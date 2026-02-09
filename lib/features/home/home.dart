@@ -14,93 +14,145 @@ class _HomeState extends State<Home> {
   String transcription = '';
   bool isListening = false;
 
-  // initializeSpeech() async {
-  //   // Initialize text-to-speech
-  //   await textToSpeech.setLanguage("en-US");
-  //   await textToSpeech.setPitch(1.0);
-  //   await textToSpeech.setSpeechRate(0.5);
+  @override
+  void initState() {
+    super.initState();
+  }
 
-  //   // Initialize speech-to-text
-  //   bool available = await speechToText.initialize();
-  //   if (!available) {
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       const SnackBar(
-  //         content: Text('Speech recognition not available'),
-  //         backgroundColor: Colors.red,
-  //       ),
-  //     );
-  //   }
-  // }
-
-  // startListening() async {
-  //   FocusScope.of(context).unfocus(); // Dismiss keyboard
-  //   if (await speechToText.initialize()) {
-  //     setState(() => isListening = true);
-  //     speechToText.listen(
-  //       onResult: (result) {
-  //         setState(() {
-  //           transcription = result.recognizedWords;
-  //           commandController.text = transcription;
-  //         });
-  //       },
-  //       listenFor: const Duration(seconds: 30),
-  //       pauseFor: const Duration(seconds: 5),
-  //     );
-  //   }
-  // }
-
-  // stopListening() async {
-  //   await speechToText.stop();
-  //   setState(() => isListening = false);
-  // }
-
-  // @override
-  // void initState() {
-  //   super.initState();
-  //   initializeSpeech();
-  // }
-
-  // @override
-  // void dispose() {
-  //   speechToText.stop();
-  //   textToSpeech.stop();
-  //   commandController.dispose();
-  //   super.dispose();
-  // }
+  @override
+  void dispose() {
+    commandController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Home'),
+        title: const Text('Autobus Home'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () {
+              // Manual session/token refresh if needed
+              context.read<AuthBloc>().add(RefreshTokenEvent());
+            },
+            tooltip: 'Refresh Session',
+          ),
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () {
               context.read<AuthBloc>().add(LogoutEvent());
             },
+            tooltip: 'Logout',
           ),
         ],
       ),
-      body: BlocBuilder<AuthBloc, AuthState>(
-        builder: (context, state) {
-          if (state is Unauthenticated) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  SizedBox(
-                    width: 260,
-                    height: 260,
-                    child: Image.asset('assets/img/aibot.png'),
-                  ),
-                  const SizedBox(height: 20),
-                  Padding(
-                    padding: const EdgeInsets.all(18.0),
-                    child: TextField(
+      body: BlocListener<AuthBloc, AuthState>(
+        listener: (context, state) {
+          if (state is SessionExpired) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.message),
+                backgroundColor: Colors.red,
+              ),
+            );
+            Navigator.of(
+              context,
+            ).pushNamedAndRemoveUntil('/signin', (route) => false);
+          } else if (state is TokenRefreshFailed) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Session error: ${state.message}'),
+                backgroundColor: Colors.orange,
+              ),
+            );
+          } else if (state is TokenRefreshed) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Session refreshed'),
+                backgroundColor: Colors.green,
+              ),
+            );
+          }
+        },
+        child: BlocBuilder<AuthBloc, AuthState>(
+          builder: (context, authState) {
+            if (authState is Authenticated) {
+              return _buildAuthenticatedHome(authState.user);
+            } else if (authState is TokenRefreshing) {
+              return const Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CircularProgressIndicator(),
+                    SizedBox(height: 16),
+                    Text('Refreshing session...'),
+                  ],
+                ),
+              );
+            } else if (authState is SessionExpired) {
+              return const Center(
+                child: Text('Session expired. Redirecting to login...'),
+              );
+            }
+            return const Center(child: CircularProgressIndicator());
+          },
+        ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Floating Action Button Pressed')),
+          );
+        },
+        child: const Icon(Icons.add),
+      ),
+    );
+  }
+
+  Widget _buildAuthenticatedHome(dynamic user) {
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Welcome to Autobus!',
+              style: Theme.of(context).textTheme.headlineLarge,
+            ),
+            const SizedBox(height: 8),
+            if (user is Map && user.containsKey('email'))
+              Text(
+                'User: ${user['email']}',
+                style: Theme.of(context).textTheme.bodyLarge,
+              ),
+            const SizedBox(height: 24),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'AI Assistant',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      child: Image.asset(
+                        'assets/img/aibot.png',
+                        height: 200,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
                       controller: commandController,
                       decoration: InputDecoration(
-                        hintText: 'Ai Assistant Command',
+                        hintText: 'Enter AI Assistant Command',
                         border: const UnderlineInputBorder(),
                         suffixIcon: IconButton(
                           icon: Icon(
@@ -108,69 +160,136 @@ class _HomeState extends State<Home> {
                             color: isListening ? Colors.red : Colors.blue,
                           ),
                           onPressed: () {
+                            setState(() => isListening = !isListening);
                           },
                         ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 20),
-                  BlocBuilder<AssistantBloc, AssistantState>(
-                    builder: (context, assistantState) {
-                      if (assistantState is AssistantLoading) {
-                        return const CircularProgressIndicator();
-                      } else if (assistantState is AssistantSuccess) {
-                        // Speak the response
-                        
-                        return Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Text(
-                            assistantState.response,
-                            style: const TextStyle(fontSize: 16),
-                          ),
-                        );
-                      } else if (assistantState is AssistantError) {
-                        return Text(
-                          assistantState.message,
-                          style: const TextStyle(color: Colors.red),
-                        );
-                      }
-                      return const SizedBox.shrink();
-                    },
-                  ),
-                  AppButton(
-                    onPressed: () {
-                      if (commandController.text.isEmpty) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Please fill all fields'),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
-                        return;
-                      }
-                      context.read<AssistantBloc>().add(
-                        SendCommandEvent(
-                          command: commandController.text,
-                        ),
-                      );
-                    },
-                    buttonText: 'Send',
-                  ),
-                ],
+                    const SizedBox(height: 16),
+                    BlocBuilder<AssistantBloc, AssistantState>(
+                      builder: (context, assistantState) {
+                        if (assistantState is AssistantLoading) {
+                          return const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              CircularProgressIndicator(),
+                              SizedBox(width: 16),
+                              Text('Processing...'),
+                            ],
+                          );
+                        } else if (assistantState is AssistantSuccess) {
+                          return Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.grey[100],
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              assistantState.response,
+                              style: const TextStyle(fontSize: 16),
+                            ),
+                          );
+                        } else if (assistantState is AssistantError) {
+                          return Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.red[100],
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              assistantState.message,
+                              style: const TextStyle(
+                                color: Colors.red,
+                                fontSize: 16,
+                              ),
+                            ),
+                          );
+                        }
+                        return const SizedBox.shrink();
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          if (commandController.text.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Please enter a command'),
+                                backgroundColor: Colors.orange,
+                              ),
+                            );
+                            return;
+                          }
+                          context.read<AssistantBloc>().add(
+                            SendCommandEvent(command: commandController.text),
+                          );
+                        },
+                        child: const Text('Send Command'),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            );
-          }
-          return const Center(child: CircularProgressIndicator());
-        },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // Add your action here
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Floating Action Button Pressed')),
-          );
-        },
-        child: const Icon(Icons.add),
+            ),
+            const SizedBox(height: 24),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Available Rides',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    const SizedBox(height: 12),
+                    FutureBuilder<List<dynamic>>(
+                      future: context.read<ApiService>().getRides(),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const CircularProgressIndicator();
+                        } else if (snapshot.hasError) {
+                          return Text(
+                            'Error: ${snapshot.error}',
+                            style: const TextStyle(color: Colors.red),
+                          );
+                        } else if (snapshot.hasData &&
+                            snapshot.data!.isNotEmpty) {
+                          return ListView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: snapshot.data!.length,
+                            itemBuilder: (context, index) {
+                              final ride = snapshot.data![index];
+                              return ListTile(
+                                title: Text(
+                                  ride['title'] ?? 'Ride ${index + 1}',
+                                ),
+                                subtitle: Text(
+                                  ride['description'] ?? 'Available seats',
+                                ),
+                                trailing: const Icon(Icons.arrow_forward),
+                              );
+                            },
+                          );
+                        } else {
+                          return const Center(
+                            child: Text('No rides available'),
+                          );
+                        }
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

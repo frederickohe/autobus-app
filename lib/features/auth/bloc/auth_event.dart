@@ -35,7 +35,14 @@ class SignupEvent extends AuthEvent {
   });
 
   @override
-  List<Object> get props => [firstname, lastname, username, phone, email, password];
+  List<Object> get props => [
+    firstname,
+    lastname,
+    username,
+    phone,
+    email,
+    password,
+  ];
 }
 
 class CheckAuthEvent extends AuthEvent {}
@@ -93,4 +100,22 @@ class ResetPasswordEvent extends AuthEvent {
 
   @override
   List<Object> get props => [email, code, newPassword];
+}
+
+// Session Management Events
+class RefreshTokenEvent extends AuthEvent {
+  final String? refreshToken;
+
+  const RefreshTokenEvent({this.refreshToken});
+
+  @override
+  List<Object> get props => [refreshToken ?? ''];
+}
+
+class CheckSessionEvent extends AuthEvent {
+  const CheckSessionEvent();
+}
+
+class SessionExpiredEvent extends AuthEvent {
+  const SessionExpiredEvent();
 }

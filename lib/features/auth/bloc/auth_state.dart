@@ -21,8 +21,8 @@ class Authenticated extends AuthState {
 }
 
 class Registered extends AuthState {
-  final String message;  
-  const Registered({ required this.message});
+  final String message;
+  const Registered({required this.message});
   @override
   List<Object> get props => [message];
 }
@@ -81,6 +81,40 @@ class PasswordResetSuccess extends AuthState {
   final String message;
 
   const PasswordResetSuccess({required this.message});
+
+  @override
+  List<Object> get props => [message];
+}
+
+// Session Management States
+class TokenRefreshing extends AuthState {
+  const TokenRefreshing();
+}
+
+class TokenRefreshed extends AuthState {
+  final dynamic user;
+
+  const TokenRefreshed({required this.user});
+
+  @override
+  List<Object> get props => [user];
+}
+
+class SessionExpired extends AuthState {
+  final String message;
+
+  const SessionExpired({
+    this.message = 'Your session has expired. Please login again.',
+  });
+
+  @override
+  List<Object> get props => [message];
+}
+
+class TokenRefreshFailed extends AuthState {
+  final String message;
+
+  const TokenRefreshFailed({this.message = 'Failed to refresh token'});
 
   @override
   List<Object> get props => [message];

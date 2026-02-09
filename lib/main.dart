@@ -1,5 +1,10 @@
 import 'package:autobus/barrel.dart';
 
+// Initialize services at app level
+late TokenService _tokenService;
+late SessionAwareHttpClient _httpClient;
+late ApiService _apiService;
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -10,20 +15,43 @@ void main() async {
     GoogleFonts.righteous(),
   ]);
 
+  // Initialize session handling services
+  _tokenService = TokenService();
+  _httpClient = SessionAwareHttpClient(
+    tokenService: _tokenService,
+    baseUrl: 'http://173.212.253.3:8000',
+  );
+  _apiService = ApiService(httpClient: _httpClient);
+
+  // Create AuthBloc with TokenService
+  final authBloc = AuthBloc(tokenService: _tokenService);
+
   runApp(
-    MultiBlocProvider(
+    MultiRepositoryProvider(
       providers: [
-        BlocProvider(create: (context) => AuthBloc()..add(CheckAuthEvent())),
-        BlocProvider(create: (context) => AssistantBloc()),
-        BlocProvider(create: (context) => ThemeBloc()),
+        RepositoryProvider<ApiService>(create: (context) => _apiService),
       ],
-      child: const MyApp(),
+      child: MultiBlocProvider(
+        providers: [
+          BlocProvider.value(value: authBloc..add(CheckSessionEvent())),
+          BlocProvider(create: (context) => AssistantBloc()),
+          BlocProvider(create: (context) => ThemeBloc()),
+        ],
+        child: MyApp(httpClient: _httpClient),
+      ),
     ),
   );
 }
 
+// Getters for services to be used throughout the app
+SessionAwareHttpClient get appHttpClient => _httpClient;
+ApiService get apiService => _apiService;
+TokenService get tokenService => _tokenService;
+
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final SessionAwareHttpClient httpClient;
+
+  const MyApp({required this.httpClient, super.key});
 
   @override
   Widget build(BuildContext context) {

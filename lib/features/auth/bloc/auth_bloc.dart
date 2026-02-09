@@ -3,12 +3,18 @@ import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
+import '../models/token_model.dart';
+import '../services/token_service.dart';
 
 part 'auth_event.dart';
 part 'auth_state.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
-  AuthBloc() : super(AuthInitial()) {
+  final TokenService tokenService;
+
+  AuthBloc({TokenService? tokenService})
+    : tokenService = tokenService ?? TokenService(),
+      super(AuthInitial()) {
     on<LoginEvent>(_onLogin);
     on<SignupEvent>(_onSignup);
     on<CheckAuthEvent>(_onCheckAuth);
@@ -17,12 +23,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<ResetPasswordEvent>(_onResetPassword);
     on<CheckEmailExistsEvent>(_onCheckEmailExists);
     on<SendResetCodeEvent>(_onSendResetCode);
+    on<RefreshTokenEvent>(_onRefreshToken);
+    on<CheckSessionEvent>(_onCheckSession);
   }
 
   // Helper method to get headers with auth token
   Future<Map<String, String>> _getAuthHeaders() async {
-    final prefs = await SharedPreferences.getInstance();
-    final accessToken = prefs.getString('access_token');
+    final accessToken = await tokenService.getAccessToken();
     return {
       'Content-Type': 'application/json',
       if (accessToken != null) 'Authorization': 'Bearer $accessToken',
@@ -33,30 +40,27 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(AuthLoading());
     try {
       final response = await http.post(
-        Uri.parse('http://35.208.64.180:8000/api/v1/auth/signin'),
+        Uri.parse('http://173.212.253.3:8000/api/v1/auth/signin'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({'email': event.email, 'password': event.password}),
       );
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        final accessToken = data['access_token'];
-        final refreshToken = data['refresh_token'];
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('access_token', accessToken);
-        await prefs.setString('refresh_token', refreshToken);
+
+        // Parse and save token
+        final tokenModel = TokenModel.fromJson(data);
+        await tokenService.saveToken(tokenModel);
 
         // Fetch user data using access token
         final userResponse = await http.get(
-          Uri.parse('http://35.208.64.180:8000/api/v1/user/me'),
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer $accessToken',
-          },
+          Uri.parse('http://173.212.253.3:8000/api/v1/user/me'),
+          headers: await _getAuthHeaders(),
         );
 
         if (userResponse.statusCode == 200) {
           final userData = json.decode(userResponse.body);
+          final prefs = await SharedPreferences.getInstance();
           await prefs.setString('user', json.encode(userData));
           emit(Authenticated(user: userData));
         } else {
@@ -89,7 +93,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(AuthLoading());
     try {
       final response = await http.post(
-        Uri.parse('http://35.208.64.180:8000/api/v1/auth/signup'),
+        Uri.parse('http://173.212.253.3:8000/api/v1/auth/signup'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'first_name': event.firstname,
@@ -150,10 +154,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   }
 
   Future<void> _onLogout(LogoutEvent event, Emitter<AuthState> emit) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('token');
-    await prefs.remove('user');
-    emit(Unauthenticated());
+    try {
+      await tokenService.clearTokens();
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('user');
+      emit(Unauthenticated());
+    } catch (e) {
+      emit(AuthError(message: 'Logout failed: $e', source: 'logout'));
+    }
   }
 
   Future<void> _onResetPassword(
@@ -163,7 +171,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(AuthLoading());
     try {
       final response = await http.post(
-        Uri.parse('http://35.208.64.180:8000/api/v1/auth/reset-password'),
+        Uri.parse('http://173.212.253.3:8000/api/v1/auth/reset-password'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'email': event.email,
@@ -195,13 +203,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(AuthLoading());
     try {
       final response = await http.post(
-        Uri.parse('http://35.208.64.180:8000/api/v1/auth/verify-account'),
+        Uri.parse('http://173.212.253.3:8000/api/v1/auth/verify-account'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({'email': event.email}),
       );
 
       if (response.statusCode == 200) {
-          emit(EmailExists(email: event.email));
+        emit(EmailExists(email: event.email));
       } else {
         String errorMsg = 'Email check failed';
         try {
@@ -226,17 +234,19 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(AuthLoading());
     try {
       final response = await http.post(
-        Uri.parse('http://35.208.64.180:8000/api/v1/auth/send-reset-code'),
+        Uri.parse('http://173.212.253.3:8000/api/v1/auth/send-reset-code'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({'email': event.email}),
       );
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        emit(ResetCodeSent(
-          email: event.email,
-          message: data['message'] ?? 'Reset code sent successfully',
-        ));
+        emit(
+          ResetCodeSent(
+            email: event.email,
+            message: data['message'] ?? 'Reset code sent successfully',
+          ),
+        );
       } else {
         String errorMsg = 'Failed to send reset code';
         try {
@@ -259,7 +269,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(AuthLoading());
     try {
       final response = await http.post(
-        Uri.parse('http://35.208.64.180:8000/api/v1/auth/verify-reset-code'),
+        Uri.parse('http://173.212.253.3:8000/api/v1/auth/verify-reset-code'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({'email': event.email, 'code': event.code}),
       );
@@ -278,6 +288,113 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       }
     } catch (e) {
       emit(AuthError(message: e.toString(), source: 'verify_code'));
+    }
+  }
+
+  // Token Refresh Handler
+  Future<void> _onRefreshToken(
+    RefreshTokenEvent event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(TokenRefreshing());
+    try {
+      final refreshToken =
+          event.refreshToken ?? await tokenService.getRefreshToken();
+
+      if (refreshToken == null) {
+        emit(SessionExpired());
+        return;
+      }
+
+      final response = await http.post(
+        Uri.parse('http://173.212.253.3:8000/api/v1/auth/refresh'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({'refresh_token': refreshToken}),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final newTokenModel = TokenModel.fromJson(data);
+
+        // Save new tokens
+        await tokenService.updateToken(newTokenModel);
+
+        // Fetch updated user data
+        final userResponse = await http.get(
+          Uri.parse('http://173.212.253.3:8000/api/v1/user/me'),
+          headers: await _getAuthHeaders(),
+        );
+
+        if (userResponse.statusCode == 200) {
+          final userData = json.decode(userResponse.body);
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('user', json.encode(userData));
+          emit(TokenRefreshed(user: userData));
+        } else {
+          emit(
+            TokenRefreshFailed(
+              message: 'Failed to fetch user data after token refresh',
+            ),
+          );
+        }
+      } else if (response.statusCode == 401) {
+        // Refresh token is invalid or expired
+        await tokenService.clearTokens();
+        emit(
+          SessionExpired(
+            message: 'Your session has expired. Please login again.',
+          ),
+        );
+      } else {
+        String errorMsg = 'Failed to refresh token';
+        try {
+          final errorData = json.decode(response.body);
+          if (errorData is Map && errorData['detail'] != null) {
+            errorMsg = errorData['detail'];
+          }
+        } catch (_) {}
+        emit(TokenRefreshFailed(message: errorMsg));
+      }
+    } catch (e) {
+      emit(TokenRefreshFailed(message: 'Token refresh error: $e'));
+    }
+  }
+
+  // Session Check Handler
+  Future<void> _onCheckSession(
+    CheckSessionEvent event,
+    Emitter<AuthState> emit,
+  ) async {
+    try {
+      final hasValidSession = await tokenService.hasValidSession();
+
+      if (!hasValidSession) {
+        emit(SessionExpired());
+        return;
+      }
+
+      // Check if token should be refreshed proactively
+      final shouldRefresh = await tokenService.shouldRefreshToken();
+      if (shouldRefresh) {
+        // Emit a refresh token event
+        add(RefreshTokenEvent());
+        return;
+      }
+
+      // Session is valid, get user data
+      final prefs = await SharedPreferences.getInstance();
+      final userString = prefs.getString('user');
+
+      if (userString != null) {
+        final user = json.decode(userString);
+        emit(Authenticated(user: user));
+      } else {
+        emit(Unauthenticated());
+      }
+    } catch (e) {
+      emit(
+        AuthError(message: 'Session check failed: $e', source: 'check_session'),
+      );
     }
   }
 }
