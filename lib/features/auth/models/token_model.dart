@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:jwt_decoder/jwt_decoder.dart';
 
 class TokenModel {

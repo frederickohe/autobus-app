@@ -1,4 +1,3 @@
-import 'package:http/http.dart' as http;
 import 'package:autobus/barrel.dart';
 
 class ApiService {

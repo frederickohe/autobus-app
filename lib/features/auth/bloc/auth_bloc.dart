@@ -71,7 +71,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
               errorMsg = errorData['detail'];
             }
           } catch (_) {}
-          print('User fetch error: ' + userResponse.body);
+          print('User fetch error: ${userResponse.body}');
           emit(AuthError(message: errorMsg, source: 'login'));
         }
       } else {
