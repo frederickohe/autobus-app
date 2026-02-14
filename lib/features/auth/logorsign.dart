@@ -20,39 +20,26 @@ class LogorSign extends StatelessWidget {
           ),
           child: Container(
             decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Color.fromARGB(75, 0, 0, 0),
-                      Color.fromARGB(150, 0, 0, 0)
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                ),
+              gradient: LinearGradient(
+                colors: [
+                  Color.fromARGB(75, 0, 0, 0),
+                  Color.fromARGB(150, 0, 0, 0),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.start,
               children: [
-                SizedBox(height: MediaQuery.of(context).size.height * 0.1),
-                Text(
-                  'AutoBus',
-                  style: GoogleFonts.righteous(
-                    color: Colors.white,
-                    fontSize: 78,
-                    fontWeight: FontWeight.bold,
+                SizedBox(height: MediaQuery.of(context).size.height * 0.2),
+                SizedBox(
+                  width: double.infinity,
+                  child: Image.asset(
+                    "assets/icons/autologo.png",
+                    height: 60,
+                    fit: BoxFit.contain,
                   ),
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Text(
-                      'Automate Actions',
-                      style: GoogleFonts.imprima(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w100,
-                      ),
-                    ),
-                  ],
                 ),
                 SizedBox(height: MediaQuery.of(context).size.width * 0.9),
                 Container(
@@ -74,9 +61,12 @@ class LogorSign extends StatelessWidget {
                               onPressed: () {
                                 Navigator.of(context).push(
                                   PageTransition(
-                                    type: PageTransitionType.rightToLeftWithFade,
+                                    type:
+                                        PageTransitionType.rightToLeftWithFade,
                                     childCurrent: const Signin(),
-                                    duration: const Duration(milliseconds: 1000),
+                                    duration: const Duration(
+                                      milliseconds: 1000,
+                                    ),
                                     reverseDuration: const Duration(
                                       milliseconds: 800,
                                     ),
@@ -96,16 +86,23 @@ class LogorSign extends StatelessWidget {
                               ),
                             ),
                           ),
-                          Container(height: 40, width: 1.5, color: Colors.black),
+                          Container(
+                            height: 40,
+                            width: 1.5,
+                            color: Colors.black,
+                          ),
                           SizedBox(
                             width: MediaQuery.of(context).size.width * 0.25,
                             child: TextButton(
                               onPressed: () {
                                 Navigator.of(context).push(
                                   PageTransition(
-                                    type: PageTransitionType.rightToLeftWithFade,
+                                    type:
+                                        PageTransitionType.rightToLeftWithFade,
                                     childCurrent: const Signup(),
-                                    duration: const Duration(milliseconds: 1000),
+                                    duration: const Duration(
+                                      milliseconds: 1000,
+                                    ),
                                     reverseDuration: const Duration(
                                       milliseconds: 600,
                                     ),

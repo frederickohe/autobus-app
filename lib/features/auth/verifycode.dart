@@ -36,41 +36,50 @@ class _VerifyCodeState extends State<VerifyCode> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               SizedBox(height: MediaQuery.of(context).size.height * 0.03),
-              SizedBox(
-                width: MediaQuery.of(context).size.width,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    SizedBox(
-                      width: MediaQuery.of(context).size.width * 0.32,
-                      child: GestureDetector(
-                        onTap: () {
-                          Navigator.of(context).pop();
-                        },
-                        child: Text(
-                          'Back',
-                          style: GoogleFonts.imprima(
-                            color: Colors.black,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w100,
+              Stack(
+                alignment: Alignment.center,
+                children: [
+                  // Centered text
+                  Center(
+                    child: Text(
+                      'Verify Code',
+                      style: GoogleFonts.imprima(
+                        color: Colors.black,
+                        fontSize: 26,
+                        fontWeight: FontWeight.w100,
+                      ),
+                    ),
+                  ),
+
+                  // Back button positioned on the left
+                  Positioned(
+                    left: 0,
+                    child: GestureDetector(
+                      onTap: () {
+                        Navigator.of(context).pop();
+                      },
+                      child: Container(
+                        height: 35,
+                        width: 35,
+                        decoration: BoxDecoration(
+                          color: CustColors.mainCol,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: CustColors.mainCol,
+                            width: 1.5,
+                          ),
+                        ),
+                        child: Center(
+                          child: Icon(
+                            Icons.arrow_back_ios_new,
+                            color: Colors.white,
+                            size: 50 * 0.35,
                           ),
                         ),
                       ),
                     ),
-                    SizedBox(
-                      width: MediaQuery.of(context).size.width * 0.3,
-                      child: Text(
-                        'VerifyCode',
-                        style: GoogleFonts.imprima(
-                          color: Colors.black,
-                          fontSize: 26,
-                          fontWeight: FontWeight.w100,
-                        ),
-                      ),
-                    ),
-                    SizedBox(width: MediaQuery.of(context).size.width * 0.2),
-                  ],
-                ),
+                  ),
+                ],
               ),
               SizedBox(height: MediaQuery.of(context).size.height * 0.1),
               Center(

@@ -23,58 +23,70 @@ class _SigninState extends State<Signin> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 SizedBox(height: MediaQuery.of(context).size.height * 0.03),
-                SizedBox(
-                  width: MediaQuery.of(context).size.width,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      SizedBox(
-                        width: MediaQuery.of(context).size.width * 0.32,
-                        child: GestureDetector(
-                              onTap: () {
-                                Navigator.of(context).pop();
-                              },
-                              child: Text(
-                                'Back',
-                                style: GoogleFonts.imprima(
-                                    color: Colors.black,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w100,
-                                  ),
-                              ),
-                            ),
-                      ),
-                      SizedBox(
-                        width: MediaQuery.of(context).size.width * 0.3,
-                        child: Text(
-                          'Signin',
-                          style: GoogleFonts.imprima(
-                                  color: Colors.black,
-                                  fontSize: 26,
-                                  fontWeight: FontWeight.w100,
-                                ),
+                Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    // Centered text
+                    Center(
+                      child: Text(
+                        'Sign In',
+                        style: GoogleFonts.imprima(
+                          color: Colors.black,
+                          fontSize: 26,
+                          fontWeight: FontWeight.w100,
                         ),
                       ),
-                      SizedBox(width: MediaQuery.of(context).size.width * 0.2),
-                    ],
-                  ),
+                    ),
+
+                    // Back button positioned on the left
+                    Positioned(
+                      left: 0,
+                      child: GestureDetector(
+                        onTap: () {
+                          Navigator.of(context).pop();
+                        },
+                        child: Container(
+                          height: 35,
+                          width: 35,
+                          decoration: BoxDecoration(
+                            color: CustColors.mainCol,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: CustColors.mainCol,
+                              width: 1.5,
+                            ),
+                          ),
+                          child: Center(
+                            child: Icon(
+                              Icons.arrow_back_ios_new,
+                              color: Colors.white,
+                              size: 50 * 0.35,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
                 SizedBox(height: MediaQuery.of(context).size.height * 0.1),
                 Center(
                   child: SizedBox(
-                        width: 100,
-                        height: 100,
-                        child: Image.asset('assets/img/bot.png'),
-                      ),
+                    width: 100,
+                    height: 100,
+                    child: Image.asset('assets/img/bot.png'),
+                  ),
                 ),
                 SizedBox(height: MediaQuery.of(context).size.height * 0.1),
                 Padding(
                   padding: EdgeInsets.only(left: 20.0, right: 20.0),
-                  child: Text('Email', style: GoogleFonts.imprima(
-                                  color: const Color.fromARGB(255, 12, 12, 12),
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w100,
-                                ),),
+                  child: Text(
+                    'Email',
+                    style: GoogleFonts.imprima(
+                      color: const Color.fromARGB(255, 12, 12, 12),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w100,
+                    ),
+                  ),
                 ),
                 Padding(
                   padding: const EdgeInsets.only(left: 20.0, right: 20.0),
@@ -89,11 +101,14 @@ class _SigninState extends State<Signin> {
                 const SizedBox(height: 20),
                 Padding(
                   padding: EdgeInsets.only(left: 20.0, right: 20.0),
-                  child: Text('Password', style: GoogleFonts.imprima(
-                                  color: Colors.black,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w100,
-                                ),),
+                  child: Text(
+                    'Password',
+                    style: GoogleFonts.imprima(
+                      color: Colors.black,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w100,
+                    ),
+                  ),
                 ),
                 Padding(
                   padding: const EdgeInsets.only(left: 20.0, right: 20.0),
@@ -121,13 +136,13 @@ class _SigninState extends State<Signin> {
                         ),
                       );
                     },
-                    child:  Text(
+                    child: Text(
                       'Forgot Password ?',
                       style: GoogleFonts.imprima(
-                                  color: Colors.black,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w700,
-                                ),
+                        color: Colors.black,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
                 ),
@@ -138,12 +153,15 @@ class _SigninState extends State<Signin> {
                       if (emailController.text.isEmpty ||
                           passwordController.text.isEmpty) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                           SnackBar(
-                            content: Text('Please fill all fields', style: GoogleFonts.imprima(
-                                  color: Colors.black,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w100,
-                                ),),
+                          SnackBar(
+                            content: Text(
+                              'Please fill all fields',
+                              style: GoogleFonts.imprima(
+                                color: Colors.black,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w100,
+                              ),
+                            ),
                             backgroundColor: Colors.red,
                           ),
                         );
@@ -160,15 +178,15 @@ class _SigninState extends State<Signin> {
                     buttonText: 'Signin',
                   ),
                 ),
-                SizedBox(height: MediaQuery.of(context).size.height * 0.03),
+                SizedBox(height: MediaQuery.of(context).size.height * 0.1),
                 Center(
                   child: Text(
                     'Dont have an Account ?',
                     style: GoogleFonts.imprima(
-                                  color: Colors.black,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w100,
-                                ),
+                      color: Colors.black,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w100,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -188,10 +206,10 @@ class _SigninState extends State<Signin> {
                     child: Text(
                       'Sign Up ',
                       style: GoogleFonts.imprima(
-                                  color: Colors.black,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w700,
-                                ),
+                        color: Colors.black,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
                 ),

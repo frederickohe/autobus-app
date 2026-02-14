@@ -26,7 +26,9 @@ class _RecoverAccountState extends State<RecoverAccount> {
           // Navigate to VerifyCode screen
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => VerifyCode(email: state.email)),
+            MaterialPageRoute(
+              builder: (context) => VerifyCode(email: state.email),
+            ),
           );
         } else if (state is AuthError && state.source == 'check_email') {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -43,41 +45,50 @@ class _RecoverAccountState extends State<RecoverAccount> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               SizedBox(height: MediaQuery.of(context).size.height * 0.03),
-              SizedBox(
-                width: MediaQuery.of(context).size.width,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    SizedBox(
-                      width: MediaQuery.of(context).size.width * 0.2,
-                      child: GestureDetector(
-                        onTap: () {
-                          Navigator.of(context).pop();
-                        },
-                        child: Text(
-                          'Back',
-                          style: GoogleFonts.imprima(
-                            color: Colors.black,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w100,
+              Stack(
+                alignment: Alignment.center,
+                children: [
+                  // Centered text
+                  Center(
+                    child: Text(
+                      'Recover Account',
+                      style: GoogleFonts.imprima(
+                        color: Colors.black,
+                        fontSize: 26,
+                        fontWeight: FontWeight.w100,
+                      ),
+                    ),
+                  ),
+
+                  // Back button positioned on the left
+                  Positioned(
+                    left: 0,
+                    child: GestureDetector(
+                      onTap: () {
+                        Navigator.of(context).pop();
+                      },
+                      child: Container(
+                        height: 35,
+                        width: 35,
+                        decoration: BoxDecoration(
+                          color: CustColors.mainCol,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: CustColors.mainCol,
+                            width: 1.5,
+                          ),
+                        ),
+                        child: Center(
+                          child: Icon(
+                            Icons.arrow_back_ios_new,
+                            color: Colors.white,
+                            size: 50 * 0.35,
                           ),
                         ),
                       ),
                     ),
-                    SizedBox(
-                      width: MediaQuery.of(context).size.width * 0.5,
-                      child: Text(
-                        'Recover Account',
-                        style: GoogleFonts.imprima(
-                          color: Colors.black,
-                          fontSize: 26,
-                          fontWeight: FontWeight.w100,
-                        ),
-                      ),
-                    ),
-                    SizedBox(width: MediaQuery.of(context).size.width * 0.1),
-                  ],
-                ),
+                  ),
+                ],
               ),
               SizedBox(height: MediaQuery.of(context).size.height * 0.1),
               Center(
@@ -124,8 +135,8 @@ class _RecoverAccountState extends State<RecoverAccount> {
                     }
 
                     context.read<AuthBloc>().add(
-                    CheckEmailExistsEvent(email: emailController.text),
-                  );
+                      CheckEmailExistsEvent(email: emailController.text),
+                    );
                   },
                   buttonText: 'Verify',
                 ),
