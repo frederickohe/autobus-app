@@ -30,6 +30,15 @@ class _HomeState extends State<Home> {
         title: const Text('Autobus Home'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.credit_card),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const SelectUserTypePage()),
+              );
+            },
+            tooltip: 'Subscription',
+          ),
+          IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () {
               // Manual session/token refresh if needed

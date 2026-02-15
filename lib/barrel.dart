@@ -34,6 +34,10 @@ export 'package:autobus/features/auth/recoveraccount.dart';
 export 'package:autobus/features/auth/resetpass.dart';
 export 'package:autobus/features/auth/verifycode.dart';
 
+// Subscription
+export 'package:autobus/features/subscription/select_user_type.dart';
+export 'package:autobus/features/subscription/subscription_bill.dart';
+
 // Icons import
 export 'package:flutter_bloc/flutter_bloc.dart';
 
