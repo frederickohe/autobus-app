@@ -26,15 +26,14 @@ class SubscriptionStorage {
     await prefs.remove(_kBillingId);
   }
 
-  /// Convenience: store the full chosen plan snapshot as json.
   Future<void> savePlanSnapshot(
     SubscriptionPlan plan,
     BillingOption billing,
   ) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('subscription.snapshot', jsonEncode({
-      'plan': plan.toJson(),
-      'billing': billing.toJson(),
-    }));
+    await prefs.setString(
+      'subscription.snapshot',
+      jsonEncode({'plan': plan.toJson(), 'billing': billing.toJson()}),
+    );
   }
 }

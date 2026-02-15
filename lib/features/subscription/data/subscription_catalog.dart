@@ -3,9 +3,7 @@ import 'package:autobus/barrel.dart';
 import '../models/subscription_plan.dart';
 
 /// Local subscription catalog.
-///
-/// The user asked to keep subscription info locally “like in a json”,
-/// so we embed JSON here (no extra pubspec asset wiring needed).
+/// embedded JSON
 class SubscriptionCatalog {
   static const String _catalogJson = r'''
   {
@@ -76,7 +74,9 @@ class SubscriptionCatalog {
     final decoded = jsonDecode(_catalogJson) as Map<String, dynamic>;
     final plans = (decoded['plans'] as List).cast<dynamic>();
     return plans
-        .map((p) => SubscriptionPlan.fromJson((p as Map).cast<String, dynamic>()))
+        .map(
+          (p) => SubscriptionPlan.fromJson((p as Map).cast<String, dynamic>()),
+        )
         .toList();
   }
 }

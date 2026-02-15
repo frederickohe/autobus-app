@@ -71,7 +71,11 @@ class _SubscriptionBillPageState extends State<SubscriptionBillPage> {
                     color: Colors.white.withOpacity(0.18),
                     borderRadius: BorderRadius.circular(31),
                   ),
-                  child: const Icon(Icons.person, color: Colors.white, size: 28),
+                  child: const Icon(
+                    Icons.person,
+                    color: Colors.white,
+                    size: 28,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 const _AccountMeta(),
@@ -115,17 +119,17 @@ class _AccountMeta extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // If your AuthBloc user payload contains real org info, swap these values.
+    // Temporary values, would be updated with endpoint
     const company = 'Star Foods Limited';
     const address = 'North Kaneshie, Accra Ghana';
     const email = 'starmeals@email.com';
     const phone = '+233 39473439820023';
 
     TextStyle metaStyle(Color c) => GoogleFonts.imprima(
-          color: c,
-          fontSize: 13,
-          fontWeight: FontWeight.w500,
-        );
+      color: c,
+      fontSize: 13,
+      fontWeight: FontWeight.w500,
+    );
 
     return Column(
       children: [
@@ -301,11 +305,7 @@ class _GradientBackground extends StatelessWidget {
     return Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
-          colors: [
-            Color(0xFF130522),
-            Color(0xFF2D0C51),
-            Color(0xFF130522),
-          ],
+          colors: [Color(0xFF130522), Color(0xFF2D0C51), Color(0xFF130522)],
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
         ),

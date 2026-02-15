@@ -294,7 +294,6 @@ class _HeaderLogo extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        // Simple mark to match the purple bubbles if the logo asset isn't present.
         Container(
           height: 34,
           width: 34,
