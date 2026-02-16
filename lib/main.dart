@@ -8,6 +8,9 @@ late ApiService _apiService;
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Initialize environment variables
+  await AppConfig.init();
+
   // Initialize Google Fonts (optional, but can help with loading)
   await GoogleFonts.pendingFonts([
     GoogleFonts.lato(),
@@ -19,7 +22,7 @@ void main() async {
   _tokenService = TokenService();
   _httpClient = SessionAwareHttpClient(
     tokenService: _tokenService,
-    baseUrl: 'http://173.212.253.3:8000',
+    baseUrl: AppConfig.backendUrl,
   );
   _apiService = ApiService(httpClient: _httpClient);
 

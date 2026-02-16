@@ -36,15 +36,6 @@ class _HomeState extends State<Home> {
         title: const Text('Autobus Home'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.credit_card),
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const SelectUserTypePage()),
-              );
-            },
-            tooltip: 'Subscription',
-          ),
-          IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () {
               // Manual session/token refresh if needed
@@ -179,6 +170,71 @@ class _HomeState extends State<Home> {
                       ),
                     ),
                     const SizedBox(height: 16),
+                    BlocBuilder<AssistantBloc, AssistantState>(
+                      builder: (context, assistantState) {
+                        if (assistantState is AssistantLoading) {
+                          return const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              CircularProgressIndicator(),
+                              SizedBox(width: 16),
+                              Text('Processing...'),
+                            ],
+                          );
+                        } else if (assistantState is AssistantSuccess) {
+                          return Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.grey[100],
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              assistantState.response,
+                              style: const TextStyle(fontSize: 16),
+                            ),
+                          );
+                        } else if (assistantState is AssistantError) {
+                          return Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.red[100],
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              assistantState.message,
+                              style: const TextStyle(
+                                color: Colors.red,
+                                fontSize: 16,
+                              ),
+                            ),
+                          );
+                        }
+                        return const SizedBox.shrink();
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          if (commandController.text.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Please enter a command'),
+                                backgroundColor: Colors.orange,
+                              ),
+                            );
+                            return;
+                          }
+                          context.read<AssistantBloc>().add(
+                            SendCommandEvent(command: commandController.text),
+                          );
+                        },
+                        child: const Text('Send Command'),
+                      ),
+                    ),
                   ],
                 ),
               ),

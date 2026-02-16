@@ -1,5 +1,6 @@
 import 'package:http/http.dart' as http;
 import 'package:autobus/barrel.dart';
+import 'package:autobus/config/app_config.dart';
 
 /// HTTP Client wrapper with automatic token injection and refresh
 /// This client automatically:
@@ -49,7 +50,7 @@ class SessionAwareHttpClient extends http.BaseClient {
     try {
       final url = baseUrl != null
           ? Uri.parse('$baseUrl/api/v1/auth/refresh')
-          : Uri.parse('http://173.212.253.3:8000/api/v1/auth/refresh');
+          : Uri.parse('${AppConfig.backendUrl}/api/v1/auth/refresh');
 
       final response = await http.post(
         url,
