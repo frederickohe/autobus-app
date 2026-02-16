@@ -29,7 +29,7 @@ class AuthWrapper extends StatelessWidget {
       child: BlocBuilder<AuthBloc, AuthState>(
         builder: (context, state) {
           if (state is Authenticated) {
-            return const Home();
+            return const Welcome();
           } else if (state is Unauthenticated) {
             return const Signin();
           } else if (state is SessionExpired) {

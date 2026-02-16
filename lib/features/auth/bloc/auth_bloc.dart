@@ -3,6 +3,7 @@ import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
+import 'package:autobus/config/app_config.dart';
 import '../models/token_model.dart';
 import '../services/token_service.dart';
 
@@ -40,7 +41,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(AuthLoading());
     try {
       final response = await http.post(
-        Uri.parse('http://173.212.253.3:8000/api/v1/auth/signin'),
+        Uri.parse('${AppConfig.backendUrl}/api/v1/auth/signin'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({'email': event.email, 'password': event.password}),
       );
@@ -54,7 +55,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
         // Fetch user data using access token
         final userResponse = await http.get(
-          Uri.parse('http://173.212.253.3:8000/api/v1/user/me'),
+          Uri.parse('${AppConfig.backendUrl}/api/v1/user/me'),
           headers: await _getAuthHeaders(),
         );
 
@@ -93,7 +94,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(AuthLoading());
     try {
       final response = await http.post(
-        Uri.parse('http://173.212.253.3:8000/api/v1/auth/signup'),
+        Uri.parse('${AppConfig.backendUrl}/api/v1/auth/signup'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'first_name': event.firstname,
@@ -171,7 +172,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(AuthLoading());
     try {
       final response = await http.post(
-        Uri.parse('http://173.212.253.3:8000/api/v1/auth/reset-password'),
+        Uri.parse('${AppConfig.backendUrl}/api/v1/auth/reset-password'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'email': event.email,
@@ -203,7 +204,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(AuthLoading());
     try {
       final response = await http.post(
-        Uri.parse('http://173.212.253.3:8000/api/v1/auth/verify-account'),
+        Uri.parse('${AppConfig.backendUrl}/api/v1/auth/verify-account'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({'email': event.email}),
       );
@@ -234,7 +235,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(AuthLoading());
     try {
       final response = await http.post(
-        Uri.parse('http://173.212.253.3:8000/api/v1/auth/send-reset-code'),
+        Uri.parse('${AppConfig.backendUrl}/api/v1/auth/send-reset-code'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({'email': event.email}),
       );
@@ -269,7 +270,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(AuthLoading());
     try {
       final response = await http.post(
-        Uri.parse('http://173.212.253.3:8000/api/v1/auth/verify-reset-code'),
+        Uri.parse('${AppConfig.backendUrl}/api/v1/auth/verify-reset-code'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({'email': event.email, 'code': event.code}),
       );
@@ -307,7 +308,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       }
 
       final response = await http.post(
-        Uri.parse('http://173.212.253.3:8000/api/v1/auth/refresh'),
+        Uri.parse('${AppConfig.backendUrl}/api/v1/auth/refresh'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({'refresh_token': refreshToken}),
       );
@@ -321,7 +322,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
         // Fetch updated user data
         final userResponse = await http.get(
-          Uri.parse('http://173.212.253.3:8000/api/v1/user/me'),
+          Uri.parse('${AppConfig.backendUrl}/api/v1/user/me'),
           headers: await _getAuthHeaders(),
         );
 

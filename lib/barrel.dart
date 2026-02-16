@@ -7,13 +7,14 @@ export 'package:autobus/features/auth/models/token_model.dart';
 export 'package:autobus/features/auth/services/token_service.dart';
 export 'package:autobus/features/auth/services/session_aware_http_client.dart';
 export 'package:autobus/features/home/services/api_service.dart';
+export 'package:autobus/config/app_config.dart';
 export 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 // bloc imports
 export 'package:autobus/features/auth/bloc/auth_bloc.dart';
-export 'package:autobus/features/home/bloc/assistant_bloc.dart';
-export 'package:autobus/features/home/bloc/assistant_event.dart';
-export 'package:autobus/features/home/bloc/assistant_state.dart';
+export 'package:autobus/features/autochat/bloc/assistant_bloc.dart';
+export 'package:autobus/features/autochat/bloc/assistant_event.dart';
+export 'package:autobus/features/autochat/bloc/assistant_state.dart';
 export 'package:autobus/common_bloc/theme_bloc.dart';
 export 'package:autobus/common_bloc/theme_state.dart';
 
