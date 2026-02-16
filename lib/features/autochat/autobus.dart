@@ -1,13 +1,13 @@
 import 'package:autobus/barrel.dart';
 
-class Home extends StatefulWidget {
-  const Home({super.key});
+class AutoBus extends StatefulWidget {
+  const AutoBus({super.key});
 
   @override
-  State<Home> createState() => _HomeState();
+  State<AutoBus> createState() => _AutoBusState();
 }
 
-class _HomeState extends State<Home> {
+class _AutoBusState extends State<AutoBus> {
   final TextEditingController commandController = TextEditingController();
   String transcription = '';
   bool isListening = false;
@@ -33,7 +33,7 @@ class _HomeState extends State<Home> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Autobus Home'),
+        title: const Text('Autobus AutoBus'),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -83,7 +83,7 @@ class _HomeState extends State<Home> {
         child: BlocBuilder<AuthBloc, AuthState>(
           builder: (context, authState) {
             if (authState is Authenticated) {
-              return _buildAuthenticatedHome(authState.user);
+              return _buildAuthenticatedAutoBus(authState.user);
             } else if (authState is TokenRefreshing) {
               return const Center(
                 child: Column(
@@ -115,7 +115,7 @@ class _HomeState extends State<Home> {
     );
   }
 
-  Widget _buildAuthenticatedHome(dynamic user) {
+  Widget _buildAuthenticatedAutoBus(dynamic user) {
     return SingleChildScrollView(
       child: Padding(
         padding: const EdgeInsets.all(16.0),

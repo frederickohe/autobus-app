@@ -1,7 +1,4 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:google_fonts/google_fonts.dart';
-import '../auth/bloc/auth_bloc.dart';
+import 'package:autobus/barrel.dart';
 
 class Home extends StatelessWidget {
   const Home({super.key});
@@ -9,7 +6,12 @@ class Home extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final List<HomeMenuItem> menuItems = [
-      HomeMenuItem("Orders", Icons.receipt_long, () {}),
+      HomeMenuItem("Orders", Icons.receipt_long, () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const AutoBus()),
+        );
+      }),
       HomeMenuItem("Marketing", Icons.campaign_outlined, () {}),
       HomeMenuItem("Queries", Icons.search, () {}),
       HomeMenuItem("Payments", Icons.payments_outlined, () {}),
@@ -55,8 +57,8 @@ class Home extends StatelessWidget {
 
                     /// Company Logo
                     Container(
-                      width: 44,
-                      height: 44,
+                      width: 54,
+                      height: 54,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         border: Border.all(color: Colors.white24),
@@ -78,9 +80,9 @@ class Home extends StatelessWidget {
                     gridDelegate:
                         const SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: 2,
-                          crossAxisSpacing: 20,
-                          mainAxisSpacing: 20,
-                          childAspectRatio: 1.05,
+                          crossAxisSpacing: 30,
+                          mainAxisSpacing: 30,
+                          childAspectRatio: 1.55,
                         ),
                     itemBuilder: (context, index) {
                       final item = menuItems[index];
@@ -100,8 +102,8 @@ class Home extends StatelessWidget {
   /// 🔘 Notification circle icon
   Widget _circleIcon(IconData icon) {
     return Container(
-      width: 44,
-      height: 44,
+      width: 54,
+      height: 54,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         border: Border.all(color: Colors.white24),

@@ -40,6 +40,7 @@ export 'package:autobus/features/auth/resetpass.dart';
 export 'package:autobus/features/auth/verifycode.dart';
 export 'package:autobus/common_design/widgets/success.dart';
 export 'package:autobus/common_design/widgets/trans_ctabutton.dart';
+export 'package:autobus/features/autochat/autobus.dart';
 
 // Subscription
 export 'package:autobus/features/subscription/userplan.dart';
