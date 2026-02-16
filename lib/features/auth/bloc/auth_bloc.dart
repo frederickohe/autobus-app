@@ -4,6 +4,9 @@ import 'package:equatable/equatable.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'package:autobus/config/app_config.dart';
+import 'package:autobus/common_bloc/success_bloc.dart';
+import 'package:autobus/common_bloc/success_event.dart';
+import 'package:autobus/config/glob_navigator.dart';
 import '../models/token_model.dart';
 import '../services/token_service.dart';
 
@@ -12,9 +15,11 @@ part 'auth_state.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final TokenService tokenService;
+  final SuccessBloc successBloc;
 
-  AuthBloc({TokenService? tokenService})
+  AuthBloc({TokenService? tokenService, SuccessBloc? successBloc})
     : tokenService = tokenService ?? TokenService(),
+      successBloc = successBloc ?? SuccessBloc(),
       super(AuthInitial()) {
     on<LoginEvent>(_onLogin);
     on<SignupEvent>(_onSignup);
@@ -97,17 +102,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         Uri.parse('${AppConfig.backendUrl}/api/v1/auth/signup'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
-          'first_name': event.firstname,
-          'last_name': event.lastname,
-          'username': event.username,
-          'phone': event.phone,
+          'fullname': event.fullname,
+          'phone_number': event.phone,
           'email': event.email,
           'password': event.password,
         }),
       );
 
       if (response.statusCode == 200) {
-        // The endpoint does not return user data or token
         String msg = 'Signup successful';
         try {
           final data = json.decode(response.body);
@@ -117,7 +119,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         } catch (_) {
           msg = response.body;
         }
-        emit(Registered(message: "Signup successful"));
+        // Trigger success bloc event
+        successBloc.add(
+          ShowSuccessEvent(
+            message: 'Registration Successful! \n\n Log into your account.',
+            nextScreen: 'login',
+          ),
+        );
       } else {
         String errorMsg = 'Signup failed';
         try {

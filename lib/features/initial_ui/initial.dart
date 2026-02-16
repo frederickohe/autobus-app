@@ -12,11 +12,9 @@ class _SplashWrapperState extends State<SplashWrapper> {
   void initState() {
     super.initState();
     Future.delayed(const Duration(seconds: 5), () {
-      Navigator.push(
+      Navigator.pushReplacement(
         context,
-        MaterialPageRoute(
-          builder: (context) => const AuthWrapper(),
-        ),
+        MaterialPageRoute(builder: (context) => const AuthWrapper()),
       );
     });
   }

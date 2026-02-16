@@ -26,8 +26,14 @@ void main() async {
   );
   _apiService = ApiService(httpClient: _httpClient);
 
-  // Create AuthBloc with TokenService
-  final authBloc = AuthBloc(tokenService: _tokenService);
+  // Create SuccessBloc
+  final successBloc = SuccessBloc();
+
+  // Create AuthBloc with TokenService and SuccessBloc
+  final authBloc = AuthBloc(
+    tokenService: _tokenService,
+    successBloc: successBloc,
+  );
 
   runApp(
     MultiRepositoryProvider(
@@ -37,6 +43,7 @@ void main() async {
       child: MultiBlocProvider(
         providers: [
           BlocProvider.value(value: authBloc..add(CheckSessionEvent())),
+          BlocProvider.value(value: successBloc),
           BlocProvider(create: (context) => AssistantBloc()),
           BlocProvider(create: (context) => ThemeBloc()),
         ],
@@ -61,6 +68,7 @@ class MyApp extends StatelessWidget {
     return BlocBuilder<ThemeBloc, ThemeState>(
       builder: (context, state) {
         return MaterialApp(
+          navigatorKey: NavigationService.navigatorKey,
           debugShowCheckedModeBanner: false,
           title: 'Autobus',
           theme: state.themeData,

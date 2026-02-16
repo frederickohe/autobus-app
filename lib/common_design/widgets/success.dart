@@ -1,0 +1,91 @@
+import 'package:autobus/barrel.dart';
+
+class Success extends StatefulWidget {
+  const Success({super.key});
+
+  @override
+  State<Success> createState() => _SuccessState();
+}
+
+class _SuccessState extends State<Success> {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: BlocListener<SuccessBloc, SuccessState>(
+        listener: (context, state) {
+          // Handle navigation when success state changes
+          if (state is SuccessDisplaying) {
+            // You can add navigation logic here if needed
+          }
+        },
+        child: BlocBuilder<SuccessBloc, SuccessState>(
+          builder: (context, state) {
+            // Extract message and nextScreen based on state
+            String displayMessage = 'Account creation was successful!';
+            String? nextScreen;
+
+            if (state is SuccessDisplaying) {
+              displayMessage = state.message;
+              nextScreen = state.nextScreen;
+            }
+
+            return Center(
+              child: Column(
+                children: [
+                  SizedBox(height: MediaQuery.of(context).size.width * 0.1),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      SizedBox(height: MediaQuery.of(context).size.width * 0.2),
+                      SizedBox(
+                        width: 260,
+                        height: 260,
+                        child: Image.asset(
+                          'assets/icons/success.png',
+                          fit: BoxFit.cover,
+                          width: 50,
+                        ),
+                      ),
+                      SizedBox(height: MediaQuery.of(context).size.width * 0.2),
+                      // Success message - now dynamic based on state
+                      Text(
+                        displayMessage,
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.righteous(
+                          color: Colors.black,
+                          fontSize: 18,
+                          fontWeight: FontWeight.normal,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: MediaQuery.of(context).size.width * 0.5),
+                  CtaButton(
+                    onPressed: () {
+                      // Clear success state and navigate
+                      context.read<SuccessBloc>().add(ClearSuccessEvent());
+                      // Navigate based on nextScreen
+                      if (nextScreen == 'login') {
+                        Navigator.of(context).pushReplacement(
+                          MaterialPageRoute(
+                            builder: (context) => const Signin(),
+                          ),
+                        );
+                      } else if (nextScreen == 'subscribe') {
+                        Navigator.of(context).pushReplacement(
+                          MaterialPageRoute(
+                            builder: (context) => const SelectPlan(),
+                          ),
+                        );
+                      }
+                    },
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}

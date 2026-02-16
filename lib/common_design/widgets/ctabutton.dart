@@ -1,39 +1,33 @@
 import 'package:autobus/barrel.dart';
 
 class CtaButton extends StatelessWidget {
-  const CtaButton({super.key});
+  final VoidCallback? onPressed;
+  final String? nextScreen;
+
+  const CtaButton({super.key, this.onPressed, this.nextScreen});
 
   @override
   Widget build(BuildContext context) {
     return ElevatedButton(
-      onPressed: () {
-        Navigator.of(context).push(
-          PageTransition(
-            type: PageTransitionType.rightToLeftWithFade,
-            childCurrent: const Home(),
-            duration: const Duration(milliseconds: 1000),
-            reverseDuration: const Duration(milliseconds: 600),
-            child: const Home(),
-          ),
-        );
-      },
+      onPressed:
+          onPressed ??
+          () {
+            if (nextScreen != null) {
+              NavigationService.navigateTo(nextScreen!);
+            }
+          },
       style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.black,
+        backgroundColor: CustColors.mainCol,
         textStyle: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-        fixedSize: Size(300, 70), // Button size
+        fixedSize: Size(MediaQuery.of(context).size.width * 0.6, 60),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(50), // Rounded corners
+          borderRadius: BorderRadius.circular(40), // Rounded corners
         ),
         padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5), // Padding
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          CircleAvatar(
-            backgroundColor: Colors.white,
-            radius: 22,
-            child: Icon(Icons.arrow_forward_ios, color: Colors.black, size: 16),
-          ),
           Text('Continue', style: TextStyle(color: Colors.white, fontSize: 18)),
           Padding(
             padding: const EdgeInsets.all(8.0),

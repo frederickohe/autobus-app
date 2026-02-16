@@ -1,244 +1,181 @@
-import 'package:autobus/barrel.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:google_fonts/google_fonts.dart';
+import '../auth/bloc/auth_bloc.dart';
 
-class Home extends StatefulWidget {
+class Home extends StatelessWidget {
   const Home({super.key});
 
   @override
-  State<Home> createState() => _HomeState();
-}
-
-class _HomeState extends State<Home> {
-  final TextEditingController commandController = TextEditingController();
-  String transcription = '';
-  bool isListening = false;
-  late Future<List<dynamic>> ridesFuture;
-
-  @override
-  void initState() {
-    super.initState();
-    // Cache the future to prevent multiple API calls
-    ridesFuture = context.read<ApiService>().getRides().catchError((e) {
-      print('Error fetching rides: $e');
-      return [];
-    });
-  }
-
-  @override
-  void dispose() {
-    commandController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
+    final List<HomeMenuItem> menuItems = [
+      HomeMenuItem("Orders", Icons.receipt_long, () {}),
+      HomeMenuItem("Marketing", Icons.campaign_outlined, () {}),
+      HomeMenuItem("Queries", Icons.search, () {}),
+      HomeMenuItem("Payments", Icons.payments_outlined, () {}),
+      HomeMenuItem("Messages", Icons.send_outlined, () {}),
+      HomeMenuItem("Records", Icons.folder_copy_outlined, () {}),
+      HomeMenuItem("Reports", Icons.bar_chart, () {}),
+    ];
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Autobus Home'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.credit_card),
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const SelectUserTypePage()),
-              );
-            },
-            tooltip: 'Subscription',
-          ),
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () {
-              // Manual session/token refresh if needed
-              context.read<AuthBloc>().add(RefreshTokenEvent());
-            },
-            tooltip: 'Refresh Session',
-          ),
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () {
-              context.read<AuthBloc>().add(LogoutEvent());
-            },
-            tooltip: 'Logout',
-          ),
-        ],
-      ),
-      body: BlocListener<AuthBloc, AuthState>(
-        listener: (context, state) {
-          if (state is SessionExpired) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-                backgroundColor: Colors.red,
-              ),
-            );
-            Navigator.of(
-              context,
-            ).pushNamedAndRemoveUntil('/signin', (route) => false);
-          } else if (state is TokenRefreshFailed) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Session error: ${state.message}'),
-                backgroundColor: Colors.orange,
-              ),
-            );
-          } else if (state is TokenRefreshed) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Session refreshed'),
-                backgroundColor: Colors.green,
-              ),
-            );
-          }
-        },
-        child: BlocBuilder<AuthBloc, AuthState>(
-          builder: (context, authState) {
-            if (authState is Authenticated) {
-              return _buildAuthenticatedHome(authState.user);
-            } else if (authState is TokenRefreshing) {
-              return const Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
+      body: _GradientBackground(
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Column(
+              children: [
+                const SizedBox(height: 20),
+
+                /// 🔔 Top Bar
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    CircularProgressIndicator(),
-                    SizedBox(height: 16),
-                    Text('Refreshing session...'),
+                    _circleIcon(Icons.notifications_none),
+
+                    BlocBuilder<AuthBloc, AuthState>(
+                      builder: (context, state) {
+                        String username = 'Guest';
+                        if (state is Authenticated) {
+                          username =
+                              state.user['fullname'] ??
+                              state.user['email'] ??
+                              'User';
+                        }
+                        return Text(
+                          username,
+                          style: GoogleFonts.roboto(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        );
+                      },
+                    ),
+
+                    /// Company Logo
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white24),
+                        image: const DecorationImage(
+                          image: AssetImage("assets/img/logo.png"),
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
-              );
-            } else if (authState is SessionExpired) {
-              return const Center(
-                child: Text('Session expired. Redirecting to login...'),
-              );
-            }
-            return const Center(child: CircularProgressIndicator());
-          },
+
+                const SizedBox(height: 40),
+
+                /// 📊 Grid Menu
+                Expanded(
+                  child: GridView.builder(
+                    itemCount: menuItems.length,
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 20,
+                          mainAxisSpacing: 20,
+                          childAspectRatio: 1.05,
+                        ),
+                    itemBuilder: (context, index) {
+                      final item = menuItems[index];
+
+                      return _DashboardCard(item: item);
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Floating Action Button Pressed')),
-          );
-        },
-        child: const Icon(Icons.add),
       ),
     );
   }
 
-  Widget _buildAuthenticatedHome(dynamic user) {
-    return SingleChildScrollView(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
+  /// 🔘 Notification circle icon
+  Widget _circleIcon(IconData icon) {
+    return Container(
+      width: 44,
+      height: 44,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(color: Colors.white24),
+      ),
+      child: Icon(icon, color: Colors.white70),
+    );
+  }
+}
+
+class _DashboardCard extends StatelessWidget {
+  final HomeMenuItem item;
+
+  const _DashboardCard({required this.item});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: item.onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.white24),
+          gradient: LinearGradient(
+            colors: [
+              Colors.white.withOpacity(0.05),
+              Colors.white.withOpacity(0.02),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            Icon(item.icon, color: Colors.white70, size: 30),
+            const SizedBox(height: 14),
             Text(
-              'Welcome to Autobus!',
-              style: Theme.of(context).textTheme.headlineLarge,
-            ),
-            const SizedBox(height: 8),
-            if (user is Map && user.containsKey('email'))
-              Text(
-                'User: ${user['email']}',
-                style: Theme.of(context).textTheme.bodyLarge,
-              ),
-            const SizedBox(height: 24),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'AI Assistant',
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      width: double.infinity,
-                      child: Image.asset(
-                        'assets/img/aibot.png',
-                        height: 200,
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    TextField(
-                      controller: commandController,
-                      decoration: InputDecoration(
-                        hintText: 'Enter AI Assistant Command',
-                        border: const UnderlineInputBorder(),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            isListening ? Icons.mic_off : Icons.mic,
-                            color: isListening ? Colors.red : Colors.blue,
-                          ),
-                          onPressed: () {
-                            setState(() => isListening = !isListening);
-                          },
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Available Rides',
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                    const SizedBox(height: 12),
-                    FutureBuilder<List<dynamic>>(
-                      future: ridesFuture,
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState ==
-                            ConnectionState.waiting) {
-                          return const CircularProgressIndicator();
-                        } else if (snapshot.hasError) {
-                          return Text(
-                            'Error: ${snapshot.error}',
-                            style: const TextStyle(color: Colors.red),
-                          );
-                        } else if (snapshot.hasData &&
-                            snapshot.data!.isNotEmpty) {
-                          return ListView.builder(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            itemCount: snapshot.data!.length,
-                            itemBuilder: (context, index) {
-                              final ride = snapshot.data![index];
-                              return ListTile(
-                                title: Text(
-                                  ride['title'] ?? 'Ride ${index + 1}',
-                                ),
-                                subtitle: Text(
-                                  ride['description'] ?? 'Available seats',
-                                ),
-                                trailing: const Icon(Icons.arrow_forward),
-                              );
-                            },
-                          );
-                        } else {
-                          return const Center(
-                            child: Text('No rides available'),
-                          );
-                        }
-                      },
-                    ),
-                  ],
-                ),
+              item.title,
+              style: GoogleFonts.roboto(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.w400,
               ),
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+class HomeMenuItem {
+  final String title;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  HomeMenuItem(this.title, this.icon, this.onTap);
+}
+
+class _GradientBackground extends StatelessWidget {
+  final Widget child;
+  const _GradientBackground({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xFF130522), Color(0xFF2D0C51), Color(0xFF130522)],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
+      ),
+      child: child,
     );
   }
 }

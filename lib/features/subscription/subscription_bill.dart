@@ -103,6 +103,9 @@ class _SubscriptionBillPageState extends State<SubscriptionBillPage> {
                         ),
                       ),
                     );
+                    Navigator.of(context).pushReplacement(
+                      MaterialPageRoute(builder: (context) => const Signin()),
+                    );
                   },
                 ),
               ],

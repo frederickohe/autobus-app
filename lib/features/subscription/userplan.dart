@@ -3,15 +3,14 @@ import 'package:autobus/barrel.dart';
 import 'data/subscription_catalog.dart';
 import 'models/subscription_plan.dart';
 
-class SelectUserTypePage extends StatefulWidget {
-  const SelectUserTypePage({super.key});
+class SelectPlan extends StatefulWidget {
+  const SelectPlan({super.key});
 
   @override
-  State<SelectUserTypePage> createState() => _SelectUserTypePageState();
+  State<SelectPlan> createState() => _SelectPlanState();
 }
 
-class _SelectUserTypePageState extends State<SelectUserTypePage>
-    with TickerProviderStateMixin {
+class _SelectPlanState extends State<SelectPlan> with TickerProviderStateMixin {
   late final List<SubscriptionPlan> _plans;
   String? _expandedPlanId;
   String? _selectedPlanId;
@@ -252,7 +251,7 @@ class _BottomCta extends StatelessWidget {
         child: GestureDetector(
           onTap: onPressed,
           child: Container(
-            width: double.infinity,
+            width: MediaQuery.of(context).size.width * 0.6,
             height: 60,
             padding: const EdgeInsets.symmetric(horizontal: 24),
             decoration: BoxDecoration(

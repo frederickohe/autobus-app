@@ -33,7 +33,7 @@ class AuthWrapper extends StatelessWidget {
           } else if (state is Unauthenticated) {
             return const Signin();
           } else if (state is SessionExpired) {
-            return const Signin();
+            return const LogorSign();
           } else if (state is Registered) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               ScaffoldMessenger.of(
@@ -41,7 +41,7 @@ class AuthWrapper extends StatelessWidget {
               ).showSnackBar(SnackBar(content: Text(state.message)));
               Navigator.pushReplacement(
                 context,
-                MaterialPageRoute(builder: (_) => const Signin()),
+                MaterialPageRoute(builder: (_) => const SelectPlan()),
               );
             });
             return const Scaffold(
