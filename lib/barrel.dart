@@ -41,6 +41,11 @@ export 'package:autobus/features/auth/verifycode.dart';
 export 'package:autobus/common_design/widgets/success.dart';
 export 'package:autobus/common_design/widgets/trans_ctabutton.dart';
 export 'package:autobus/features/autochat/autobus.dart';
+export 'package:autobus/features/settings/settings.dart';
+export 'package:autobus/features/settings/profile.dart';
+export 'package:autobus/features/settings/notification.dart';
+export 'package:autobus/features/settings/security.dart';
+export 'package:autobus/features/settings/help.dart';
 
 // Subscription
 export 'package:autobus/features/subscription/userplan.dart';
@@ -55,6 +60,14 @@ export 'package:iconify_flutter/icons/ion.dart';
 export 'package:iconify_flutter/icons/uil.dart';
 export 'package:iconify_flutter/icons/majesticons.dart';
 export 'package:iconify_flutter/icons/carbon.dart';
+export 'package:iconify_flutter/icons/nimbus.dart';
+export 'package:iconify_flutter/icons/material_symbols.dart';
+export 'package:iconify_flutter/icons/fa6_solid.dart';
+export 'package:iconify_flutter/icons/fluent_emoji_high_contrast.dart';
+export 'package:iconify_flutter/icons/tabler.dart';
+export 'package:iconify_flutter/icons/icons8.dart';
+export 'package:iconify_flutter/icons/ph.dart';
+export 'package:iconify_flutter/icons/ri.dart';
 
 // Design Imports
 export 'package:autobus/common_design/colors.dart';

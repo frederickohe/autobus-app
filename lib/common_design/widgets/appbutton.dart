@@ -14,7 +14,7 @@ class AppButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return TextButton(
       style: TextButton.styleFrom(
-        backgroundColor: Colors.black,
+        backgroundColor: CustColors.mainCol,
         minimumSize: const Size(270, 50),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(14.0),

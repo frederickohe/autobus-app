@@ -32,26 +32,6 @@ class _AutoBusState extends State<AutoBus> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Autobus AutoBus'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () {
-              // Manual session/token refresh if needed
-              context.read<AuthBloc>().add(RefreshTokenEvent());
-            },
-            tooltip: 'Refresh Session',
-          ),
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () {
-              context.read<AuthBloc>().add(LogoutEvent());
-            },
-            tooltip: 'Logout',
-          ),
-        ],
-      ),
       body: BlocListener<AuthBloc, AuthState>(
         listener: (context, state) {
           if (state is SessionExpired) {
@@ -104,197 +84,188 @@ class _AutoBusState extends State<AutoBus> {
           },
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Floating Action Button Pressed')),
-          );
-        },
-        child: const Icon(Icons.add),
-      ),
     );
   }
 
   Widget _buildAuthenticatedAutoBus(dynamic user) {
-    return SingleChildScrollView(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
+    return _AutoBusChatUI(
+      user: user,
+      controller: commandController,
+      isListening: isListening,
+      onMicTap: () {
+        setState(() => isListening = !isListening);
+      },
+      onSend: () {
+        if (commandController.text.isEmpty) return;
+
+        context.read<AssistantBloc>().add(
+          SendCommandEvent(command: commandController.text),
+        );
+
+        commandController.clear();
+      },
+    );
+  }
+}
+
+class _AutoBusChatUI extends StatelessWidget {
+  final dynamic user;
+  final TextEditingController controller;
+  final bool isListening;
+  final VoidCallback onMicTap;
+  final VoidCallback onSend;
+
+  const _AutoBusChatUI({
+    required this.user,
+    required this.controller,
+    required this.isListening,
+    required this.onMicTap,
+    required this.onSend,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    String username = "User";
+
+    if (user is Map && user.containsKey('fullname')) {
+      username = user['fullname'];
+    }
+
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xFFF4F4F4), Color(0xFFEDEDED), Color(0xFFE6E6E6)],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
+      ),
+      child: SafeArea(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Welcome to Autobus!',
-              style: Theme.of(context).textTheme.headlineLarge,
-            ),
-            const SizedBox(height: 8),
-            if (user is Map && user.containsKey('email'))
-              Text(
-                'User: ${user['email']}',
-                style: Theme.of(context).textTheme.bodyLarge,
+            const SizedBox(height: 20),
+
+            /// 🔝 HEADER
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 18),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  /// Back
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: Container(
+                      width: 48,
+                      height: 48,
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: CustColors.mainCol,
+                      ),
+                      child: const Icon(
+                        Icons.arrow_back_ios_new,
+                        color: Colors.white,
+                        size: 18,
+                      ),
+                    ),
+                  ),
+
+                  /// Title
+                  Text(
+                    "Autobus on Orders",
+                    style: GoogleFonts.roboto(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w400,
+                      color: Colors.black87,
+                    ),
+                  ),
+                ],
               ),
-            const SizedBox(height: 24),
-            Card(
+            ),
+
+            const SizedBox(height: 30),
+
+            /// 💬 CHAT AREA
+            Expanded(
               child: Padding(
-                padding: const EdgeInsets.all(16.0),
+                padding: const EdgeInsets.symmetric(horizontal: 18),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'AI Assistant',
-                      style: Theme.of(context).textTheme.titleLarge,
+                    /// User Bubble
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: _chatBubble("Hello", isUser: true),
                     ),
+
                     const SizedBox(height: 16),
-                    SizedBox(
-                      width: double.infinity,
-                      child: Image.asset(
-                        'assets/img/aibot.png',
-                        height: 200,
-                        fit: BoxFit.cover,
+
+                    /// AI Bubble
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: _chatBubble(
+                        "Hello MD $username, what task we performing today?",
+                        isUser: false,
                       ),
                     ),
-                    const SizedBox(height: 16),
-                    TextField(
-                      controller: commandController,
-                      decoration: InputDecoration(
-                        hintText: 'Enter AI Assistant Command',
-                        border: const UnderlineInputBorder(),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            isListening ? Icons.mic_off : Icons.mic,
-                            color: isListening ? Colors.red : Colors.blue,
-                          ),
-                          onPressed: () {
-                            setState(() => isListening = !isListening);
-                          },
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    BlocBuilder<AssistantBloc, AssistantState>(
-                      builder: (context, assistantState) {
-                        if (assistantState is AssistantLoading) {
-                          return const Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              CircularProgressIndicator(),
-                              SizedBox(width: 16),
-                              Text('Processing...'),
-                            ],
-                          );
-                        } else if (assistantState is AssistantSuccess) {
-                          return Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: Colors.grey[100],
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              assistantState.response,
-                              style: const TextStyle(fontSize: 16),
-                            ),
-                          );
-                        } else if (assistantState is AssistantError) {
-                          return Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: Colors.red[100],
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              assistantState.message,
-                              style: const TextStyle(
-                                color: Colors.red,
-                                fontSize: 16,
-                              ),
-                            ),
-                          );
-                        }
-                        return const SizedBox.shrink();
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          if (commandController.text.isEmpty) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Please enter a command'),
-                                backgroundColor: Colors.orange,
-                              ),
-                            );
-                            return;
-                          }
-                          context.read<AssistantBloc>().add(
-                            SendCommandEvent(command: commandController.text),
-                          );
-                        },
-                        child: const Text('Send Command'),
-                      ),
-                    ),
+
+                    const Spacer(),
                   ],
                 ),
               ),
             ),
-            const SizedBox(height: 24),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Available Rides',
-                      style: Theme.of(context).textTheme.titleLarge,
+
+            /// ⌨️ INPUT BAR
+            Container(
+              margin: const EdgeInsets.all(18),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.85),
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: Row(
+                children: [
+                  /// Plus Icon
+                  const Icon(Icons.add, color: Colors.black87),
+
+                  const SizedBox(width: 10),
+
+                  /// Input
+                  Expanded(
+                    child: TextField(
+                      controller: controller,
+                      decoration: const InputDecoration(
+                        hintText: "Type Your Command Autobus …",
+                        border: InputBorder.none,
+                      ),
                     ),
-                    const SizedBox(height: 12),
-                    FutureBuilder<List<dynamic>>(
-                      future: ridesFuture,
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState ==
-                            ConnectionState.waiting) {
-                          return const CircularProgressIndicator();
-                        } else if (snapshot.hasError) {
-                          return Text(
-                            'Error: ${snapshot.error}',
-                            style: const TextStyle(color: Colors.red),
-                          );
-                        } else if (snapshot.hasData &&
-                            snapshot.data!.isNotEmpty) {
-                          return ListView.builder(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            itemCount: snapshot.data!.length,
-                            itemBuilder: (context, index) {
-                              final ride = snapshot.data![index];
-                              return ListTile(
-                                title: Text(
-                                  ride['title'] ?? 'Ride ${index + 1}',
-                                ),
-                                subtitle: Text(
-                                  ride['description'] ?? 'Available seats',
-                                ),
-                                trailing: const Icon(Icons.arrow_forward),
-                              );
-                            },
-                          );
-                        } else {
-                          return const Center(
-                            child: Text('No rides available'),
-                          );
-                        }
-                      },
+                  ),
+
+                  /// Mic
+                  GestureDetector(
+                    onTap: onMicTap,
+                    child: Icon(
+                      isListening ? Icons.mic_off : Icons.mic,
+                      color: CustColors.mainCol,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  /// 💬 Bubble Widget
+  Widget _chatBubble(String text, {required bool isUser}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: isUser
+            ? Colors.white.withOpacity(0.9)
+            : Colors.white.withOpacity(0.9),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Text(text, style: const TextStyle(fontSize: 14)),
     );
   }
 }

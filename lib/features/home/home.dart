@@ -6,18 +6,17 @@ class Home extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final List<HomeMenuItem> menuItems = [
-      HomeMenuItem("Orders", Icons.receipt_long, () {
+      HomeMenuItem("Orders", Carbon.ibm_watson_orders, () {
         Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => const AutoBus()),
         );
       }),
-      HomeMenuItem("Marketing", Icons.campaign_outlined, () {}),
-      HomeMenuItem("Queries", Icons.search, () {}),
-      HomeMenuItem("Payments", Icons.payments_outlined, () {}),
-      HomeMenuItem("Messages", Icons.send_outlined, () {}),
-      HomeMenuItem("Records", Icons.folder_copy_outlined, () {}),
-      HomeMenuItem("Reports", Icons.bar_chart, () {}),
+      HomeMenuItem("Marketing", Icons8.advertising, () {}),
+      HomeMenuItem("Payments", FluentEmojiHighContrast.money_bag, () {}),
+      HomeMenuItem("Messages", Mdi.phone_message_outline, () {}),
+      HomeMenuItem("Records", Mdi.database_arrow_down_outline, () {}),
+      HomeMenuItem("Reports", MaterialSymbols.data_usage, () {}),
     ];
 
     return Scaffold(
@@ -33,7 +32,17 @@ class Home extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    _circleIcon(Icons.notifications_none),
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const NotificationsPage(),
+                          ),
+                        );
+                      },
+                      child: _circleIcon(Icons.notifications_none),
+                    ),
 
                     BlocBuilder<AuthBloc, AuthState>(
                       builder: (context, state) {
@@ -48,30 +57,27 @@ class Home extends StatelessWidget {
                           username,
                           style: GoogleFonts.roboto(
                             color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w500,
+                            fontSize: 20,
+                            fontWeight: FontWeight.w300,
                           ),
                         );
                       },
                     ),
-
-                    /// Company Logo
-                    Container(
-                      width: 54,
-                      height: 54,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white24),
-                        image: const DecorationImage(
-                          image: AssetImage("assets/img/logo.png"),
-                          fit: BoxFit.cover,
-                        ),
-                      ),
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const SettingsPage(),
+                          ),
+                        );
+                      },
+                      child: _circleIcon(Icons.settings_outlined),
                     ),
                   ],
                 ),
 
-                const SizedBox(height: 40),
+                const SizedBox(height: 80),
 
                 /// 📊 Grid Menu
                 Expanded(
@@ -99,8 +105,7 @@ class Home extends StatelessWidget {
     );
   }
 
-  /// 🔘 Notification circle icon
-  Widget _circleIcon(IconData icon) {
+  Widget _circleIcon(dynamic icon) {
     return Container(
       width: 54,
       height: 54,
@@ -108,7 +113,9 @@ class Home extends StatelessWidget {
         shape: BoxShape.circle,
         border: Border.all(color: Colors.white24),
       ),
-      child: Icon(icon, color: Colors.white70),
+      child: icon is IconData
+          ? Icon(icon, color: Colors.white70, size: 18)
+          : Iconify(icon, color: Colors.white70, size: 8),
     );
   }
 }
@@ -138,14 +145,14 @@ class _DashboardCard extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(item.icon, color: Colors.white70, size: 30),
+            _buildIcon(item.icon),
             const SizedBox(height: 14),
             Text(
               item.title,
               style: GoogleFonts.roboto(
                 color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.w400,
+                fontSize: 14,
+                fontWeight: FontWeight.w200,
               ),
             ),
           ],
@@ -153,11 +160,20 @@ class _DashboardCard extends StatelessWidget {
       ),
     );
   }
+
+  Widget _buildIcon(dynamic icon) {
+    if (icon is IconData) {
+      return Icon(icon, color: Colors.white70, size: 30);
+    } else {
+      // Handle iconify icons (SVG strings)
+      return Iconify(icon, color: Colors.white70, size: 30);
+    }
+  }
 }
 
 class HomeMenuItem {
   final String title;
-  final IconData icon;
+  final dynamic icon; // Changed from IconData to dynamic for Iconify icons
   final VoidCallback onTap;
 
   HomeMenuItem(this.title, this.icon, this.onTap);
@@ -170,7 +186,12 @@ class _GradientBackground extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
+        image: const DecorationImage(
+          image: AssetImage("assets/img/dashimg.png"),
+          fit: BoxFit.cover,
+          opacity: 0.1,
+        ),
         gradient: LinearGradient(
           colors: [Color(0xFF130522), Color(0xFF2D0C51), Color(0xFF130522)],
           begin: Alignment.topCenter,

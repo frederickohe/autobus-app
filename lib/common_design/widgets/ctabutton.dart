@@ -26,9 +26,9 @@ class CtaButton extends StatelessWidget {
         padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5), // Padding
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          Text('Continue', style: TextStyle(color: Colors.white, fontSize: 18)),
+          Text('Continue', style: TextStyle(color: Colors.white, fontSize: 16)),
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: Row(

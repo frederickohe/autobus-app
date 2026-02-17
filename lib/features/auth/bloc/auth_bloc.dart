@@ -6,7 +6,6 @@ import 'package:http/http.dart' as http;
 import 'package:autobus/config/app_config.dart';
 import 'package:autobus/common_bloc/success_bloc.dart';
 import 'package:autobus/common_bloc/success_event.dart';
-import 'package:autobus/config/glob_navigator.dart';
 import '../models/token_model.dart';
 import '../services/token_service.dart';
 
@@ -126,6 +125,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
             nextScreen: 'login',
           ),
         );
+        // Clear loading state so downstream UI (e.g. signin page) isn't left
+        // thinking an operation is still in progress.
+        emit(const Unauthenticated());
       } else {
         String errorMsg = 'Signup failed';
         try {
