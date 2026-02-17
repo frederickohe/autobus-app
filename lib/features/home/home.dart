@@ -16,7 +16,12 @@ class Home extends StatelessWidget {
       HomeMenuItem("Payments", FluentEmojiHighContrast.money_bag, () {}),
       HomeMenuItem("Messages", Mdi.phone_message_outline, () {}),
       HomeMenuItem("Records", Mdi.database_arrow_down_outline, () {}),
-      HomeMenuItem("Reports", MaterialSymbols.data_usage, () {}),
+      HomeMenuItem("Reports", MaterialSymbols.data_usage, () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const AnalyticsPage()),
+        );
+      }),
     ];
 
     return Scaffold(

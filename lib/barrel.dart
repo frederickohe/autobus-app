@@ -46,6 +46,7 @@ export 'package:autobus/features/settings/profile.dart';
 export 'package:autobus/features/settings/notification.dart';
 export 'package:autobus/features/settings/security.dart';
 export 'package:autobus/features/settings/help.dart';
+export 'package:autobus/features/analytics/analytics.dart';
 
 // Subscription
 export 'package:autobus/features/subscription/userplan.dart';
