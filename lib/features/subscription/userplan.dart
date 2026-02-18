@@ -104,8 +104,11 @@ class _SelectPlanState extends State<SelectPlan> with TickerProviderStateMixin {
                     final selected = _selectedPlan;
                     if (selected == null) return;
                     Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => SubscriptionBillPage(plan: selected),
+                      PageTransition(
+                        type: PageTransitionType.rightToLeftWithFade,
+                        duration: const Duration(milliseconds: 1000),
+                        reverseDuration: const Duration(milliseconds: 600),
+                        child: SubscriptionBillPage(plan: selected),
                       ),
                     );
                   },

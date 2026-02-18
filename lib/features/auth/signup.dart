@@ -27,7 +27,12 @@ class _SignupState extends State<Signup> {
         listener: (context, state) {
           if (state is SuccessDisplaying) {
             Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (_) => const SelectPlan()),
+              PageTransition(
+                type: PageTransitionType.rightToLeftWithFade,
+                duration: const Duration(milliseconds: 1000),
+                reverseDuration: const Duration(milliseconds: 600),
+                child: const SelectPlan(),
+              ),
             );
           }
         },
