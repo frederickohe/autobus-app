@@ -140,14 +140,14 @@ class _AutoBusChatUIState extends State<_AutoBusChatUI> {
   void _sendMessage() {
     if (widget.controller.text.isEmpty) return;
 
-    final String userId =
+    final String phone =
         (widget.user is Map &&
-            (widget.user['id'] ?? widget.user['userid']) != null)
-        ? (widget.user['id'] ?? widget.user['userid']).toString()
+            (widget.user['phone'] ?? widget.user['phone_number']) != null)
+        ? (widget.user['phone'] ?? widget.user['phone_number']).toString()
         : 'unknown';
 
     context.read<ChatBloc>().add(
-      SendMessage(userId: userId, message: widget.controller.text),
+      SendMessage(phone: phone, message: widget.controller.text),
     );
     widget.controller.clear();
   }

@@ -23,7 +23,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     // Optimistic user message
     final userMsg = ChatMessage(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
-      userId: event.userId,
+      userId: event.phone,
       text: event.message,
       timestamp: DateTime.now(),
       sender: Sender.user,
@@ -34,10 +34,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     emit(ChatLoadSuccess(List.from(current)));
 
     try {
-      final botReply = await repository.sendMessage(
-        event.userId,
-        event.message,
-      );
+      final botReply = await repository.sendMessage(event.phone, event.message);
 
       // mark user message as sent
       final updated = current.map((m) {

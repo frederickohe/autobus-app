@@ -7,13 +7,13 @@ abstract class ChatEvent extends Equatable {
 }
 
 class SendMessage extends ChatEvent {
-  final String userId;
+  final String phone;
   final String message;
 
-  const SendMessage({required this.userId, required this.message});
+  const SendMessage({required this.phone, required this.message});
 
   @override
-  List<Object?> get props => [userId, message];
+  List<Object?> get props => [phone, message];
 }
 
 class LoadHistory extends ChatEvent {
