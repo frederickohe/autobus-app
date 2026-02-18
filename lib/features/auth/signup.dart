@@ -25,15 +25,9 @@ class _SignupState extends State<Signup> {
       backgroundColor: Colors.white,
       body: BlocListener<SuccessBloc, SuccessState>(
         listener: (context, state) {
-          // Navigate to Success page when signup is successful
           if (state is SuccessDisplaying) {
-            Navigator.of(context).push(
-              PageTransition(
-                type: PageTransitionType.rightToLeftWithFade,
-                duration: const Duration(milliseconds: 1000),
-                reverseDuration: const Duration(milliseconds: 600),
-                child: const Success(),
-              ),
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (_) => const SelectPlan()),
             );
           }
         },
