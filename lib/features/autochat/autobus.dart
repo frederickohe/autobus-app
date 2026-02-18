@@ -1,4 +1,10 @@
 import 'package:autobus/barrel.dart';
+import 'package:http/http.dart' as http;
+import 'services/autochat_repository.dart';
+import 'chat_bloc.dart';
+import 'chat_event.dart';
+import 'chat_state.dart';
+import 'models/chat_message.dart';
 
 class AutoBus extends StatefulWidget {
   const AutoBus({super.key});
@@ -11,16 +17,10 @@ class _AutoBusState extends State<AutoBus> {
   final TextEditingController commandController = TextEditingController();
   String transcription = '';
   bool isListening = false;
-  late Future<List<dynamic>> ridesFuture;
 
   @override
   void initState() {
     super.initState();
-    // Cache the future to prevent multiple API calls
-    ridesFuture = context.read<ApiService>().getRides().catchError((e) {
-      print('Error fetching rides: $e');
-      return [];
-    });
   }
 
   @override
@@ -88,43 +88,76 @@ class _AutoBusState extends State<AutoBus> {
   }
 
   Widget _buildAuthenticatedAutoBus(dynamic user) {
-    return _AutoBusChatUI(
-      user: user,
-      controller: commandController,
-      isListening: isListening,
-      onMicTap: () {
-        setState(() => isListening = !isListening);
-      },
-      onSend: () {
-        if (commandController.text.isEmpty) return;
+    final repo = AutoChatRepository(client: http.Client());
 
-        context.read<AssistantBloc>().add(
-          SendCommandEvent(command: commandController.text),
-        );
-
-        commandController.clear();
-      },
+    return BlocProvider(
+      create: (_) => ChatBloc(repo),
+      child: _AutoBusChatUI(
+        user: user,
+        controller: commandController,
+        isListening: isListening,
+        onMicTap: () {
+          setState(() => isListening = !isListening);
+        },
+      ),
     );
   }
 }
 
-class _AutoBusChatUI extends StatelessWidget {
+class _AutoBusChatUI extends StatefulWidget {
   final dynamic user;
   final TextEditingController controller;
   final bool isListening;
   final VoidCallback onMicTap;
-  final VoidCallback onSend;
 
   const _AutoBusChatUI({
     required this.user,
     required this.controller,
     required this.isListening,
     required this.onMicTap,
-    required this.onSend,
   });
 
   @override
+  State<_AutoBusChatUI> createState() => _AutoBusChatUIState();
+}
+
+class _AutoBusChatUIState extends State<_AutoBusChatUI> {
+  late TextEditingController _listen;
+
+  @override
+  void initState() {
+    super.initState();
+    _listen = widget.controller;
+    _listen.addListener(() => setState(() {}));
+  }
+
+  @override
+  void dispose() {
+    _listen.removeListener(() => setState(() {}));
+    super.dispose();
+  }
+
+  void _sendMessage() {
+    if (widget.controller.text.isEmpty) return;
+
+    final String userId =
+        (widget.user is Map &&
+            (widget.user['id'] ?? widget.user['userid']) != null)
+        ? (widget.user['id'] ?? widget.user['userid']).toString()
+        : 'unknown';
+
+    context.read<ChatBloc>().add(
+      SendMessage(userId: userId, message: widget.controller.text),
+    );
+    widget.controller.clear();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final user = widget.user;
+    final controller = widget.controller;
+    final isListening = widget.isListening;
+    final onMicTap = widget.onMicTap;
     String username = "User";
 
     if (user is Map && user.containsKey('fullname')) {
@@ -189,24 +222,50 @@ class _AutoBusChatUI extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 18),
                 child: Column(
                   children: [
-                    /// User Bubble
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: _chatBubble("Hello", isUser: true),
-                    ),
+                    Expanded(
+                      child: BlocBuilder<ChatBloc, ChatState>(
+                        builder: (context, state) {
+                          List<ChatMessage> msgs = [];
+                          if (state is ChatLoadSuccess) msgs = state.messages;
 
-                    const SizedBox(height: 16),
+                          if (msgs.isEmpty) {
+                            return ListView(
+                              children: [
+                                Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: _chatBubble(
+                                    'Hello $username, what task we performing today?',
+                                    isUser: false,
+                                  ),
+                                ),
+                              ],
+                            );
+                          }
 
-                    /// AI Bubble
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: _chatBubble(
-                        "Hello MD $username, what task we performing today?",
-                        isUser: false,
+                          return ListView.builder(
+                            padding: const EdgeInsets.only(top: 8),
+                            itemCount: msgs.length,
+                            itemBuilder: (context, index) {
+                              final m = msgs[index];
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 8,
+                                ),
+                                child: Align(
+                                  alignment: m.sender == Sender.user
+                                      ? Alignment.centerRight
+                                      : Alignment.centerLeft,
+                                  child: _chatBubble(
+                                    m.text,
+                                    isUser: m.sender == Sender.user,
+                                  ),
+                                ),
+                              );
+                            },
+                          );
+                        },
                       ),
                     ),
-
-                    const Spacer(),
                   ],
                 ),
               ),
@@ -238,14 +297,21 @@ class _AutoBusChatUI extends StatelessWidget {
                     ),
                   ),
 
-                  /// Mic
-                  GestureDetector(
-                    onTap: onMicTap,
-                    child: Icon(
-                      isListening ? Icons.mic_off : Icons.mic,
-                      color: CustColors.mainCol,
+                  /// Send Button (shows if text is not empty)
+                  if (controller.text.isNotEmpty)
+                    GestureDetector(
+                      onTap: _sendMessage,
+                      child: const Icon(Icons.send, color: CustColors.mainCol),
+                    )
+                  else
+                    /// Mic (shows if text is empty)
+                    GestureDetector(
+                      onTap: onMicTap,
+                      child: Icon(
+                        isListening ? Icons.mic_off : Icons.mic,
+                        color: CustColors.mainCol,
+                      ),
                     ),
-                  ),
                 ],
               ),
             ),
