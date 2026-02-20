@@ -41,10 +41,10 @@ class _WelcomeState extends State<Welcome> {
                         ),
                       ],
                     ),
-                    SizedBox(height: MediaQuery.of(context).size.width * 0.2),
+                    SizedBox(height: MediaQuery.of(context).size.width * 0.1),
                     SizedBox(
-                      width: 260,
-                      height: 260,
+                      width: 220,
+                      height: 220,
                       child: Image.asset(
                         'assets/img/welcomeai.png',
                         fit: BoxFit.cover,

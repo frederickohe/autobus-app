@@ -180,7 +180,7 @@ class _SigninState extends State<Signin> {
                         ),
                       ),
                     ),
-                    SizedBox(height: MediaQuery.of(context).size.height * 0.1),
+                    SizedBox(height: MediaQuery.of(context).size.height * 0.05),
                     Center(
                       child: AppButton(
                         onPressed: isLoading
@@ -259,8 +259,7 @@ class _SigninState extends State<Signin> {
                 ),
 
                 // Loading overlay
-                if (isLoading)
-                  const Center(child: CircularProgressIndicator()),
+                if (isLoading) const Center(child: CircularProgressIndicator()),
               ],
             ),
           );

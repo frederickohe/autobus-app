@@ -142,8 +142,8 @@ class _AutoBusChatUIState extends State<_AutoBusChatUI> {
 
     final String phone =
         (widget.user is Map &&
-            (widget.user['phone'] ?? widget.user['phone_number']) != null)
-        ? (widget.user['phone'] ?? widget.user['phone_number']).toString()
+            (widget.user['phone'] ?? widget.user['phone']) != null)
+        ? (widget.user['phone'] ?? widget.user['phone']).toString()
         : 'unknown';
 
     context.read<ChatBloc>().add(

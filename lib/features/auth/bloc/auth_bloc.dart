@@ -102,7 +102,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'fullname': event.fullname,
-          'phone_number': event.phone,
+          'phone': event.phone,
           'email': event.email,
           'password': event.password,
         }),
