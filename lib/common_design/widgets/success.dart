@@ -38,8 +38,8 @@ class _SuccessState extends State<Success> {
                     children: [
                       SizedBox(height: MediaQuery.of(context).size.width * 0.2),
                       SizedBox(
-                        width: 260,
-                        height: 260,
+                        width: 150,
+                        height: 150,
                         child: Image.asset(
                           'assets/icons/success.png',
                           fit: BoxFit.cover,
@@ -47,13 +47,12 @@ class _SuccessState extends State<Success> {
                         ),
                       ),
                       SizedBox(height: MediaQuery.of(context).size.width * 0.2),
-                      // Success message - now dynamic based on state
                       Text(
                         displayMessage,
                         textAlign: TextAlign.center,
-                        style: GoogleFonts.righteous(
+                        style: GoogleFonts.montserrat(
                           color: Colors.black,
-                          fontSize: 18,
+                          fontSize: 15,
                           fontWeight: FontWeight.normal,
                         ),
                       ),

@@ -31,7 +31,7 @@ class _SignupState extends State<Signup> {
                 type: PageTransitionType.rightToLeftWithFade,
                 duration: const Duration(milliseconds: 1000),
                 reverseDuration: const Duration(milliseconds: 600),
-                child: const SelectPlan(),
+                child: const Success(),
               ),
             );
           }
