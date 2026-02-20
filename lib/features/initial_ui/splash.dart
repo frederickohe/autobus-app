@@ -159,7 +159,7 @@ class _SplashPgeState extends State<SplashPge>
                                 ),
                               ),
                               child: Text(
-                                'Your ride, your way.',
+                                'eCommerce made simpler!',
                                 textAlign: TextAlign.center,
                                 style: GoogleFonts.imprima(
                                   color: Colors.white.withValues(alpha: 0.92),
