@@ -1,9 +1,11 @@
 import 'package:autobus/barrel.dart';
+import 'package:autobus/features/subscription/services/paystack_service.dart';
 
 // Initialize services at app level
 late TokenService _tokenService;
 late SessionAwareHttpClient _httpClient;
 late ApiService _apiService;
+late PaystackService _paystackService;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -11,7 +13,7 @@ void main() async {
   // Initialize environment variables
   await AppConfig.init();
 
-  // Initialize Google Fonts (optional, but can help with loading)
+  // Initialize Google Fonts
   await GoogleFonts.pendingFonts([
     GoogleFonts.lato(),
     GoogleFonts.imprima(),
@@ -26,10 +28,12 @@ void main() async {
   );
   _apiService = ApiService(httpClient: _httpClient);
 
-  // Create SuccessBloc
-  final successBloc = SuccessBloc();
+  // Initialize Paystack
+  _paystackService = PaystackService();
+  await _paystackService.initialize();
 
-  // Create AuthBloc with TokenService and SuccessBloc
+  // Create blocs
+  final successBloc = SuccessBloc();
   final authBloc = AuthBloc(
     tokenService: _tokenService,
     successBloc: successBloc,
@@ -39,6 +43,9 @@ void main() async {
     MultiRepositoryProvider(
       providers: [
         RepositoryProvider<ApiService>(create: (context) => _apiService),
+        RepositoryProvider<PaystackService>(
+          create: (context) => _paystackService,
+        ),
       ],
       child: MultiBlocProvider(
         providers: [
@@ -53,10 +60,11 @@ void main() async {
   );
 }
 
-// Getters for services to be used throughout the app
+//Getters
 SessionAwareHttpClient get appHttpClient => _httpClient;
 ApiService get apiService => _apiService;
 TokenService get tokenService => _tokenService;
+PaystackService get paystackService => _paystackService;
 
 class MyApp extends StatelessWidget {
   final SessionAwareHttpClient httpClient;
