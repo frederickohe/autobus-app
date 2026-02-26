@@ -15,12 +15,116 @@ class SubscriptionBillPage extends StatefulWidget {
 class _SubscriptionBillPageState extends State<SubscriptionBillPage> {
   late BillingOption _selected;
   final _storage = SubscriptionStorage();
+  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
     _selected = widget.plan.billing.first;
   }
+
+  Future<void> _handleSubscription() async {
+    setState(() => _isLoading = true);
+
+    try {
+      final authState = context.read<AuthBloc>().state;
+      final userEmail = authState is Authenticated
+          ? (authState.user?['email'] ?? '')
+          : '';
+
+      // Step 1 — initialize transaction on your backend
+      final accessCode = await context
+          .read<ApiService>()
+          .initializePaystackTransaction(
+            email: userEmail,
+            amount: _selected.price,
+          );
+
+      if (!mounted || accessCode == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to initialize payment.')),
+        );
+        return;
+      }
+
+      String? paymentReference;
+
+      // Step 2 — launch Paystack UI
+      await context.read<PaystackService>().launch(
+        context: context,
+        email: userEmail,
+        reference: DateTime.now().millisecondsSinceEpoch.toString(),
+        amount: _selected.price.toInt(),
+        callbackUrl: AppConfig.paystackCallbackUrl,
+        onSuccess: () async {
+          final verified = await context
+              .read<ApiService>()
+              .verifyPaystackTransaction(accessCode);
+
+          if (!verified) {
+            if (!mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Payment verification failed.')),
+            );
+            return;
+          }
+
+          final subscribed = await context.read<ApiService>().subscribeToPlan(
+            planId: widget.plan.id.toString(),
+            billingId: _selected.id.toString(),
+            reference: accessCode,
+          );
+
+          if (!subscribed) {
+            if (!mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Subscription activation failed.')),
+            );
+            return;
+          }
+
+          await _storage.saveSelection(
+            planId: widget.plan.id.toString(),
+            billingId: _selected.id,
+          );
+          await _storage.savePlanSnapshot(widget.plan, _selected);
+
+          if (!mounted) return;
+          context.read<SuccessBloc>().add(
+            ShowSuccessEvent(
+              message: 'Your ${widget.plan.name} subscription is active!',
+              nextScreen: 'login',
+            ),
+          );
+          Navigator.of(context).pushReplacement(
+            PageTransition(
+              type: PageTransitionType.rightToLeftWithFade,
+              duration: const Duration(milliseconds: 1000),
+              child: const Success(),
+            ),
+          );
+        },
+        onCancelled: () {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Payment was not completed.')),
+          );
+        },
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('An error occurred: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+  // String _getPlanCode(String planId, String billingId) {
+  //   const codes = {'pro_monthly': 'PLN_xxxx', 'pro_annual': 'PLN_yyyy'};
+  //   return codes['${planId}_$billingId'] ?? '';
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -86,33 +190,12 @@ class _SubscriptionBillPageState extends State<SubscriptionBillPage> {
                   onSelect: (opt) => setState(() => _selected = opt),
                 ),
                 const Spacer(),
-                _BottomCta(
-                  label: 'Subscribe Now',
-                  onPressed: () async {
-                    await _storage.saveSelection(
-                      planId: widget.plan.id,
-                      billingId: _selected.id,
-                    );
-                    await _storage.savePlanSnapshot(widget.plan, _selected);
-
-                    if (!mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          'Saved: ${widget.plan.name} • ${_selected.label} ${_selected.subtitle}',
-                        ),
+                _isLoading
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : _BottomCta(
+                        label: 'Subscribe Now',
+                        onPressed: _handleSubscription,
                       ),
-                    );
-                    Navigator.of(context).pushReplacement(
-                      PageTransition(
-                        type: PageTransitionType.rightToLeftWithFade,
-                        duration: const Duration(milliseconds: 1000),
-                        reverseDuration: const Duration(milliseconds: 600),
-                        child: const Signin(),
-                      ),
-                    );
-                  },
-                ),
               ],
             ),
           ),
@@ -242,7 +325,7 @@ class _BillingOptionTile extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             Text(
-              '\$ ${option.priceUsd.toStringAsFixed(0)}',
+              '\$ ${option.price.toStringAsFixed(0)}',
               style: GoogleFonts.imprima(
                 color: labelColor,
                 fontSize: 18,

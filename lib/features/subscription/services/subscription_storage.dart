@@ -33,7 +33,7 @@ class SubscriptionStorage {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(
       'subscription.snapshot',
-      jsonEncode({'plan': plan.toJson(), 'billing': billing.toJson()}),
+      jsonEncode({'plan': plan.toJson(), 'billing': billing}),
     );
   }
 }

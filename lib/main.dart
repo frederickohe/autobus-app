@@ -1,5 +1,4 @@
 import 'package:autobus/barrel.dart';
-import 'package:autobus/features/subscription/services/paystack_service.dart';
 
 // Initialize services at app level
 late TokenService _tokenService;

@@ -1,52 +1,55 @@
 import 'dart:developer';
-import 'package:flutter/services.dart';
-import 'package:paystack_flutter_sdk/paystack_flutter_sdk.dart';
-import 'package:autobus/barrel.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_paystack_plus/flutter_paystack_plus.dart';
+import 'package:autobus/config/app_config.dart';
 
 class PaystackService {
   static final PaystackService _instance = PaystackService._internal();
   factory PaystackService() => _instance;
   PaystackService._internal();
 
-  final _paystack = Paystack();
   bool _initialized = false;
 
   Future<bool> initialize() async {
-    try {
-      final response = await _paystack.initialize(
-        publicKey: AppConfig.paystackPublicKey, // pull from your AppConfig
-      );
-      _initialized = response;
-      log('Paystack: ${response ? 'Initialized' : 'Failed to initialize'}');
-      return response;
-    } on PlatformException catch (e) {
-      log('Paystack init error: ${e.message}');
-      return false;
-    }
+    _initialized = true;
+    log('Paystack: Ready');
+    return true;
   }
 
-  Future<TransactionResponse?> launch(String accessCode) async {
+  /// For subscriptions, pass a [planCode] (e.g. PLN_xxxx from dashboard).
+  /// For one-time payments, leave [planCode] null and pass [amount] in kobo/pesewas.
+  Future<String?> launch({
+    required BuildContext context,
+    required String email,
+    required String reference,
+    String? planCode, // pass this for subscriptions
+    int? amount, // pass this for one-time payments
+    String currency = 'GHS', // change to NGN, USD etc as needed
+    required String callbackUrl, // from your Paystack dashboard
+    required VoidCallback onSuccess,
+    required VoidCallback onCancelled,
+  }) async {
     if (!_initialized) {
-      log('Paystack: SDK not initialized. Call initialize() first.');
+      log('Paystack: Not initialized');
       return null;
     }
 
     try {
-      final response = await _paystack.launch(accessCode);
-
-      switch (response.status) {
-        case 'success':
-          log('Paystack: Transaction successful. Ref: ${response.reference}');
-          return response;
-        case 'cancelled':
-          log('Paystack: Transaction cancelled — ${response.message}');
-          return null;
-        default:
-          log('Paystack: Transaction failed — ${response.message}');
-          return null;
-      }
-    } on PlatformException catch (e) {
-      log('Paystack launch error: ${e.message}');
+      await FlutterPaystackPlus.openPaystackPopup(
+        context: context,
+        publicKey: AppConfig.paystackPublicKey,
+        customerEmail: email,
+        reference: reference,
+        plan: planCode, // subscription plan code
+        amount: amount != null ? (amount * 100).toString() : '0',
+        currency: currency,
+        callBackUrl: callbackUrl,
+        onSuccess: onSuccess,
+        onClosed: onCancelled,
+      );
+      return reference;
+    } catch (e) {
+      log('Paystack error: $e');
       return null;
     }
   }

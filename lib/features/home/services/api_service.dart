@@ -216,4 +216,89 @@ class ApiService {
       throw Exception('Error searching rides: $e');
     }
   }
+
+  // Future<String?> createPaystackTransaction({
+  //   required String planId,
+  //   required String billingId,
+  //   required double amountUsd,
+  // }) async {
+  //   final response = await httpClient.post(
+  //     Uri.parse('$baseUrl/subscriptions/initialize'),
+  //     headers: {'Content-Type': 'application/json'},
+  //     body: json.encode({
+  //       'plan_id': planId,
+  //       'billing_id': billingId,
+  //       'amount': amountUsd,
+  //     }),
+  //   );
+
+  //   if (response.statusCode == 200) {
+  //     final data = jsonDecode(response.body);
+  //     return data['access_code'] as String?;
+  //   }
+  //   return null;
+  // }
+
+  Future<String?> initializePaystackTransaction({
+    required String email,
+    required double amount,
+  }) async {
+    final response = await httpClient.post(
+      Uri.parse('$baseUrl/paystack/initialize'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({'email': email, 'amount': amount}),
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return data['access_code'] as String?;
+    }
+    return null;
+  }
+
+  Future<bool> verifyPaystackTransaction(String reference) async {
+    final response = await httpClient.get(
+      Uri.parse('$baseUrl/paystack/verify/$reference'),
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return data['status'] == true || data['status'] == 'success';
+    }
+    return false;
+  }
+
+  Future<bool> subscribeToPlan({
+    required String planId,
+    required String billingId,
+    required String reference,
+  }) async {
+    final response = await httpClient.post(
+      Uri.parse('$baseUrl/subscription/subscribe'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({
+        'plan_id': planId,
+        'billing_id': billingId,
+        'reference': reference,
+      }),
+    );
+
+    return response.statusCode == 200 || response.statusCode == 201;
+  }
+
+  Future<List<SubscriptionPlan>> getSubscriptionPlans() async {
+    final response = await httpClient.get(
+      Uri.parse('$baseUrl/subscription/plans'),
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      final plans = (data['plans'] as List)
+          .map((e) => SubscriptionPlan.fromJson(e as Map<String, dynamic>))
+          .where((p) => p.isActive)
+          .toList();
+      return plans;
+    }
+    return [];
+  }
 }

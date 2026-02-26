@@ -4,74 +4,84 @@ class BillingOption extends Equatable {
   final String id;
   final String label;
   final String subtitle;
-  final double priceUsd;
+  final double price;
 
   const BillingOption({
     required this.id,
     required this.label,
     required this.subtitle,
-    required this.priceUsd,
+    required this.price,
   });
 
-  factory BillingOption.fromJson(Map<String, dynamic> json) {
-    return BillingOption(
-      id: (json['id'] ?? '').toString(),
-      label: (json['label'] ?? '').toString(),
-      subtitle: (json['subtitle'] ?? '').toString(),
-      priceUsd: (json['priceUsd'] is num)
-          ? (json['priceUsd'] as num).toDouble()
-          : double.tryParse((json['priceUsd'] ?? '0').toString()) ?? 0,
-    );
-  }
-
-  Map<String, dynamic> toJson() => {
-        'id': id,
-        'label': label,
-        'subtitle': subtitle,
-        'priceUsd': priceUsd,
-      };
-
   @override
-  List<Object?> get props => [id, label, subtitle, priceUsd];
+  List<Object?> get props => [id, label, subtitle, price];
 }
 
 class SubscriptionPlan extends Equatable {
-  final String id;
+  final int id;
   final String name;
-  final String priceText;
+  final double price;
   final List<String> features;
-  final List<BillingOption> billing;
+  final String description;
+  final bool isActive;
 
   const SubscriptionPlan({
     required this.id,
     required this.name,
-    required this.priceText,
+    required this.price,
     required this.features,
-    required this.billing,
+    required this.description,
+    required this.isActive,
   });
 
   factory SubscriptionPlan.fromJson(Map<String, dynamic> json) {
     return SubscriptionPlan(
-      id: (json['id'] ?? '').toString(),
+      id: json['id'] is int
+          ? json['id'] as int
+          : int.tryParse((json['id'] ?? '0').toString()) ?? 0,
       name: (json['name'] ?? '').toString(),
-      priceText: (json['priceText'] ?? '').toString(),
-      features: ((json['features'] as List?) ?? const [])
+      price: (json['price'] is num)
+          ? (json['price'] as num).toDouble()
+          : double.tryParse((json['price'] ?? '0').toString()) ?? 0,
+      features: ((json['features'] as List?) ?? [])
           .map((e) => e.toString())
           .toList(),
-      billing: ((json['billing'] as List?) ?? const [])
-          .map((e) => BillingOption.fromJson((e as Map).cast<String, dynamic>()))
-          .toList(),
+      description: (json['description'] ?? '').toString(),
+      isActive: json['is_active'] == true,
     );
   }
 
-  Map<String, dynamic> toJson() => {
-        'id': id,
-        'name': name,
-        'priceText': priceText,
-        'features': features,
-        'billing': billing.map((b) => b.toJson()).toList(),
-      };
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'price': price,
+      'features': features,
+      'description': description,
+      'is_active': isActive,
+    };
+  }
+
+  List<BillingOption> get billing => [
+    BillingOption(
+      id: 'monthly',
+      label: 'Monthly',
+      subtitle: 'per month',
+      price: price,
+    ),
+    BillingOption(
+      id: 'annual',
+      label: 'Annual',
+      subtitle: 'per year',
+      price: _annualPrice,
+    ),
+  ];
+
+  double get _annualPrice =>
+      double.parse((price * 12 * 0.8).toStringAsFixed(2));
+
+  String get priceText => price == 0 ? 'Free' : 'from GHS $price/mo';
 
   @override
-  List<Object?> get props => [id, name, priceText, features, billing];
+  List<Object?> get props => [id, name, price, features, description, isActive];
 }

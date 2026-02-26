@@ -18,7 +18,7 @@ class SubscriptionCatalog {
           "Customer Service"
         ],
         "billing": [
-          {"id": "trial", "label": "14", "subtitle": "Days", "priceUsd": 0}
+          {"id": "trial", "label": "14", "subtitle": "Days", "price": 0}
         ]
       },
       {
@@ -31,9 +31,9 @@ class SubscriptionCatalog {
           "Customer Service"
         ],
         "billing": [
-          {"id": "m1", "label": "1", "subtitle": "Month", "priceUsd": 15},
-          {"id": "y1", "label": "1", "subtitle": "Year", "priceUsd": 120},
-          {"id": "y3", "label": "3", "subtitle": "Years Combo", "priceUsd": 450}
+          {"id": "m1", "label": "1", "subtitle": "Month", "price": 15},
+          {"id": "y1", "label": "1", "subtitle": "Year", "price": 120},
+          {"id": "y3", "label": "3", "subtitle": "Years Combo", "price": 450}
         ]
       },
       {
@@ -46,9 +46,9 @@ class SubscriptionCatalog {
           "Customer Service"
         ],
         "billing": [
-          {"id": "m1", "label": "1", "subtitle": "Month", "priceUsd": 25},
-          {"id": "y1", "label": "1", "subtitle": "Year", "priceUsd": 200},
-          {"id": "y3", "label": "3", "subtitle": "Years Combo", "priceUsd": 750}
+          {"id": "m1", "label": "1", "subtitle": "Month", "price": 25},
+          {"id": "y1", "label": "1", "subtitle": "Year", "price": 200},
+          {"id": "y3", "label": "3", "subtitle": "Years Combo", "price": 750}
         ]
       },
       {
@@ -61,9 +61,9 @@ class SubscriptionCatalog {
           "Customer Service"
         ],
         "billing": [
-          {"id": "m1", "label": "1", "subtitle": "Month", "priceUsd": 60},
-          {"id": "y1", "label": "1", "subtitle": "Year", "priceUsd": 600},
-          {"id": "y3", "label": "3", "subtitle": "Years Combo", "priceUsd": 2000}
+          {"id": "m1", "label": "1", "subtitle": "Month", "price": 60},
+          {"id": "y1", "label": "1", "subtitle": "Year", "price": 600},
+          {"id": "y3", "label": "3", "subtitle": "Years Combo", "price": 2000}
         ]
       }
     ]

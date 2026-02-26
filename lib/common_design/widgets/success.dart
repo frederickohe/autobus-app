@@ -1,4 +1,5 @@
 import 'package:autobus/barrel.dart';
+import 'package:autobus/features/subscription/models/subscription_plan.dart';
 
 class Success extends StatefulWidget {
   const Success({super.key});
@@ -67,7 +68,7 @@ class _SuccessState extends State<Success> {
                       if (nextScreen == 'login') {
                         Navigator.of(context).pushReplacement(
                           MaterialPageRoute(
-                            builder: (context) => const Signin(),
+                            builder: (context) => const SelectPlan(),
                           ),
                         );
                       } else if (nextScreen == 'subscribe') {

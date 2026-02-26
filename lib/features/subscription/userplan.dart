@@ -1,7 +1,6 @@
 import 'package:autobus/barrel.dart';
-
-import 'data/subscription_catalog.dart';
-import 'models/subscription_plan.dart';
+import 'package:autobus/main.dart';
+import 'dart:developer';
 
 class SelectPlan extends StatefulWidget {
   const SelectPlan({super.key});
@@ -11,21 +10,35 @@ class SelectPlan extends StatefulWidget {
 }
 
 class _SelectPlanState extends State<SelectPlan> with TickerProviderStateMixin {
-  late final List<SubscriptionPlan> _plans;
-  String? _expandedPlanId;
-  String? _selectedPlanId;
+  List<SubscriptionPlan> _plans = [];
+  bool _isLoading = true;
+  int? _expandedPlanId; // int to match plan.id
+  int? _selectedPlanId; // int to match plan.id
 
   @override
   void initState() {
     super.initState();
-    _plans = SubscriptionCatalog.loadPlans();
+    _fetchPlans();
   }
 
-  SubscriptionPlan? get _selectedPlan {
-    final id = _selectedPlanId;
-    if (id == null) return null;
-    return _plans.where((p) => p.id == id).firstOrNull;
+  Future<void> _fetchPlans() async {
+    try {
+      final plans = await apiService.getSubscriptionPlans();
+      if (mounted) {
+        setState(() {
+          _plans = plans;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      log('SelectPlan: Failed to load plans — $e');
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
+
+  SubscriptionPlan? get _selectedPlan => _selectedPlanId == null
+      ? null
+      : _plans.where((p) => p.id == _selectedPlanId).firstOrNull;
 
   @override
   Widget build(BuildContext context) {
@@ -39,62 +52,71 @@ class _SelectPlanState extends State<SelectPlan> with TickerProviderStateMixin {
               children: [
                 const SizedBox(height: 10),
                 _HeaderLogo(),
-
                 const SizedBox(height: 22),
                 Expanded(
-                  child: Center(
-                    child: SingleChildScrollView(
-                      child: Column(
-                        children: [
-                          const SizedBox(height: 34),
-                          Text(
-                            'User Type',
-                            style: GoogleFonts.imprima(
-                              color: Colors.white,
-                              fontSize: 30,
-                              fontWeight: FontWeight.w700,
+                  child: _isLoading
+                      ? const Center(
+                          child: CircularProgressIndicator(color: Colors.white),
+                        )
+                      : _plans.isEmpty
+                      ? Center(
+                          child: Text(
+                            'No plans available.',
+                            style: GoogleFonts.imprima(color: Colors.white),
+                          ),
+                        )
+                      : Center(
+                          child: SingleChildScrollView(
+                            child: Column(
+                              children: [
+                                const SizedBox(height: 34),
+                                Text(
+                                  'User Type',
+                                  style: GoogleFonts.imprima(
+                                    color: Colors.white,
+                                    fontSize: 30,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Select a user type',
+                                  style: GoogleFonts.imprima(
+                                    color: Colors.white.withOpacity(0.8),
+                                    fontSize: 13,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                for (final plan in _plans) ...[
+                                  Center(
+                                    child: ConstrainedBox(
+                                      constraints: const BoxConstraints(
+                                        maxWidth: 400,
+                                      ),
+                                      child: _PlanExpandableTile(
+                                        plan: plan,
+                                        expanded: _expandedPlanId == plan.id,
+                                        selected: _selectedPlanId == plan.id,
+                                        onTap: () {
+                                          setState(() {
+                                            final isExpanding =
+                                                _expandedPlanId != plan.id;
+                                            _expandedPlanId = isExpanding
+                                                ? plan.id
+                                                : null;
+                                            _selectedPlanId = plan.id;
+                                          });
+                                        },
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 14),
+                                ],
+                                const SizedBox(height: 18),
+                              ],
                             ),
                           ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Select a user type',
-                            style: GoogleFonts.imprima(
-                              color: Colors.white.withOpacity(0.8),
-                              fontSize: 13,
-                              fontWeight: FontWeight.w400,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          for (final plan in _plans) ...[
-                            Center(
-                              child: ConstrainedBox(
-                                constraints: const BoxConstraints(
-                                  maxWidth: 400,
-                                ),
-                                child: _PlanExpandableTile(
-                                  plan: plan,
-                                  expanded: _expandedPlanId == plan.id,
-                                  selected: _selectedPlanId == plan.id,
-                                  onTap: () {
-                                    setState(() {
-                                      final isExpanding =
-                                          _expandedPlanId != plan.id;
-                                      _expandedPlanId = isExpanding
-                                          ? plan.id
-                                          : null;
-                                      _selectedPlanId = plan.id;
-                                    });
-                                  },
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 14),
-                          ],
-                          const SizedBox(height: 18),
-                        ],
-                      ),
-                    ),
-                  ),
+                        ),
                 ),
                 const SizedBox(height: 8),
                 _BottomCta(
