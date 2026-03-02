@@ -41,7 +41,9 @@ class AuthWrapper extends StatelessWidget {
               ).showSnackBar(SnackBar(content: Text(state.message)));
               Navigator.pushReplacement(
                 context,
-                MaterialPageRoute(builder: (_) => const SelectPlan()),
+                MaterialPageRoute(
+                  builder: (_) => const SelectPlan(userEmail: ''),
+                ),
               );
             });
             return const Scaffold(
