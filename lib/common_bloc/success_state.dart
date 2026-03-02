@@ -14,11 +14,13 @@ class SuccessInitial extends SuccessState {
 class SuccessDisplaying extends SuccessState {
   final String message;
   final String nextScreen;
+  final String userEmail;
 
-  const SuccessDisplaying({required this.message, required this.nextScreen});
-
-  @override
-  List<Object?> get props => [message, nextScreen];
+  const SuccessDisplaying({
+    required this.message,
+    required this.nextScreen,
+    this.userEmail = '',
+  });
 }
 
 class SuccessCleared extends SuccessState {

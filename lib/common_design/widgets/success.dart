@@ -62,19 +62,23 @@ class _SuccessState extends State<Success> {
                   SizedBox(height: MediaQuery.of(context).size.width * 0.5),
                   CtaButton(
                     onPressed: () {
-                      // Clear success state and navigate
                       context.read<SuccessBloc>().add(ClearSuccessEvent());
-                      // Navigate based on nextScreen
+
+                      final userEmail = state is SuccessDisplaying
+                          ? state.userEmail
+                          : '';
+
                       if (nextScreen == 'login') {
                         Navigator.of(context).pushReplacement(
                           MaterialPageRoute(
-                            builder: (context) => const SelectPlan(),
+                            builder: (context) => const Signin(),
                           ),
                         );
                       } else if (nextScreen == 'subscribe') {
                         Navigator.of(context).pushReplacement(
                           MaterialPageRoute(
-                            builder: (context) => const SelectPlan(),
+                            builder: (context) =>
+                                SelectPlan(userEmail: userEmail),
                           ),
                         );
                       }

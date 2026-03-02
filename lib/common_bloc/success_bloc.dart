@@ -11,7 +11,11 @@ class SuccessBloc extends Bloc<SuccessEvent, SuccessState> {
     Emitter<SuccessState> emit,
   ) async {
     emit(
-      SuccessDisplaying(message: event.message, nextScreen: event.nextScreen),
+      SuccessDisplaying(
+        message: event.message,
+        nextScreen: event.nextScreen,
+        userEmail: event.userEmail,
+      ),
     );
   }
 

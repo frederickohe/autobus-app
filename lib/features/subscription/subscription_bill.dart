@@ -1,12 +1,15 @@
 import 'package:autobus/barrel.dart';
-
-import 'models/subscription_plan.dart';
 import 'services/subscription_storage.dart';
 
 class SubscriptionBillPage extends StatefulWidget {
   final SubscriptionPlan plan;
+  final String userEmail;
 
-  const SubscriptionBillPage({required this.plan, super.key});
+  const SubscriptionBillPage({
+    required this.plan,
+    required this.userEmail,
+    super.key,
+  });
 
   @override
   State<SubscriptionBillPage> createState() => _SubscriptionBillPageState();
@@ -27,10 +30,8 @@ class _SubscriptionBillPageState extends State<SubscriptionBillPage> {
     setState(() => _isLoading = true);
 
     try {
-      final authState = context.read<AuthBloc>().state;
-      final userEmail = authState is Authenticated
-          ? (authState.user?['email'] ?? '')
-          : '';
+      final userEmail = widget.userEmail;
+      debugPrint('email resolved: "$userEmail"');
 
       // Step 1 — initialize transaction on your backend
       final accessCode = await context

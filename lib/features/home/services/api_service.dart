@@ -1,4 +1,5 @@
 import 'package:autobus/barrel.dart';
+import 'dart:developer';
 
 class ApiService {
   final SessionAwareHttpClient httpClient;
@@ -29,21 +30,21 @@ class ApiService {
   /// Get all rides/buses
   Future<List<dynamic>> getRides() async {
     try {
-      print('Fetching rides from: $baseUrl/rides');
+      debugPrint('Fetching rides from: $baseUrl/rides');
       final response = await httpClient.get(Uri.parse('$baseUrl/rides'));
 
-      print('Rides response status: ${response.statusCode}');
-      print('Rides response body: ${response.body}');
+      debugPrint('Rides response status: ${response.statusCode}');
+      debugPrint('Rides response body: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        print('Decoded data type: ${data.runtimeType}');
+        debugPrint('Decoded data type: ${data.runtimeType}');
 
         if (data is Map && data.containsKey('rides')) {
-          print('Found rides in response: ${data['rides'].length} rides');
+          debugPrint('Found rides in response: ${data['rides'].length} rides');
           return data['rides'];
         }
-        print('Data is not a map or does not contain rides key');
+        debugPrint('Data is not a map or does not contain rides key');
         return data is List ? data : [];
       } else if (response.statusCode == 401) {
         throw Exception('Session expired - unauthorized');
@@ -53,7 +54,7 @@ class ApiService {
         );
       }
     } catch (e) {
-      print('Error fetching rides: $e');
+      debugPrint('Error fetching rides: $e');
       throw Exception('Error fetching rides: $e');
     }
   }
@@ -217,39 +218,36 @@ class ApiService {
     }
   }
 
-  // Future<String?> createPaystackTransaction({
-  //   required String planId,
-  //   required String billingId,
-  //   required double amountUsd,
-  // }) async {
-  //   final response = await httpClient.post(
-  //     Uri.parse('$baseUrl/subscriptions/initialize'),
-  //     headers: {'Content-Type': 'application/json'},
-  //     body: json.encode({
-  //       'plan_id': planId,
-  //       'billing_id': billingId,
-  //       'amount': amountUsd,
-  //     }),
-  //   );
-
-  //   if (response.statusCode == 200) {
-  //     final data = jsonDecode(response.body);
-  //     return data['access_code'] as String?;
-  //   }
-  //   return null;
-  // }
-
   Future<String?> initializePaystackTransaction({
     required String email,
     required double amount,
   }) async {
+    final token = await TokenService().getAccessToken();
+    debugPrint('initializePaystack: token exists — ${token != null}');
+    debugPrint('initializePaystack: token — $token');
+
+    final body = json.encode({
+      'email': email,
+      'amount': (amount * 100).toInt(),
+      'reference': DateTime.now().millisecondsSinceEpoch.toString(),
+      'callback_url': AppConfig.paystackCallbackUrl,
+    });
+
+    debugPrint(
+      'initializePaystack: POST $baseUrl/paystack/transaction/initialize',
+    );
+    debugPrint('initializePaystack: body — $body');
+
     final response = await httpClient.post(
-      Uri.parse('$baseUrl/paystack/initialize'),
+      Uri.parse('$baseUrl/paystack/transaction/initialize'),
       headers: {'Content-Type': 'application/json'},
-      body: json.encode({'email': email, 'amount': amount}),
+      body: body,
     );
 
-    if (response.statusCode == 200) {
+    debugPrint('initializePaystack: status — ${response.statusCode}');
+    debugPrint('initializePaystack: response — ${response.body}');
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
       final data = jsonDecode(response.body);
       return data['access_code'] as String?;
     }
@@ -257,9 +255,16 @@ class ApiService {
   }
 
   Future<bool> verifyPaystackTransaction(String reference) async {
-    final response = await httpClient.get(
-      Uri.parse('$baseUrl/paystack/verify/$reference'),
+    debugPrint(
+      'verifyPaystack: GET $baseUrl/paystack/transaction/verify/$reference',
     );
+
+    final response = await httpClient.get(
+      Uri.parse('$baseUrl/paystack/transaction/verify/$reference'), // fix
+    );
+
+    debugPrint('verifyPaystack: status — ${response.statusCode}');
+    debugPrint('verifyPaystack: response — ${response.body}');
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
@@ -273,15 +278,22 @@ class ApiService {
     required String billingId,
     required String reference,
   }) async {
+    final body = {
+      'plan_id': planId,
+      'billing_id': billingId,
+      'reference': reference,
+    };
+
+    log('subscribeToPlan: POST /api/v1/subscription/subscribe');
+    log('subscribeToPlan: request body — $body');
+
     final response = await httpClient.post(
       Uri.parse('$baseUrl/subscription/subscribe'),
-      headers: {'Content-Type': 'application/json'},
-      body: json.encode({
-        'plan_id': planId,
-        'billing_id': billingId,
-        'reference': reference,
-      }),
+      body: body,
     );
+
+    log('subscribeToPlan: status — ${response.statusCode}');
+    log('subscribeToPlan: response — ${response.body}');
 
     return response.statusCode == 200 || response.statusCode == 201;
   }

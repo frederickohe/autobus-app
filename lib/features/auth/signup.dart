@@ -23,19 +23,37 @@ class _SignupState extends State<Signup> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: BlocListener<SuccessBloc, SuccessState>(
-        listener: (context, state) {
-          if (state is SuccessDisplaying) {
-            Navigator.of(context).pushReplacement(
-              PageTransition(
-                type: PageTransitionType.rightToLeftWithFade,
-                duration: const Duration(milliseconds: 1000),
-                reverseDuration: const Duration(milliseconds: 600),
-                child: const Success(),
-              ),
-            );
-          }
-        },
+      body: MultiBlocListener(
+        listeners: [
+          BlocListener<SuccessBloc, SuccessState>(
+            listener: (context, state) {
+              if (state is SuccessDisplaying) {
+                Navigator.of(context).pushReplacement(
+                  PageTransition(
+                    type: PageTransitionType.rightToLeftWithFade,
+                    duration: const Duration(milliseconds: 1000),
+                    reverseDuration: const Duration(milliseconds: 600),
+                    child: const Success(),
+                  ),
+                );
+              }
+            },
+          ),
+          BlocListener<AuthBloc, AuthState>(
+            listener: (context, state) {
+              if (state is Registered) {
+                context.read<SuccessBloc>().add(
+                  ShowSuccessEvent(
+                    message: 'Account creation was successful!',
+                    nextScreen: 'subscribe',
+                    userEmail: emailController.text
+                        .trim(), // capture email here
+                  ),
+                );
+              }
+            },
+          ),
+        ],
         child: BlocBuilder<AuthBloc, AuthState>(
           builder: (context, state) {
             return SafeArea(

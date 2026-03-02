@@ -10,11 +10,13 @@ abstract class SuccessEvent extends Equatable {
 class ShowSuccessEvent extends SuccessEvent {
   final String message;
   final String nextScreen;
+  final String userEmail;
 
-  const ShowSuccessEvent({required this.message, required this.nextScreen});
-
-  @override
-  List<Object?> get props => [message, nextScreen];
+  const ShowSuccessEvent({
+    required this.message,
+    required this.nextScreen,
+    this.userEmail = '',
+  });
 }
 
 class ClearSuccessEvent extends SuccessEvent {

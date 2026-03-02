@@ -3,7 +3,8 @@ import 'package:autobus/main.dart';
 import 'dart:developer';
 
 class SelectPlan extends StatefulWidget {
-  const SelectPlan({super.key});
+  final String userEmail;
+  const SelectPlan({required this.userEmail, super.key});
 
   @override
   State<SelectPlan> createState() => _SelectPlanState();
@@ -130,7 +131,10 @@ class _SelectPlanState extends State<SelectPlan> with TickerProviderStateMixin {
                         type: PageTransitionType.rightToLeftWithFade,
                         duration: const Duration(milliseconds: 1000),
                         reverseDuration: const Duration(milliseconds: 600),
-                        child: SubscriptionBillPage(plan: selected),
+                        child: SubscriptionBillPage(
+                          plan: selected,
+                          userEmail: widget.userEmail,
+                        ),
                       ),
                     );
                   },
