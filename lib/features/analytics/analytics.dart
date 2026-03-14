@@ -28,23 +28,6 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
     super.initState();
   }
 
-  // Uncomment and implement this method to fetch real data
-  // Future<void> _loadAnalyticsData() async {
-  //   try {
-  //     final data = await YourApiService.getAnalytics();
-  //     setState(() {
-  //       // Update state variables with fetched data
-  //     });
-  //   } catch (e) {
-  //     // Handle error
-  //     if (mounted) {
-  //       ScaffoldMessenger.of(context).showSnackBar(
-  //         SnackBar(content: Text('Failed to load analytics: $e')),
-  //       );
-  //     }
-  //   }
-  // }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -87,7 +70,6 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Back Button
           GestureDetector(
             onTap: () => Navigator.pop(context),
             child: Container(
@@ -105,7 +87,6 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
             ),
           ),
 
-          // Reports Title
           Text(
             'Reports',
             style: GoogleFonts.roboto(
@@ -115,7 +96,6 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
             ),
           ),
 
-          // Star Icon (Favorite/Export Action)
           GestureDetector(
             onTap: _handleStarAction,
             child: Container(
@@ -134,7 +114,6 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
     );
   }
 
-  /// Combined Growth and Average metrics card
   Widget _buildGrowthAverageCard() {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -151,7 +130,6 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
       ),
       child: Row(
         children: [
-          // Growth Section
           Expanded(
             child: _GrowthWidget(
               percentage: _growthPercentage,
@@ -160,7 +138,6 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
           ),
           const SizedBox(width: 20),
 
-          // Average Section
           Expanded(
             child: _AverageWidget(rmaValue: _rmaValue, valValue: _valValue),
           ),
@@ -169,7 +146,6 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
     );
   }
 
-  /// Metrics grid displaying all KPIs
   Widget _buildMetricsGrid() {
     return GridView.builder(
       shrinkWrap: true,
@@ -187,10 +163,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
     );
   }
 
-  /// Handle star icon tap (export, favorite, etc.)
   void _handleStarAction() {
-    // TODO: Implement your star action
-    // Examples: Export report, mark as favorite, share, etc.
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
@@ -220,7 +193,6 @@ class _GrowthWidget extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Title
           Text(
             'Growth',
             style: GoogleFonts.roboto(
@@ -231,31 +203,33 @@ class _GrowthWidget extends StatelessWidget {
           ),
           const SizedBox(height: 16),
 
-          // Progress Indicator Row
           Row(
             children: [
-              // Circular Progress
               SizedBox(
-                width: 50,
-                height: 50,
+                width: 56,
+                height: 56,
                 child: Stack(
+                  alignment: Alignment.center,
                   children: [
-                    CircularProgressIndicator(
-                      value: percentage / 100,
-                      strokeWidth: 5,
-                      backgroundColor: Colors.grey.shade300,
-                      valueColor: const AlwaysStoppedAnimation<Color>(
-                        Color(0xFF4CAF50),
+                    SizedBox(
+                      width: 56,
+                      height: 56,
+                      child: CircularProgressIndicator(
+                        value: percentage / 100,
+                        strokeWidth: 5,
+                        strokeAlign: BorderSide.strokeAlignInside,
+                        backgroundColor: Colors.grey.shade300,
+                        valueColor: const AlwaysStoppedAnimation<Color>(
+                          Color(0xFF4CAF50),
+                        ),
                       ),
                     ),
-                    Center(
-                      child: Text(
-                        '${percentage.toInt()}%',
-                        style: GoogleFonts.roboto(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black87,
-                        ),
+                    Text(
+                      '${percentage.toInt()}%',
+                      style: GoogleFonts.roboto(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black87,
                       ),
                     ),
                   ],
@@ -263,7 +237,6 @@ class _GrowthWidget extends StatelessWidget {
               ),
               const SizedBox(width: 12),
 
-              // Progress Label
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -311,7 +284,6 @@ class _AverageWidget extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Title
           Text(
             'Average',
             style: GoogleFonts.roboto(
@@ -322,10 +294,9 @@ class _AverageWidget extends StatelessWidget {
           ),
           const SizedBox(height: 16),
 
-          // Bar and Values Row
           Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Green Bar Indicator
               Container(
                 width: 6,
                 height: 50,
@@ -336,11 +307,9 @@ class _AverageWidget extends StatelessWidget {
               ),
               const SizedBox(width: 16),
 
-              // Values Column
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Labels (RMA, VAL)
                   Row(
                     children: [
                       Text(
@@ -364,8 +333,9 @@ class _AverageWidget extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
 
-                  // Values
                   Row(
+                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                    textBaseline: TextBaseline.alphabetic,
                     children: [
                       Text(
                         rmaValue.toString(),
@@ -423,7 +393,8 @@ class _MetricCard extends StatelessWidget {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        // FIX 1: Removed MainAxisAlignment.spaceBetween (it spread 3 children
+        // unevenly). Now using Spacer() to push the value row to the bottom.
         children: [
           // Title
           Text(
@@ -436,12 +407,15 @@ class _MetricCard extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
-          const SizedBox(height: 8),
+
+          const Spacer(),
 
           // Value and Change Indicator
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.end,
+            // FIX 2: Changed CrossAxisAlignment.end → center so the large
+            // number and the badge pill sit on the same vertical midpoint.
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               // Main Value
               Text(
@@ -495,7 +469,6 @@ class MetricData {
 
   MetricData(this.title, this.value, this.percentageChange);
 
-  // Factory constructor for creating from JSON
   factory MetricData.fromJson(Map<String, dynamic> json) {
     return MetricData(
       json['title'] as String,
@@ -504,7 +477,6 @@ class MetricData {
     );
   }
 
-  // Convert to JSON
   Map<String, dynamic> toJson() {
     return {
       'title': title,

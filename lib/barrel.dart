@@ -54,7 +54,7 @@ export 'package:autobus/features/subscription/userplan.dart';
 export 'package:autobus/features/subscription/subscription_bill.dart';
 // barrel.dart
 export 'package:autobus/features/subscription/models/subscription_plan.dart';
-
+export 'package:autobus/features/marketing/digital_marketing.dart';
 // Icons import
 export 'package:flutter_bloc/flutter_bloc.dart';
 

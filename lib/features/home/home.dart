@@ -12,7 +12,12 @@ class Home extends StatelessWidget {
           MaterialPageRoute(builder: (_) => const AutoBus()),
         );
       }),
-      HomeMenuItem("Marketing", Icons8.advertising, () {}),
+      HomeMenuItem("Marketing", Icons8.advertising, () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const DigitalMarketingPage()),
+        );
+      }),
       HomeMenuItem("Payments", FluentEmojiHighContrast.money_bag, () {}),
       HomeMenuItem("Messages", Mdi.phone_message_outline, () {}),
       HomeMenuItem("Records", Mdi.database_arrow_down_outline, () {}),
