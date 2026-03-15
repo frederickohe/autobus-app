@@ -1,17 +1,8 @@
 import 'package:autobus/barrel.dart';
-import 'dart:async';
-
-// ═══════════════════════════════════════════════════════════════════════════
-//  CONSTANTS
-// ═══════════════════════════════════════════════════════════════════════════
 
 const _kPrimary = Color(0xFF1A1A2E);
 const _kPurple = Color(0xFF6C63FF);
 const _kRed = Color(0xFFE63946);
-
-// ═══════════════════════════════════════════════════════════════════════════
-//  MODELS
-// ═══════════════════════════════════════════════════════════════════════════
 
 enum MarketingContentType { pictures, videos, text }
 
@@ -20,8 +11,8 @@ enum MediaGenState { idle, generating, ready }
 class MarketingContent {
   final MarketingContentType type;
   String? prompt;
-  String? manualText; // text type: directly typed
-  String? generatedResult; // returned from generation API
+  String? manualText;
+  String? generatedResult;
   MediaGenState genState = MediaGenState.idle;
 
   MarketingContent(this.type);
@@ -69,11 +60,6 @@ class DigitalMarketingCampaign {
   DigitalMarketingCampaign(this.contents);
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//  SHARED WIDGETS
-// ═══════════════════════════════════════════════════════════════════════════
-
-/// Standard page scaffold: white background, back button, title, optional star
 class _MarketingScaffold extends StatelessWidget {
   final Widget child;
   final bool showStar;
@@ -147,7 +133,6 @@ class _MarketingScaffold extends StatelessWidget {
   }
 }
 
-/// Dark rounded button with optional "› › ›" arrows
 class _DarkButton extends StatelessWidget {
   final String label;
   final VoidCallback? onTap;
@@ -191,7 +176,6 @@ class _DarkButton extends StatelessWidget {
   }
 }
 
-/// Prompt input bar at bottom of generate pages (+ icon, text field, mic)
 class _PromptBar extends StatelessWidget {
   final TextEditingController controller;
   final String hint;
@@ -258,10 +242,6 @@ class _PromptBar extends StatelessWidget {
     );
   }
 }
-
-// ═══════════════════════════════════════════════════════════════════════════
-//  PAGE 1 — SELECT CONTENT TYPE(S)
-// ═══════════════════════════════════════════════════════════════════════════
 
 class DigitalMarketingPage extends StatefulWidget {
   const DigitalMarketingPage({super.key});
@@ -417,10 +397,6 @@ class _TypeCard extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//  PAGES 2..N — GENERATE MEDIA
-// ═══════════════════════════════════════════════════════════════════════════
-
 class _GenerateMediaPage extends StatefulWidget {
   final DigitalMarketingCampaign campaign;
   final int contentIndex;
@@ -448,7 +424,7 @@ class _GenerateMediaPageState extends State<_GenerateMediaPage> {
     super.initState();
     _promptCtrl.addListener(() => setState(() {}));
     _textBodyCtrl.addListener(() => _content.manualText = _textBodyCtrl.text);
-    // Pre-fill text box if user already typed something (back-nav)
+
     if (_content.manualText != null) _textBodyCtrl.text = _content.manualText!;
   }
 
@@ -460,7 +436,6 @@ class _GenerateMediaPageState extends State<_GenerateMediaPage> {
     super.dispose();
   }
 
-  /// Kick off generation — replace Timer body with real API call
   void _generate() {
     final prompt = _promptCtrl.text.trim();
     if (prompt.isEmpty) return;
@@ -471,12 +446,6 @@ class _GenerateMediaPageState extends State<_GenerateMediaPage> {
     });
     _promptCtrl.clear();
 
-    // ── Replace with actual API call: ────────────────────────────────────
-    // final result = await YourGenerationService.generate(
-    //   type: _content.type, prompt: prompt,
-    // );
-    // setState(() { _content.generatedResult = result; ... });
-    // ─────────────────────────────────────────────────────────────────────
     _genTimer = Timer(const Duration(seconds: 3), () {
       if (!mounted) return;
       setState(() {
@@ -529,7 +498,6 @@ class _GenerateMediaPageState extends State<_GenerateMediaPage> {
           ),
           const SizedBox(height: 20),
 
-          // ── Main preview / editor box ─────────────────────────────────
           Expanded(
             child: Container(
               width: double.infinity,
@@ -553,8 +521,6 @@ class _GenerateMediaPageState extends State<_GenerateMediaPage> {
           ),
 
           const SizedBox(height: 16),
-
-          // ── Prompt bar ────────────────────────────────────────────────
           _PromptBar(
             controller: _promptCtrl,
             hint: _content.promptHint,
@@ -573,7 +539,6 @@ class _GenerateMediaPageState extends State<_GenerateMediaPage> {
   }
 
   Widget _buildPreviewBox() {
-    // TEXT TYPE: editable box (generation fills it, user can also type)
     if (_isText) {
       return Stack(
         fit: StackFit.expand,
@@ -601,7 +566,6 @@ class _GenerateMediaPageState extends State<_GenerateMediaPage> {
       );
     }
 
-    // IMAGE / VIDEO TYPES
     switch (_content.genState) {
       case MediaGenState.idle:
         return _IdlePreview(content: _content);
@@ -613,9 +577,6 @@ class _GenerateMediaPageState extends State<_GenerateMediaPage> {
   }
 }
 
-// ── Preview state widgets ─────────────────────────────────────────────────────
-
-/// Idle: centred icon + label, no prompt entered yet
 class _IdlePreview extends StatelessWidget {
   final MarketingContent content;
   const _IdlePreview({required this.content});
@@ -642,7 +603,6 @@ class _IdlePreview extends StatelessWidget {
   }
 }
 
-/// Pulsing "Generating..." overlay while AI works
 class _GeneratingOverlay extends StatefulWidget {
   final String label;
   const _GeneratingOverlay({required this.label});
@@ -716,7 +676,6 @@ class _GeneratingOverlayState extends State<_GeneratingOverlay>
   }
 }
 
-/// Ready: green check + confirmation of what was generated
 class _ReadyPreview extends StatelessWidget {
   final MarketingContent content;
   const _ReadyPreview({required this.content});
@@ -764,10 +723,6 @@ class _ReadyPreview extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//  PAGE N+1 — SCHEDULE
-// ═══════════════════════════════════════════════════════════════════════════
-
 class _SchedulePage extends StatefulWidget {
   final DigitalMarketingCampaign campaign;
   const _SchedulePage({required this.campaign});
@@ -814,7 +769,6 @@ class _SchedulePageState extends State<_SchedulePage> {
 
           const Spacer(),
 
-          // Post Right Away
           GestureDetector(
             onTap: () => _proceed(rightAway: true),
             child: Container(
@@ -845,8 +799,6 @@ class _SchedulePageState extends State<_SchedulePage> {
     );
   }
 }
-
-// ── Inline Calendar ───────────────────────────────────────────────────────────
 
 class _InlineCalendar extends StatelessWidget {
   final DateTime focusedMonth;
@@ -883,13 +835,12 @@ class _InlineCalendar extends StatelessWidget {
     final y = focusedMonth.year;
     final m = focusedMonth.month;
     final daysInMonth = DateUtils.getDaysInMonth(y, m);
-    final firstWeekday = DateTime(y, m, 1).weekday % 7; // 0 = Sun
+    final firstWeekday = DateTime(y, m, 1).weekday % 7;
     final today = DateTime.now();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // ── Month header ─────────────────────────────────────────────────
         Row(
           children: [
             RichText(
@@ -928,7 +879,6 @@ class _InlineCalendar extends StatelessWidget {
         ),
         const SizedBox(height: 12),
 
-        // ── Day-of-week labels ───────────────────────────────────────────
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: _days
@@ -950,7 +900,6 @@ class _InlineCalendar extends StatelessWidget {
         ),
         const SizedBox(height: 8),
 
-        // ── Days grid ────────────────────────────────────────────────────
         GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
@@ -1002,10 +951,6 @@ class _InlineCalendar extends StatelessWidget {
     );
   }
 }
-
-// ═══════════════════════════════════════════════════════════════════════════
-//  PAGE N+2 — SELECT OUTLET
-// ═══════════════════════════════════════════════════════════════════════════
 
 class _OutletItem {
   final String label;
@@ -1123,7 +1068,6 @@ class _SelectOutletPageState extends State<_SelectOutletPage> {
   }
 
   void _publish() {
-    // TODO: connect to your publish / scheduling API
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
