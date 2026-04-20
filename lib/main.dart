@@ -27,9 +27,7 @@ void main() async {
   );
   _apiService = ApiService(httpClient: _httpClient);
 
-  // Initialize Paystack
   _paystackService = PaystackService();
-  await _paystackService.initialize();
 
   // Create blocs
   final successBloc = SuccessBloc();

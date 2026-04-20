@@ -8,24 +8,66 @@ class AnalyticsPage extends StatefulWidget {
 }
 
 class _AnalyticsPageState extends State<AnalyticsPage> {
-  final double _growthPercentage = 63.0;
-  final String _growthMonth = 'Jan';
-  final int _rmaValue = 14;
-  final int _valValue = 5;
+  double _growthPercentage = 0.0;
+  String _growthMonth = '';
+  int _rmaValue = 0;
+  int _valValue = 0;
+  List<MetricData> _metrics = [];
 
-  // Metrics data - Replace with dynamic data from your backend
-  final List<MetricData> _metrics = [
-    MetricData('Queries', 20312, -2.9),
-    MetricData('Client Responses', 20312, 2.99),
-    MetricData('Completed Orders', 20312, 73.99),
-    MetricData('Payments', 20312, -5.9),
-    MetricData('Metric 1', 20312, -29.9),
-    MetricData('Bills', 20312, -59.9),
-  ];
+  late final ApiService _apiService = ApiService(
+    httpClient: SessionAwareHttpClient(tokenService: TokenService()),
+  );
 
   @override
   void initState() {
     super.initState();
+    _loadAnalytics();
+  }
+
+  Future<void> _loadAnalytics() async {
+    try {
+      final results = await Future.wait([
+        _apiService.getTotalRevenue(),
+        _apiService.getFinancials(),
+      ]);
+
+      final revenue = results[0] as double;
+      final transactions = results[1] as List<Map<String, dynamic>>;
+
+      final completed = transactions.where((t) => t['status'] == 'completed').length;
+      final pending = transactions.where((t) => t['status'] == 'pending').length;
+      final failed = transactions.where((t) => t['status'] == 'failed').length;
+      final totalTxn = transactions.length;
+      final totalAmount = transactions.fold<double>(
+        0,
+        (sum, t) => sum + ((t['amount'] as num?)?.toDouble() ?? 0),
+      );
+
+      final now = DateTime.now();
+      final monthNames = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+      final growth = totalAmount > 0 && revenue > 0
+          ? ((revenue / totalAmount) * 100).clamp(0.0, 100.0)
+          : 0.0;
+
+      setState(() {
+        _growthPercentage = double.parse(growth.toStringAsFixed(1));
+        _growthMonth = monthNames[now.month];
+        _rmaValue = totalTxn;
+        _valValue = completed;
+        _metrics = [
+          MetricData('Total Transactions', totalTxn, 0),
+          MetricData('Completed', completed, 0),
+          MetricData('Pending', pending, 0),
+          MetricData('Failed', failed, 0),
+          MetricData('Total Amount', totalAmount.toInt(), 0),
+          MetricData('Revenue', revenue.toInt(), 0),
+        ];
+      });
+    } catch (_) {
+      // leave metrics empty on error
+    }
   }
 
   @override

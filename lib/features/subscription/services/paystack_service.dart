@@ -8,16 +8,8 @@ class PaystackService {
   factory PaystackService() => _instance;
   PaystackService._internal();
 
-  bool _initialized = false;
-
-  Future<bool> initialize() async {
-    _initialized = true;
-    log('Paystack: Ready');
-    return true;
-  }
-
   /// For subscriptions, pass a [planCode] (e.g. PLN_xxxx from dashboard).
-  /// For one-time payments, leave [planCode] null and pass [amount] in kobo/pesewas.
+  /// For one-time payments, leave [planCode] null and pass [amount] in pesewas.
   Future<String?> launch({
     required BuildContext context,
     required String email,
@@ -25,14 +17,10 @@ class PaystackService {
     String? planCode, // pass this for subscriptions
     int? amount, // pass this for one-time payments
     String currency = 'GHS', // change to NGN, USD etc as needed
-    required String callbackUrl, // from your Paystack dashboard
+    required String callbackUrl,
     required VoidCallback onSuccess,
     required VoidCallback onCancelled,
   }) async {
-    if (!_initialized) {
-      log('Paystack: Not initialized');
-      return null;
-    }
 
     try {
       await FlutterPaystackPlus.openPaystackPopup(
@@ -40,7 +28,7 @@ class PaystackService {
         publicKey: AppConfig.paystackPublicKey,
         customerEmail: email,
         reference: reference,
-        plan: planCode, // subscription plan code
+        plan: planCode,
         amount: amount != null ? (amount * 100).toString() : '0',
         currency: currency,
         callBackUrl: callbackUrl,

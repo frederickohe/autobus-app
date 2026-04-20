@@ -22,9 +22,10 @@ class Authenticated extends AuthState {
 
 class Registered extends AuthState {
   final String message;
-  const Registered({required this.message});
+  final String email;
+  const Registered({required this.message, required this.email});
   @override
-  List<Object> get props => [message];
+  List<Object> get props => [message, email];
 }
 
 class Unauthenticated extends AuthState {

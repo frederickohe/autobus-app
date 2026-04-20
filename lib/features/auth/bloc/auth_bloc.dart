@@ -5,7 +5,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'package:autobus/config/app_config.dart';
 import 'package:autobus/common_bloc/success_bloc.dart';
-import 'package:autobus/common_bloc/success_event.dart';
 import '../models/token_model.dart';
 import '../services/token_service.dart';
 
@@ -109,25 +108,27 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       );
 
       if (response.statusCode == 200) {
-        String msg = 'Signup successful';
-        try {
-          final data = json.decode(response.body);
-          if (data is Map && data['detail'] != null) {
-            msg = data['detail'];
-          }
-        } catch (_) {
-          msg = response.body;
+        // Auto-login after signup so a token is available for the
+        // subscription/payment flow that follows immediately.
+        final loginResponse = await http.post(
+          Uri.parse('${AppConfig.backendUrl}/api/v1/auth/signin'),
+          headers: {'Content-Type': 'application/json'},
+          body: json.encode({'email': event.email, 'password': event.password}),
+        );
+
+        if (loginResponse.statusCode == 200) {
+          final tokenData = json.decode(loginResponse.body);
+          final tokenModel = TokenModel.fromJson(tokenData);
+          await tokenService.saveToken(tokenModel);
         }
-        // Trigger success bloc event
-        successBloc.add(
-          ShowSuccessEvent(
-            message: 'Registration Successful! \n\n Log into your account.',
-            nextScreen: 'login',
+        // Emit Registered regardless — subscription flow proceeds even if
+        // auto-login fails (user can still log in manually afterwards).
+        emit(
+          Registered(
+            email: event.email,
+            message: 'Account creation was successful!',
           ),
         );
-        // Clear loading state so downstream UI (e.g. signin page) isn't left
-        // thinking an operation is still in progress.
-        emit(const Unauthenticated());
       } else {
         String errorMsg = 'Signup failed';
         try {
@@ -182,7 +183,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(AuthLoading());
     try {
       final response = await http.post(
-        Uri.parse('${AppConfig.backendUrl}/api/v1/auth/reset-password'),
+        Uri.parse('${AppConfig.backendUrl}/api/v1/auth/no-auth/reset-password'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'email': event.email,
@@ -245,9 +246,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(AuthLoading());
     try {
       final response = await http.post(
-        Uri.parse('${AppConfig.backendUrl}/api/v1/auth/send-reset-code'),
+        Uri.parse('${AppConfig.backendUrl}/api/v1/otp/send'),
         headers: {'Content-Type': 'application/json'},
-        body: json.encode({'email': event.email}),
+        body: json.encode({'email': event.email, 'phone': event.phone}),
       );
 
       if (response.statusCode == 200) {
@@ -280,9 +281,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(AuthLoading());
     try {
       final response = await http.post(
-        Uri.parse('${AppConfig.backendUrl}/api/v1/auth/verify-reset-code'),
+        Uri.parse('${AppConfig.backendUrl}/api/v1/otp/verify'),
         headers: {'Content-Type': 'application/json'},
-        body: json.encode({'email': event.email, 'code': event.code}),
+        body: json.encode({
+          'email': event.email,
+          'phone': event.phone,
+          'otp': event.code,
+        }),
       );
 
       if (response.statusCode == 200) {

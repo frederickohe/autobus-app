@@ -413,7 +413,10 @@ class _GenerateMediaPage extends StatefulWidget {
 class _GenerateMediaPageState extends State<_GenerateMediaPage> {
   final TextEditingController _promptCtrl = TextEditingController();
   final TextEditingController _textBodyCtrl = TextEditingController();
-  Timer? _genTimer;
+
+  final ApiService _apiService = ApiService(
+    httpClient: SessionAwareHttpClient(tokenService: TokenService()),
+  );
 
   MarketingContent get _content =>
       widget.campaign.contents[widget.contentIndex];
@@ -432,11 +435,10 @@ class _GenerateMediaPageState extends State<_GenerateMediaPage> {
   void dispose() {
     _promptCtrl.dispose();
     _textBodyCtrl.dispose();
-    _genTimer?.cancel();
     super.dispose();
   }
 
-  void _generate() {
+  Future<void> _generate() async {
     final prompt = _promptCtrl.text.trim();
     if (prompt.isEmpty) return;
 
@@ -446,17 +448,31 @@ class _GenerateMediaPageState extends State<_GenerateMediaPage> {
     });
     _promptCtrl.clear();
 
-    _genTimer = Timer(const Duration(seconds: 3), () {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userJson = prefs.getString('user');
+      String userId = '';
+      if (userJson != null) {
+        final user = jsonDecode(userJson) as Map<String, dynamic>;
+        userId = (user['id'] ?? user['phone'] ?? '').toString();
+      }
+
+      final result = await _apiService.generateAgentContent(
+        userId: userId,
+        prompt: prompt,
+        agentName: 'marketing',
+      );
+
       if (!mounted) return;
       setState(() {
         _content.genState = MediaGenState.ready;
-        _content.generatedResult = _isText
-            ? 'AI-generated marketing copy based on:\n"${_content.prompt}"\n\n'
-                  '[Replace this with real content from your generation service]'
-            : 'https://your-cdn.com/generated-asset';
-        if (_isText) _textBodyCtrl.text = _content.generatedResult!;
+        _content.generatedResult = _isText ? result : 'https://your-cdn.com/generated-asset';
+        if (_isText) _textBodyCtrl.text = result;
       });
-    });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _content.genState = MediaGenState.idle);
+    }
   }
 
   void _goNext() {
@@ -968,26 +984,45 @@ class _SelectOutletPage extends StatefulWidget {
 }
 
 class _SelectOutletPageState extends State<_SelectOutletPage> {
+  final ApiService _apiService = ApiService(
+    httpClient: SessionAwareHttpClient(tokenService: TokenService()),
+  );
+
+  List<Map<String, dynamic>> _connectedAccounts = [];
+  bool _loadingAccounts = true;
+
+  // Fallback static outlets when no accounts are connected
   static final _outlets = [
     _OutletItem('Email List', Icons.email_outlined, const Color(0xFF546E7A)),
     _OutletItem('LinkedIn', Icons.work_outline, const Color(0xFF0077B5)),
     _OutletItem('Facebook', Icons.facebook, const Color(0xFF1877F2)),
-    _OutletItem(
-      'WhatsApp Status',
-      Icons.chat_bubble_outline,
-      const Color(0xFF25D366),
-    ),
-    _OutletItem(
-      'Instagram',
-      Icons.camera_alt_outlined,
-      const Color(0xFFE1306C),
-    ),
+    _OutletItem('WhatsApp Status', Icons.chat_bubble_outline, const Color(0xFF25D366)),
+    _OutletItem('Instagram', Icons.camera_alt_outlined, const Color(0xFFE1306C)),
     _OutletItem('X', Icons.close, const Color(0xFF000000)),
     _OutletItem('YouTube', Icons.play_circle_outline, const Color(0xFFFF0000)),
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _loadAccounts();
+  }
+
+  Future<void> _loadAccounts() async {
+    try {
+      final accounts = await _apiService.getSocialAccounts();
+      if (mounted) setState(() { _connectedAccounts = accounts; _loadingAccounts = false; });
+    } catch (_) {
+      if (mounted) setState(() => _loadingAccounts = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    // Use connected accounts if available, otherwise fall back to static outlets
+    final useConnected = !_loadingAccounts && _connectedAccounts.isNotEmpty;
+    final itemCount = useConnected ? _connectedAccounts.length : _outlets.length;
+
     return _MarketingScaffold(
       showStar: true,
       child: Column(
@@ -998,62 +1033,82 @@ class _SelectOutletPageState extends State<_SelectOutletPage> {
           ),
           const SizedBox(height: 24),
 
-          Expanded(
-            child: GridView.builder(
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                childAspectRatio: 1.5,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-              ),
-              itemCount: _outlets.length,
-              itemBuilder: (_, i) {
-                final o = _outlets[i];
-                final sel = widget.campaign.selectedOutlets.contains(o.label);
+          if (_loadingAccounts)
+            const Expanded(child: Center(child: CircularProgressIndicator()))
+          else
+            Expanded(
+              child: GridView.builder(
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  childAspectRatio: 1.5,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                ),
+                itemCount: itemCount,
+                itemBuilder: (_, i) {
+                  final String id;
+                  final String label;
+                  final IconData icon;
+                  final Color color;
 
-                return GestureDetector(
-                  onTap: () => setState(
-                    () => sel
-                        ? widget.campaign.selectedOutlets.remove(o.label)
-                        : widget.campaign.selectedOutlets.add(o.label),
-                  ),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: sel ? _kPrimary : Colors.grey.shade200,
-                        width: sel ? 2 : 1,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.04),
-                          blurRadius: 6,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
+                  if (useConnected) {
+                    final acct = _connectedAccounts[i];
+                    id = acct['id'] as String? ?? '';
+                    label = (acct['account_name'] ?? acct['platform'] ?? 'Account').toString();
+                    icon = Icons.link;
+                    color = _kPurple;
+                  } else {
+                    final o = _outlets[i];
+                    id = o.label;
+                    label = o.label;
+                    icon = o.icon;
+                    color = o.color;
+                  }
+
+                  final sel = widget.campaign.selectedOutlets.contains(id);
+
+                  return GestureDetector(
+                    onTap: () => setState(
+                      () => sel
+                          ? widget.campaign.selectedOutlets.remove(id)
+                          : widget.campaign.selectedOutlets.add(id),
                     ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(o.icon, size: 30, color: o.color),
-                        const SizedBox(height: 6),
-                        Text(
-                          o.label,
-                          style: GoogleFonts.roboto(
-                            fontSize: 11,
-                            color: Colors.black54,
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: sel ? _kPrimary : Colors.grey.shade200,
+                          width: sel ? 2 : 1,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.04),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
                           ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
+                        ],
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(icon, size: 30, color: color),
+                          const SizedBox(height: 6),
+                          Text(
+                            label,
+                            style: GoogleFonts.roboto(fontSize: 11, color: Colors.black54),
+                            textAlign: TextAlign.center,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                );
-              },
+                  );
+                },
+              ),
             ),
-          ),
 
           const SizedBox(height: 16),
 
@@ -1067,16 +1122,56 @@ class _SelectOutletPageState extends State<_SelectOutletPage> {
     );
   }
 
-  void _publish() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Publishing to: ${widget.campaign.selectedOutlets.join(', ')}',
-          style: GoogleFonts.roboto(color: Colors.white),
+  Future<void> _publish() async {
+    final selectedIds = widget.campaign.selectedOutlets.toList();
+    final textContent = widget.campaign.contents
+        .where((c) => c.type == MarketingContentType.text)
+        .map((c) => c.manualText ?? c.generatedResult ?? '')
+        .where((s) => s.isNotEmpty)
+        .join('\n\n');
+
+    final mediaUrls = widget.campaign.contents
+        .where((c) => c.type != MarketingContentType.text && c.generatedResult != null)
+        .map((c) => c.generatedResult!)
+        .toList();
+
+    final scheduleTime = widget.campaign.scheduledDate?.toUtc().toIso8601String();
+
+    // Only call the API if we have connected accounts (IDs that are UUIDs)
+    final useApi = _connectedAccounts.isNotEmpty;
+
+    try {
+      if (useApi) {
+        await _apiService.publishSocialPost(
+          accountIds: selectedIds,
+          content: textContent,
+          mediaUrls: mediaUrls,
+          scheduleTime: scheduleTime,
+        );
+      }
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            useApi
+                ? 'Published successfully to ${selectedIds.length} account(s)'
+                : 'Scheduled for: ${selectedIds.join(', ')}',
+            style: GoogleFonts.roboto(color: Colors.white),
+          ),
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
         ),
-        backgroundColor: _kPrimary,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Publish failed: $e', style: GoogleFonts.roboto(color: Colors.white)),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 }

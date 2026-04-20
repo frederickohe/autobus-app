@@ -1,4 +1,4 @@
-package com.example.autobus
+package com.autobus.app
 
 import io.flutter.embedding.android.FlutterFragmentActivity
 

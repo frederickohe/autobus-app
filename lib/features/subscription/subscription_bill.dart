@@ -20,10 +20,25 @@ class _SubscriptionBillPageState extends State<SubscriptionBillPage> {
   final _storage = SubscriptionStorage();
   bool _isLoading = false;
 
+  String? _fullname;
+  String? _phone;
+
   @override
   void initState() {
     super.initState();
     _selected = widget.plan.billing.first;
+    _loadUserProfile();
+  }
+
+  Future<void> _loadUserProfile() async {
+    try {
+      final user = await context.read<ApiService>().getUserProfile();
+      if (!mounted) return;
+      setState(() {
+        _fullname = (user['fullname'] ?? user['name'] ?? '').toString();
+        _phone = (user['phone'] ?? '').toString();
+      });
+    } catch (_) {}
   }
 
   Future<void> _handleSubscription() async {
@@ -183,7 +198,11 @@ class _SubscriptionBillPageState extends State<SubscriptionBillPage> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                const _AccountMeta(),
+                _AccountMeta(
+                  fullname: _fullname,
+                  email: widget.userEmail,
+                  phone: _phone,
+                ),
                 const SizedBox(height: 22),
                 _BillingSelector(
                   options: widget.plan.billing,
@@ -207,16 +226,18 @@ class _SubscriptionBillPageState extends State<SubscriptionBillPage> {
 }
 
 class _AccountMeta extends StatelessWidget {
-  const _AccountMeta();
+  final String? fullname;
+  final String email;
+  final String? phone;
+
+  const _AccountMeta({
+    required this.fullname,
+    required this.email,
+    required this.phone,
+  });
 
   @override
   Widget build(BuildContext context) {
-    // Temporary values, would be updated with endpoint
-    const company = 'Star Foods Limited';
-    const address = 'North Kaneshie, Accra Ghana';
-    const email = 'starmeals@email.com';
-    const phone = '+233 39473439820023';
-
     TextStyle metaStyle(Color c) => GoogleFonts.imprima(
       color: c,
       fontSize: 13,
@@ -225,13 +246,16 @@ class _AccountMeta extends StatelessWidget {
 
     return Column(
       children: [
-        Text(company, style: metaStyle(Colors.white.withOpacity(0.9))),
-        const SizedBox(height: 6),
-        Text(address, style: metaStyle(Colors.white.withOpacity(0.75))),
-        const SizedBox(height: 6),
+        if (fullname != null && fullname!.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: Text(fullname!, style: metaStyle(Colors.white.withOpacity(0.9))),
+          ),
         Text(email, style: metaStyle(Colors.white.withOpacity(0.75))),
-        const SizedBox(height: 6),
-        Text(phone, style: metaStyle(Colors.white.withOpacity(0.75))),
+        if (phone != null && phone!.isNotEmpty) ...[
+          const SizedBox(height: 6),
+          Text(phone!, style: metaStyle(Colors.white.withOpacity(0.75))),
+        ],
       ],
     );
   }

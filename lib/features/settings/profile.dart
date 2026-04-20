@@ -13,6 +13,72 @@ class _ProfileState extends State<Profile> {
   final TextEditingController nameController = TextEditingController();
   final TextEditingController phoneController = TextEditingController();
 
+  bool _loading = true;
+  bool _saving = false;
+  String? _error;
+
+  late final ApiService _apiService = ApiService(
+    httpClient: SessionAwareHttpClient(tokenService: TokenService()),
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    try {
+      final user = await _apiService.getUserProfile();
+      if (!mounted) return;
+      nameController.text = (user['fullname'] ?? user['name'] ?? '').toString();
+      phoneController.text = (user['phone'] ?? '').toString();
+      emailController.text = (user['email'] ?? '').toString();
+    } catch (e) {
+      if (mounted) setState(() => _error = e.toString());
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _saveProfile() async {
+    setState(() { _saving = true; _error = null; });
+    try {
+      await _apiService.updateUserProfile(
+        firstName: nameController.text.trim(),
+        phone: phoneController.text.trim(),
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Profile updated'),
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to save: $e'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  void dispose() {
+    emailController.dispose();
+    passwordController.dispose();
+    nameController.dispose();
+    phoneController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -78,132 +144,52 @@ class _ProfileState extends State<Profile> {
                   ],
                 ),
                 const SizedBox(height: 40),
-                BlocBuilder<AuthBloc, AuthState>(
-                  builder: (context, state) {
-                    return Padding(
+                if (_loading)
+                  const Expanded(child: Center(child: CircularProgressIndicator()))
+                else
+                  Expanded(
+                    child: Padding(
                       padding: const EdgeInsets.all(20.0),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          SizedBox(
-                            height: MediaQuery.of(context).size.height * 0.1,
-                          ),
-                          SizedBox(
-                            height: 400,
+                          if (_error != null)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: Text(
+                                _error!,
+                                style: GoogleFonts.imprima(color: Colors.red, fontSize: 13),
+                              ),
+                            ),
+                          Expanded(
                             child: SingleChildScrollView(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Padding(
-                                    padding: EdgeInsets.only(
-                                      left: 20.0,
-                                      right: 20.0,
-                                    ),
-                                    child: Text(
-                                      'User Name / Business Name',
-                                      style: GoogleFonts.imprima(
-                                        color: Colors.black,
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w100,
-                                      ),
-                                    ),
-                                  ),
-                                  Padding(
-                                    padding: const EdgeInsets.only(
-                                      left: 20.0,
-                                      right: 20.0,
-                                    ),
-                                    child: TextField(
-                                      controller: nameController,
-                                      decoration: const InputDecoration(
-                                        border: UnderlineInputBorder(),
-                                      ),
-                                    ),
-                                  ),
+                                  _fieldLabel('User Name / Business Name'),
+                                  _fieldInput(nameController),
                                   const SizedBox(height: 20),
-                                  Padding(
-                                    padding: EdgeInsets.only(
-                                      left: 20.0,
-                                      right: 20.0,
-                                    ),
-                                    child: Text(
-                                      'Phone',
-                                      style: GoogleFonts.imprima(
-                                        color: Colors.black,
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w100,
-                                      ),
-                                    ),
-                                  ),
-                                  Padding(
-                                    padding: const EdgeInsets.only(
-                                      left: 20.0,
-                                      right: 20.0,
-                                    ),
-                                    child: TextField(
-                                      controller: phoneController,
-                                      decoration: const InputDecoration(
-                                        border: UnderlineInputBorder(),
-                                      ),
-                                    ),
-                                  ),
+                                  _fieldLabel('Phone'),
+                                  _fieldInput(phoneController, keyboardType: TextInputType.phone),
                                   const SizedBox(height: 20),
-                                  Padding(
-                                    padding: EdgeInsets.only(
-                                      left: 20.0,
-                                      right: 20.0,
-                                    ),
-                                    child: Text(
-                                      'Email',
-                                      style: GoogleFonts.imprima(
-                                        color: Colors.black,
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w100,
-                                      ),
-                                    ),
-                                  ),
-                                  Padding(
-                                    padding: const EdgeInsets.only(
-                                      left: 20.0,
-                                      right: 20.0,
-                                    ),
-                                    child: TextField(
-                                      controller: emailController,
-                                      decoration: const InputDecoration(
-                                        border: UnderlineInputBorder(),
-                                      ),
-                                    ),
-                                  ),
+                                  _fieldLabel('Email'),
+                                  _fieldInput(emailController, readOnly: true),
                                   const SizedBox(height: 20),
                                 ],
                               ),
                             ),
                           ),
                           Center(
-                            child: BlocBuilder<AuthBloc, AuthState>(
-                              builder: (context, state) {
-                                return AppButton(
-                                  onPressed: () async {
-                                    context.read<AuthBloc>().add(
-                                      SignupEvent(
-                                        fullname: nameController.text,
-                                        phone: phoneController.text,
-                                        email: emailController.text,
-                                        password: passwordController.text,
-                                      ),
-                                    );
-                                  },
-                                  buttonText: 'Save Changes',
-                                );
-                              },
+                            child: AppButton(
+                              onPressed: _saving ? () {} : () => _saveProfile(),
+                              buttonText: _saving ? 'Saving...' : 'Save Changes',
                             ),
                           ),
                           const SizedBox(height: 20),
                         ],
                       ),
-                    );
-                  },
-                ),
+                    ),
+                  ),
                 const SizedBox(height: 26),
               ],
             ),
@@ -212,6 +198,37 @@ class _ProfileState extends State<Profile> {
       ),
     );
   }
+
+  Widget _fieldLabel(String text) => Padding(
+        padding: const EdgeInsets.only(left: 20, right: 20),
+        child: Text(
+          text,
+          style: GoogleFonts.imprima(
+            color: Colors.black,
+            fontSize: 14,
+            fontWeight: FontWeight.w100,
+          ),
+        ),
+      );
+
+  Widget _fieldInput(
+    TextEditingController controller, {
+    TextInputType keyboardType = TextInputType.text,
+    bool readOnly = false,
+  }) =>
+      Padding(
+        padding: const EdgeInsets.only(left: 20, right: 20),
+        child: TextField(
+          controller: controller,
+          keyboardType: keyboardType,
+          readOnly: readOnly,
+          decoration: InputDecoration(
+            border: const UnderlineInputBorder(),
+            filled: readOnly,
+            fillColor: readOnly ? Colors.grey.shade100 : null,
+          ),
+        ),
+      );
 
   Widget _circleIcon(dynamic icon) {
     return Container(

@@ -59,21 +59,27 @@ class CheckEmailExistsEvent extends AuthEvent {
 
 class SendResetCodeEvent extends AuthEvent {
   final String email;
+  final String phone;
 
-  const SendResetCodeEvent({required this.email});
+  const SendResetCodeEvent({required this.email, this.phone = ''});
 
   @override
-  List<Object> get props => [email];
+  List<Object> get props => [email, phone];
 }
 
 class VerifyResetCodeEvent extends AuthEvent {
   final String email;
+  final String phone;
   final String code;
 
-  const VerifyResetCodeEvent({required this.email, required this.code});
+  const VerifyResetCodeEvent({
+    required this.email,
+    required this.code,
+    this.phone = '',
+  });
 
   @override
-  List<Object> get props => [email, code];
+  List<Object> get props => [email, phone, code];
 }
 
 class ResetPasswordEvent extends AuthEvent {

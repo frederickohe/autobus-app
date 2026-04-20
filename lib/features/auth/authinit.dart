@@ -34,21 +34,6 @@ class AuthWrapper extends StatelessWidget {
             return const Signin();
           } else if (state is SessionExpired) {
             return const LogorSign();
-          } else if (state is Registered) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(SnackBar(content: Text(state.message)));
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const SelectPlan(userEmail: ''),
-                ),
-              );
-            });
-            return const Scaffold(
-              body: Center(child: CircularProgressIndicator()),
-            );
           } else if (state is AuthError) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               ScaffoldMessenger.of(

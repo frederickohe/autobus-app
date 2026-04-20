@@ -313,4 +313,99 @@ class ApiService {
     }
     return [];
   }
+
+  /// Get total revenue
+  Future<double> getTotalRevenue() async {
+    final response = await httpClient.get(
+      Uri.parse('$baseUrl/payment/revenue'),
+    );
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return (data as num).toDouble();
+    }
+    return 0.0;
+  }
+
+  /// Get financial transaction history
+  Future<List<Map<String, dynamic>>> getFinancials({
+    int page = 1,
+    int pageSize = 50,
+  }) async {
+    final response = await httpClient.get(
+      Uri.parse('$baseUrl/user/me/financials?page=$page&page_size=$pageSize'),
+    );
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data is List) return List<Map<String, dynamic>>.from(data);
+    }
+    return [];
+  }
+
+  /// Get connected social media accounts
+  Future<List<Map<String, dynamic>>> getSocialAccounts() async {
+    final response = await httpClient.get(
+      Uri.parse('$baseUrl/social/accounts'),
+    );
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      final accounts = data['accounts'] as List? ?? [];
+      return List<Map<String, dynamic>>.from(accounts);
+    }
+    return [];
+  }
+
+  /// Publish a post to connected social accounts
+  Future<Map<String, dynamic>> publishSocialPost({
+    required List<String> accountIds,
+    required String content,
+    List<String> mediaUrls = const [],
+    String? scheduleTime,
+    List<String> hashtags = const [],
+  }) async {
+    final body = <String, dynamic>{
+      'account_ids': accountIds,
+      'content': content,
+      if (mediaUrls.isNotEmpty)
+        'media_urls': mediaUrls
+            .map((u) => {'url': u, 'type': 'image'})
+            .toList(),
+      if (scheduleTime != null) 'schedule_time': scheduleTime,
+      if (hashtags.isNotEmpty) 'hashtags': hashtags,
+    };
+
+    final response = await httpClient.post(
+      Uri.parse('$baseUrl/social/post'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(body),
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    }
+    throw Exception(
+      'Failed to publish: ${response.statusCode} ${response.body}',
+    );
+  }
+
+  Future<String> generateAgentContent({
+    required String userId,
+    required String prompt,
+    String agentName = 'marketing',
+  }) async {
+    final response = await httpClient.post(
+      Uri.parse('$baseUrl/agent/command'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'userid': userId,
+        'message': prompt,
+        'agent_name': agentName,
+      }),
+    );
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return (data['response'] ?? data['message'] ?? data['reply'] ?? '')
+          .toString();
+    }
+    throw Exception('Agent error: ${response.statusCode}');
+  }
 }
