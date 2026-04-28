@@ -5,11 +5,19 @@ class LogorSign extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final h = size.height;
+
+    // Figma: 428x926
+    const figmaH = 926.0;
+    final brandingTop = h * (148 / figmaH);
+    final bottomPanelH = h * (420 / figmaH);
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: Container(
-        height: MediaQuery.of(context).size.height,
-        width: MediaQuery.of(context).size.width,
+        height: size.height,
+        width: size.width,
         decoration: const BoxDecoration(
           image: DecorationImage(
             image: AssetImage('assets/img/splash.png'),
@@ -20,159 +28,182 @@ class LogorSign extends StatelessWidget {
           decoration: const BoxDecoration(
             gradient: LinearGradient(
               colors: [
-                Color.fromARGB(75, 0, 0, 0),
-                Color.fromARGB(150, 0, 0, 0),
+                Color.fromRGBO(0, 0, 0, 0.8),
+                Color.fromRGBO(0, 0, 0, 0.25),
               ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
+              stops: [0.24251044, 1],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
             ),
           ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.start,
-            children: [
-              SizedBox(height: MediaQuery.of(context).size.height * 0.2),
-              SizedBox(
-                width: double.infinity,
-                child: Image.asset(
-                  "assets/icons/autologo.png",
-                  height: 60,
-                  fit: BoxFit.contain,
-                ),
-              ),
-              SizedBox(height: MediaQuery.of(context).size.width * 0.9),
-              Container(
-                height: 200.0,
-                width: MediaQuery.of(context).size.width * 0.9,
-                decoration: BoxDecoration(
-                  color: CustColors.mainCol,
-                  borderRadius: BorderRadius.circular(35.0),
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        SizedBox(
-                          width: MediaQuery.of(context).size.width * 0.25,
-                          child: TextButton(
-                            onPressed: () {
-                              Navigator.of(context).push(
-                                PageTransition(
-                                  type: PageTransitionType.rightToLeftWithFade,
-                                  childCurrent: const Signin(),
-                                  duration: const Duration(milliseconds: 1000),
-                                  reverseDuration: const Duration(
-                                    milliseconds: 800,
-                                  ),
-                                  child: const Signin(),
-                                ),
-                              );
-                            },
-                            child: Center(
-                              child: Text(
-                                'Log In',
-                                style: GoogleFonts.imprima(
-                                  color: Colors.white,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w100,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        Container(height: 40, width: 1.5, color: Colors.white),
-                        SizedBox(
-                          width: MediaQuery.of(context).size.width * 0.25,
-                          child: TextButton(
-                            onPressed: () {
-                              Navigator.of(context).push(
-                                PageTransition(
-                                  type: PageTransitionType.rightToLeftWithFade,
-                                  childCurrent: const Signup(),
-                                  duration: const Duration(milliseconds: 1000),
-                                  reverseDuration: const Duration(
-                                    milliseconds: 600,
-                                  ),
-                                  child: const Signup(),
-                                ),
-                              );
-                            },
-                            child: Text(
-                              'Sign Up',
-                              style: GoogleFonts.imprima(
-                                color: Colors.white,
-                                fontSize: 18,
-                                fontWeight: FontWeight.w100,
-                              ),
-                            ),
-                          ),
-                        ),
+          child: SafeArea(
+            child: Stack(
+              children: [
+                Positioned(
+                  top: brandingTop,
+                  left: 0,
+                  right: 0,
+                  child: Center(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        AutobusMark(),
+                        SizedBox(width: 9),
+                        AutobusWordmark(baseColor: Colors.white),
                       ],
                     ),
-                    Wrap(
-                      children: [
-                        GestureDetector(
-                          onTap: () {
-                            // Navigator.of(context).push(
-                            //   MaterialPageRoute(
-                            //     builder: (context) => const Terms(),
-                            //   ),
-                            // );
-                          },
-                          child: Text(
-                            'Terms & Conditions',
-                            style: GoogleFonts.imprima(
-                              color: Colors.white,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w100,
-                            ),
-                          ),
-                        ),
-                        SizedBox(width: 10),
-                        GestureDetector(
-                          onTap: () {
-                            // Navigator.of(context).push(
-                            //   MaterialPageRoute(
-                            //     builder: (context) => const Privacy(),
-                            //   ),
-                            // );
-                          },
-                          child: Text(
-                            'Privacy Policy',
-                            style: GoogleFonts.imprima(
-                              color: Colors.white,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w100,
-                            ),
-                          ),
-                        ),
-                        SizedBox(width: 10),
-                        GestureDetector(
-                          onTap: () {
-                            // Navigator.of(context).push(
-                            //   MaterialPageRoute(
-                            //     builder: (context) => const HelpAndAssistance(),
-                            //   ),
-                            // );
-                          },
-                          child: Text(
-                            'Help & Support',
-                            style: GoogleFonts.imprima(
-                              color: Colors.white,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w100,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+                  ),
                 ),
-              ),
-            ],
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  height: bottomPanelH,
+                  child: _BottomPanel(height: bottomPanelH),
+                ),
+              ],
+            ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _BottomPanel extends StatelessWidget {
+  const _BottomPanel({required this.height});
+
+  final double height;
+
+  @override
+  Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    // Figma bottom panel size: 428x420
+    const figmaPanelH = 420.0;
+    final s = height / figmaPanelH;
+
+    const panelColor = Color(0xFF2A1447);
+
+    TextStyle tStyle({double size = 14, FontWeight weight = FontWeight.w400}) {
+      return GoogleFonts.montserrat(
+        fontSize: size,
+        fontWeight: weight,
+        color: Colors.white,
+      );
+    }
+
+    return Container(
+      width: double.infinity,
+      color: panelColor,
+      child: Stack(
+        children: [
+          Positioned(
+            left: 26 * s,
+            top: 23 * s,
+            right: 26 * s,
+            child: Text(
+              'The power of Ai in your pocket',
+              style: tStyle(size: 32, weight: FontWeight.w600),
+            ),
+          ),
+          Positioned(
+            left: 26 * s,
+            top: 131 * s,
+            right: 26 * s,
+            child: Text(
+              'Agentic business management',
+              style: tStyle(size: 16, weight: FontWeight.w400),
+            ),
+          ),
+          Positioned(
+            left: 0,
+            right: 0,
+            top: 218 * s,
+            child: Center(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    width: size.width * 0.25,
+                    child: TextButton(
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          PageTransition(
+                            type: PageTransitionType.rightToLeftWithFade,
+                            childCurrent: const Signin(),
+                            duration: const Duration(milliseconds: 1000),
+                            reverseDuration: const Duration(milliseconds: 800),
+                            child: const Signin(),
+                          ),
+                        );
+                      },
+                      child: Center(
+                        child: Text(
+                          'Log In',
+                          style: GoogleFonts.montserrat(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w200,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Container(height: 40, width: 1.5, color: Colors.white),
+                  SizedBox(
+                    width: size.width * 0.25,
+                    child: TextButton(
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          PageTransition(
+                            type: PageTransitionType.rightToLeftWithFade,
+                            childCurrent: const Signup(),
+                            duration: const Duration(milliseconds: 1000),
+                            reverseDuration: const Duration(milliseconds: 600),
+                            child: const Signup(),
+                          ),
+                        );
+                      },
+                      child: Text(
+                        'Sign Up',
+                        style: GoogleFonts.montserrat(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w200,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Positioned(
+            left: 0,
+            right: 0,
+            top: 315 * s,
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  GestureDetector(
+                    onTap: () {},
+                    child: Text(
+                      'Terms and Conditions',
+                      style: tStyle(size: 12),
+                    ),
+                  ),
+                  SizedBox(height: 8 * s),
+                  GestureDetector(
+                    onTap: () {},
+                    child: Text('Privacy Policy', style: tStyle(size: 12)),
+                  ),
+                  SizedBox(height: 8 * s),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

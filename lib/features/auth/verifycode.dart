@@ -43,7 +43,7 @@ class _VerifyCodeState extends State<VerifyCode> {
                   Center(
                     child: Text(
                       'Verify Code',
-                      style: GoogleFonts.imprima(
+                      style: GoogleFonts.montserrat(
                         color: Colors.black,
                         fontSize: 26,
                         fontWeight: FontWeight.w100,
@@ -94,7 +94,7 @@ class _VerifyCodeState extends State<VerifyCode> {
                 padding: EdgeInsets.only(left: 20.0, right: 20.0),
                 child: Text(
                   'Enter Code',
-                  style: GoogleFonts.imprima(
+                  style: GoogleFonts.montserrat(
                     color: Colors.black,
                     fontSize: 14,
                     fontWeight: FontWeight.w100,
@@ -119,7 +119,7 @@ class _VerifyCodeState extends State<VerifyCode> {
                   onTap: () {},
                   child: Text(
                     'Did Not Receeve Code? Resend Code',
-                    style: GoogleFonts.imprima(
+                    style: GoogleFonts.montserrat(
                       color: Colors.black,
                       fontSize: 14,
                       fontWeight: FontWeight.w100,
@@ -155,7 +155,7 @@ class _VerifyCodeState extends State<VerifyCode> {
               Center(
                 child: Text(
                   'Dont have an Account ?',
-                  style: GoogleFonts.imprima(
+                  style: GoogleFonts.montserrat(
                     color: Colors.black,
                     fontSize: 14,
                     fontWeight: FontWeight.w100,
@@ -178,7 +178,7 @@ class _VerifyCodeState extends State<VerifyCode> {
                   },
                   child: Text(
                     'Verify',
-                    style: GoogleFonts.imprima(
+                    style: GoogleFonts.montserrat(
                       color: Colors.black,
                       fontSize: 16,
                       fontWeight: FontWeight.w700,

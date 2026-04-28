@@ -29,7 +29,7 @@ class TransparentCtaButton extends StatelessWidget {
             const SizedBox(width: 34),
             Text(
               label,
-              style: GoogleFonts.imprima(
+              style: GoogleFonts.montserrat(
                 color: Colors.white,
                 fontSize: 15,
                 fontWeight: FontWeight.w600,

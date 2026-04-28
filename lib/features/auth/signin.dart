@@ -31,7 +31,7 @@ class _SigninState extends State<Signin> {
               SnackBar(
                 content: Text(
                   state.message,
-                  style: GoogleFonts.imprima(color: Colors.white),
+                  style: GoogleFonts.montserrat(color: Colors.white),
                 ),
                 backgroundColor: Colors.red,
               ),
@@ -57,10 +57,10 @@ class _SigninState extends State<Signin> {
                         Center(
                           child: Text(
                             'Sign In',
-                            style: GoogleFonts.imprima(
+                            style: GoogleFonts.montserrat(
                               color: Colors.black,
                               fontSize: 26,
-                              fontWeight: FontWeight.w100,
+                              fontWeight: FontWeight.w300,
                             ),
                           ),
                         ),
@@ -95,10 +95,10 @@ class _SigninState extends State<Signin> {
                     ),
                     SizedBox(height: MediaQuery.of(context).size.height * 0.1),
                     Center(
-                      child: SizedBox(
-                        width: 100,
-                        height: 100,
-                        child: Image.asset('assets/img/bot.png'),
+                      child: AutobusBranding(
+                        wordmarkFontSize: 26,
+                        markCircleSize: 34,
+                        spacing: 14,
                       ),
                     ),
                     SizedBox(height: MediaQuery.of(context).size.height * 0.1),
@@ -106,7 +106,7 @@ class _SigninState extends State<Signin> {
                       padding: EdgeInsets.only(left: 20.0, right: 20.0),
                       child: Text(
                         'Email',
-                        style: GoogleFonts.imprima(
+                        style: GoogleFonts.montserrat(
                           color: const Color.fromARGB(255, 12, 12, 12),
                           fontSize: 14,
                           fontWeight: FontWeight.w100,
@@ -129,7 +129,7 @@ class _SigninState extends State<Signin> {
                       padding: EdgeInsets.only(left: 20.0, right: 20.0),
                       child: Text(
                         'Password',
-                        style: GoogleFonts.imprima(
+                        style: GoogleFonts.montserrat(
                           color: Colors.black,
                           fontSize: 14,
                           fontWeight: FontWeight.w100,
@@ -172,10 +172,10 @@ class _SigninState extends State<Signin> {
                               },
                         child: Text(
                           'Forgot Password ?',
-                          style: GoogleFonts.imprima(
+                          style: GoogleFonts.montserrat(
                             color: isLoading ? Colors.grey : Colors.black,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w400,
                           ),
                         ),
                       ),
@@ -192,7 +192,7 @@ class _SigninState extends State<Signin> {
                                     SnackBar(
                                       content: Text(
                                         'Please fill all fields',
-                                        style: GoogleFonts.imprima(
+                                        style: GoogleFonts.montserrat(
                                           color: Colors.white,
                                           fontSize: 14,
                                         ),
@@ -217,10 +217,10 @@ class _SigninState extends State<Signin> {
                     Center(
                       child: Text(
                         'Dont have an Account ?',
-                        style: GoogleFonts.imprima(
+                        style: GoogleFonts.montserrat(
                           color: isLoading ? Colors.grey : Colors.black,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w100,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w400,
                         ),
                       ),
                     ),
@@ -247,10 +247,10 @@ class _SigninState extends State<Signin> {
                               },
                         child: Text(
                           'Sign Up ',
-                          style: GoogleFonts.imprima(
+                          style: GoogleFonts.montserrat(
                             color: isLoading ? Colors.grey : Colors.black,
                             fontSize: 16,
-                            fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.w400,
                           ),
                         ),
                       ),

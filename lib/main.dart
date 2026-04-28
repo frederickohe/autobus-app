@@ -13,11 +13,7 @@ void main() async {
   await AppConfig.init();
 
   // Initialize Google Fonts
-  await GoogleFonts.pendingFonts([
-    GoogleFonts.lato(),
-    GoogleFonts.imprima(),
-    GoogleFonts.righteous(),
-  ]);
+  await GoogleFonts.pendingFonts([GoogleFonts.montserrat()]);
 
   // Initialize session handling services
   _tokenService = TokenService();

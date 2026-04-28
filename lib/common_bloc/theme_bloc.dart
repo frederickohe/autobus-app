@@ -6,16 +6,18 @@ class ThemeBloc extends Cubit<ThemeState> {
   static ThemeData _defaultTheme() {
     return ThemeData(
       colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-      textTheme: GoogleFonts.latoTextTheme(),
+      textTheme: GoogleFonts.montserratTextTheme(),
     );
   }
 
   void changeFontFamily(String fontFamily) {
-    emit(ThemeState(
-      ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        textTheme: GoogleFonts.getTextTheme(fontFamily),
+    emit(
+      ThemeState(
+        ThemeData(
+          colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+          textTheme: GoogleFonts.montserratTextTheme(),
+        ),
       ),
-    ));
+    );
   }
 }

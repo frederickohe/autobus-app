@@ -65,7 +65,7 @@ class Home extends StatelessWidget {
                         }
                         return Text(
                           username,
-                          style: GoogleFonts.roboto(
+                          style: GoogleFonts.montserrat(
                             color: Colors.white,
                             fontSize: 20,
                             fontWeight: FontWeight.w300,
@@ -159,7 +159,7 @@ class _DashboardCard extends StatelessWidget {
             const SizedBox(height: 14),
             Text(
               item.title,
-              style: GoogleFonts.roboto(
+              style: GoogleFonts.montserrat(
                 color: Colors.white,
                 fontSize: 14,
                 fontWeight: FontWeight.w200,

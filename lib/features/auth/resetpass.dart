@@ -34,7 +34,7 @@ class _ResetPasswordState extends State<ResetPassword> {
                     Center(
                       child: Text(
                         'Reset Password',
-                        style: GoogleFonts.imprima(
+                        style: GoogleFonts.montserrat(
                           color: Colors.black,
                           fontSize: 26,
                           fontWeight: FontWeight.w100,
@@ -85,7 +85,7 @@ class _ResetPasswordState extends State<ResetPassword> {
                   padding: EdgeInsets.only(left: 20.0, right: 20.0),
                   child: Text(
                     'New Password',
-                    style: GoogleFonts.imprima(
+                    style: GoogleFonts.montserrat(
                       color: const Color.fromARGB(255, 12, 12, 12),
                       fontSize: 14,
                       fontWeight: FontWeight.w100,
@@ -107,7 +107,7 @@ class _ResetPasswordState extends State<ResetPassword> {
                   padding: EdgeInsets.only(left: 20.0, right: 20.0),
                   child: Text(
                     'Confirm Password',
-                    style: GoogleFonts.imprima(
+                    style: GoogleFonts.montserrat(
                       color: Colors.black,
                       fontSize: 14,
                       fontWeight: FontWeight.w100,
@@ -132,7 +132,7 @@ class _ResetPasswordState extends State<ResetPassword> {
                     onTap: () {},
                     child: Text(
                       'At least 8 characters, 1 uppercase, 1 lowercase, 1 number',
-                      style: GoogleFonts.imprima(
+                      style: GoogleFonts.montserrat(
                         color: Colors.black,
                         fontSize: 14,
                         fontWeight: FontWeight.w100,
@@ -180,7 +180,7 @@ class _ResetPasswordState extends State<ResetPassword> {
                 Center(
                   child: Text(
                     'Dont have an Account ?',
-                    style: GoogleFonts.imprima(
+                    style: GoogleFonts.montserrat(
                       color: Colors.black,
                       fontSize: 14,
                       fontWeight: FontWeight.w100,
@@ -203,7 +203,7 @@ class _ResetPasswordState extends State<ResetPassword> {
                     },
                     child: Text(
                       'Sign Up ',
-                      style: GoogleFonts.imprima(
+                      style: GoogleFonts.montserrat(
                         color: Colors.black,
                         fontSize: 16,
                         fontWeight: FontWeight.w700,

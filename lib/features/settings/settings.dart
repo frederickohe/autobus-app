@@ -26,7 +26,7 @@ class _SettingsPageState extends State<SettingsPage> {
             SnackBar(
               content: Text(
                 state.message,
-                style: GoogleFonts.imprima(color: Colors.white),
+                style: GoogleFonts.montserrat(color: Colors.white),
               ),
               backgroundColor: Colors.red,
             ),
@@ -76,7 +76,7 @@ class _SettingsPageState extends State<SettingsPage> {
                           }
                           return Text(
                             username,
-                            style: GoogleFonts.roboto(
+                            style: GoogleFonts.montserrat(
                               color: Colors.black,
                               fontSize: 20,
                               fontWeight: FontWeight.w300,
@@ -129,7 +129,7 @@ class _SettingsPageState extends State<SettingsPage> {
                             children: [
                               Text(
                                 isLoading ? 'Logging out...' : "Logout",
-                                style: GoogleFonts.roboto(
+                                style: GoogleFonts.montserrat(
                                   color: isLoading ? Colors.grey : Colors.red,
                                   fontSize: 16,
                                   fontWeight: FontWeight.w300,

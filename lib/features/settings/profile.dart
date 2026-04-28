@@ -42,7 +42,10 @@ class _ProfileState extends State<Profile> {
   }
 
   Future<void> _saveProfile() async {
-    setState(() { _saving = true; _error = null; });
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
     try {
       await _apiService.updateUserProfile(
         firstName: nameController.text.trim(),
@@ -124,7 +127,7 @@ class _ProfileState extends State<Profile> {
                         }
                         return Text(
                           username,
-                          style: GoogleFonts.roboto(
+                          style: GoogleFonts.montserrat(
                             color: Colors.black,
                             fontSize: 20,
                             fontWeight: FontWeight.w300,
@@ -145,7 +148,9 @@ class _ProfileState extends State<Profile> {
                 ),
                 const SizedBox(height: 40),
                 if (_loading)
-                  const Expanded(child: Center(child: CircularProgressIndicator()))
+                  const Expanded(
+                    child: Center(child: CircularProgressIndicator()),
+                  )
                 else
                   Expanded(
                     child: Padding(
@@ -158,7 +163,10 @@ class _ProfileState extends State<Profile> {
                               padding: const EdgeInsets.only(bottom: 12),
                               child: Text(
                                 _error!,
-                                style: GoogleFonts.imprima(color: Colors.red, fontSize: 13),
+                                style: GoogleFonts.montserrat(
+                                  color: Colors.red,
+                                  fontSize: 13,
+                                ),
                               ),
                             ),
                           Expanded(
@@ -170,7 +178,10 @@ class _ProfileState extends State<Profile> {
                                   _fieldInput(nameController),
                                   const SizedBox(height: 20),
                                   _fieldLabel('Phone'),
-                                  _fieldInput(phoneController, keyboardType: TextInputType.phone),
+                                  _fieldInput(
+                                    phoneController,
+                                    keyboardType: TextInputType.phone,
+                                  ),
                                   const SizedBox(height: 20),
                                   _fieldLabel('Email'),
                                   _fieldInput(emailController, readOnly: true),
@@ -182,7 +193,9 @@ class _ProfileState extends State<Profile> {
                           Center(
                             child: AppButton(
                               onPressed: _saving ? () {} : () => _saveProfile(),
-                              buttonText: _saving ? 'Saving...' : 'Save Changes',
+                              buttonText: _saving
+                                  ? 'Saving...'
+                                  : 'Save Changes',
                             ),
                           ),
                           const SizedBox(height: 20),
@@ -200,35 +213,34 @@ class _ProfileState extends State<Profile> {
   }
 
   Widget _fieldLabel(String text) => Padding(
-        padding: const EdgeInsets.only(left: 20, right: 20),
-        child: Text(
-          text,
-          style: GoogleFonts.imprima(
-            color: Colors.black,
-            fontSize: 14,
-            fontWeight: FontWeight.w100,
-          ),
-        ),
-      );
+    padding: const EdgeInsets.only(left: 20, right: 20),
+    child: Text(
+      text,
+      style: GoogleFonts.montserrat(
+        color: Colors.black,
+        fontSize: 14,
+        fontWeight: FontWeight.w100,
+      ),
+    ),
+  );
 
   Widget _fieldInput(
     TextEditingController controller, {
     TextInputType keyboardType = TextInputType.text,
     bool readOnly = false,
-  }) =>
-      Padding(
-        padding: const EdgeInsets.only(left: 20, right: 20),
-        child: TextField(
-          controller: controller,
-          keyboardType: keyboardType,
-          readOnly: readOnly,
-          decoration: InputDecoration(
-            border: const UnderlineInputBorder(),
-            filled: readOnly,
-            fillColor: readOnly ? Colors.grey.shade100 : null,
-          ),
-        ),
-      );
+  }) => Padding(
+    padding: const EdgeInsets.only(left: 20, right: 20),
+    child: TextField(
+      controller: controller,
+      keyboardType: keyboardType,
+      readOnly: readOnly,
+      decoration: InputDecoration(
+        border: const UnderlineInputBorder(),
+        filled: readOnly,
+        fillColor: readOnly ? Colors.grey.shade100 : null,
+      ),
+    ),
+  );
 
   Widget _circleIcon(dynamic icon) {
     return Container(

@@ -97,7 +97,7 @@ class _MarketingScaffold extends StatelessWidget {
                   ),
                   Text(
                     'Digital Marketing',
-                    style: GoogleFonts.roboto(
+                    style: GoogleFonts.montserrat(
                       fontSize: 20,
                       fontWeight: FontWeight.w400,
                       color: Colors.black87,
@@ -156,7 +156,7 @@ class _DarkButton extends StatelessWidget {
           children: [
             Text(
               label,
-              style: GoogleFonts.roboto(
+              style: GoogleFonts.montserrat(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
                 color: Colors.white,
@@ -219,10 +219,10 @@ class _PromptBar extends StatelessWidget {
           Expanded(
             child: TextField(
               controller: controller,
-              style: GoogleFonts.roboto(fontSize: 14),
+              style: GoogleFonts.montserrat(fontSize: 14),
               decoration: InputDecoration(
                 hintText: hint,
-                hintStyle: GoogleFonts.roboto(
+                hintStyle: GoogleFonts.montserrat(
                   fontSize: 14,
                   color: Colors.black38,
                 ),
@@ -280,7 +280,10 @@ class _DigitalMarketingPageState extends State<DigitalMarketingPage> {
           Center(
             child: Text(
               'Select Marketing Content',
-              style: GoogleFonts.roboto(fontSize: 16, color: Colors.black87),
+              style: GoogleFonts.montserrat(
+                fontSize: 16,
+                color: Colors.black87,
+              ),
             ),
           ),
           const SizedBox(height: 32),
@@ -384,7 +387,7 @@ class _TypeCard extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               label,
-              style: GoogleFonts.roboto(
+              style: GoogleFonts.montserrat(
                 fontSize: 12,
                 color: iconColor,
                 fontWeight: FontWeight.w500,
@@ -466,7 +469,9 @@ class _GenerateMediaPageState extends State<_GenerateMediaPage> {
       if (!mounted) return;
       setState(() {
         _content.genState = MediaGenState.ready;
-        _content.generatedResult = _isText ? result : 'https://your-cdn.com/generated-asset';
+        _content.generatedResult = _isText
+            ? result
+            : 'https://your-cdn.com/generated-asset';
         if (_isText) _textBodyCtrl.text = result;
       });
     } catch (_) {
@@ -510,7 +515,7 @@ class _GenerateMediaPageState extends State<_GenerateMediaPage> {
         children: [
           Text(
             _content.pageTitle,
-            style: GoogleFonts.roboto(fontSize: 16, color: Colors.black87),
+            style: GoogleFonts.montserrat(fontSize: 16, color: Colors.black87),
           ),
           const SizedBox(height: 20),
 
@@ -565,10 +570,13 @@ class _GenerateMediaPageState extends State<_GenerateMediaPage> {
               controller: _textBodyCtrl,
               maxLines: null,
               expands: true,
-              style: GoogleFonts.roboto(fontSize: 14, color: Colors.black87),
+              style: GoogleFonts.montserrat(
+                fontSize: 14,
+                color: Colors.black87,
+              ),
               decoration: InputDecoration(
                 hintText: 'Type Text Here...',
-                hintStyle: GoogleFonts.roboto(
+                hintStyle: GoogleFonts.montserrat(
                   fontSize: 14,
                   color: Colors.black38,
                 ),
@@ -612,7 +620,7 @@ class _IdlePreview extends StatelessWidget {
         const SizedBox(height: 12),
         Text(
           content.label,
-          style: GoogleFonts.roboto(fontSize: 13, color: _kPurple),
+          style: GoogleFonts.montserrat(fontSize: 13, color: _kPurple),
         ),
       ],
     );
@@ -673,7 +681,7 @@ class _GeneratingOverlayState extends State<_GeneratingOverlay>
               opacity: _fade,
               child: Text(
                 'Generating...',
-                style: GoogleFonts.roboto(
+                style: GoogleFonts.montserrat(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
                   color: _kPrimary,
@@ -683,7 +691,10 @@ class _GeneratingOverlayState extends State<_GeneratingOverlay>
             const SizedBox(height: 6),
             Text(
               'Creating your ${widget.label.toLowerCase()}',
-              style: GoogleFonts.roboto(fontSize: 13, color: Colors.black45),
+              style: GoogleFonts.montserrat(
+                fontSize: 13,
+                color: Colors.black45,
+              ),
             ),
           ],
         ),
@@ -717,7 +728,7 @@ class _ReadyPreview extends StatelessWidget {
         const SizedBox(height: 14),
         Text(
           '${content.label} Ready!',
-          style: GoogleFonts.roboto(
+          style: GoogleFonts.montserrat(
             fontSize: 15,
             fontWeight: FontWeight.w600,
             color: _kPrimary,
@@ -729,7 +740,7 @@ class _ReadyPreview extends StatelessWidget {
           child: Text(
             content.prompt ?? '',
             textAlign: TextAlign.center,
-            style: GoogleFonts.roboto(fontSize: 12, color: Colors.black45),
+            style: GoogleFonts.montserrat(fontSize: 12, color: Colors.black45),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
@@ -771,7 +782,10 @@ class _SchedulePageState extends State<_SchedulePage> {
           Center(
             child: Text(
               'Schedule Your Post',
-              style: GoogleFonts.roboto(fontSize: 16, color: Colors.black87),
+              style: GoogleFonts.montserrat(
+                fontSize: 16,
+                color: Colors.black87,
+              ),
             ),
           ),
           const SizedBox(height: 20),
@@ -797,7 +811,7 @@ class _SchedulePageState extends State<_SchedulePage> {
               child: Center(
                 child: Text(
                   'Post Right Away',
-                  style: GoogleFonts.roboto(
+                  style: GoogleFonts.montserrat(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
                     color: Colors.white,
@@ -864,7 +878,7 @@ class _InlineCalendar extends StatelessWidget {
                 children: [
                   TextSpan(
                     text: '${_months[m]} $y',
-                    style: GoogleFonts.roboto(
+                    style: GoogleFonts.montserrat(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
                       color: Colors.black87,
@@ -904,7 +918,7 @@ class _InlineCalendar extends StatelessWidget {
                   child: Text(
                     d,
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.roboto(
+                    style: GoogleFonts.montserrat(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
                       color: Colors.black38,
@@ -947,7 +961,7 @@ class _InlineCalendar extends StatelessWidget {
                 alignment: Alignment.center,
                 child: Text(
                   '$day',
-                  style: GoogleFonts.roboto(
+                  style: GoogleFonts.montserrat(
                     fontSize: 13,
                     fontWeight: isToday || isSel
                         ? FontWeight.w700
@@ -996,8 +1010,16 @@ class _SelectOutletPageState extends State<_SelectOutletPage> {
     _OutletItem('Email List', Icons.email_outlined, const Color(0xFF546E7A)),
     _OutletItem('LinkedIn', Icons.work_outline, const Color(0xFF0077B5)),
     _OutletItem('Facebook', Icons.facebook, const Color(0xFF1877F2)),
-    _OutletItem('WhatsApp Status', Icons.chat_bubble_outline, const Color(0xFF25D366)),
-    _OutletItem('Instagram', Icons.camera_alt_outlined, const Color(0xFFE1306C)),
+    _OutletItem(
+      'WhatsApp Status',
+      Icons.chat_bubble_outline,
+      const Color(0xFF25D366),
+    ),
+    _OutletItem(
+      'Instagram',
+      Icons.camera_alt_outlined,
+      const Color(0xFFE1306C),
+    ),
     _OutletItem('X', Icons.close, const Color(0xFF000000)),
     _OutletItem('YouTube', Icons.play_circle_outline, const Color(0xFFFF0000)),
   ];
@@ -1011,7 +1033,11 @@ class _SelectOutletPageState extends State<_SelectOutletPage> {
   Future<void> _loadAccounts() async {
     try {
       final accounts = await _apiService.getSocialAccounts();
-      if (mounted) setState(() { _connectedAccounts = accounts; _loadingAccounts = false; });
+      if (mounted)
+        setState(() {
+          _connectedAccounts = accounts;
+          _loadingAccounts = false;
+        });
     } catch (_) {
       if (mounted) setState(() => _loadingAccounts = false);
     }
@@ -1021,7 +1047,9 @@ class _SelectOutletPageState extends State<_SelectOutletPage> {
   Widget build(BuildContext context) {
     // Use connected accounts if available, otherwise fall back to static outlets
     final useConnected = !_loadingAccounts && _connectedAccounts.isNotEmpty;
-    final itemCount = useConnected ? _connectedAccounts.length : _outlets.length;
+    final itemCount = useConnected
+        ? _connectedAccounts.length
+        : _outlets.length;
 
     return _MarketingScaffold(
       showStar: true,
@@ -1029,7 +1057,7 @@ class _SelectOutletPageState extends State<_SelectOutletPage> {
         children: [
           Text(
             'Select Your Digital Outlet',
-            style: GoogleFonts.roboto(fontSize: 16, color: Colors.black87),
+            style: GoogleFonts.montserrat(fontSize: 16, color: Colors.black87),
           ),
           const SizedBox(height: 24),
 
@@ -1054,7 +1082,9 @@ class _SelectOutletPageState extends State<_SelectOutletPage> {
                   if (useConnected) {
                     final acct = _connectedAccounts[i];
                     id = acct['id'] as String? ?? '';
-                    label = (acct['account_name'] ?? acct['platform'] ?? 'Account').toString();
+                    label =
+                        (acct['account_name'] ?? acct['platform'] ?? 'Account')
+                            .toString();
                     icon = Icons.link;
                     color = _kPurple;
                   } else {
@@ -1097,7 +1127,10 @@ class _SelectOutletPageState extends State<_SelectOutletPage> {
                           const SizedBox(height: 6),
                           Text(
                             label,
-                            style: GoogleFonts.roboto(fontSize: 11, color: Colors.black54),
+                            style: GoogleFonts.montserrat(
+                              fontSize: 11,
+                              color: Colors.black54,
+                            ),
                             textAlign: TextAlign.center,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
@@ -1131,11 +1164,16 @@ class _SelectOutletPageState extends State<_SelectOutletPage> {
         .join('\n\n');
 
     final mediaUrls = widget.campaign.contents
-        .where((c) => c.type != MarketingContentType.text && c.generatedResult != null)
+        .where(
+          (c) =>
+              c.type != MarketingContentType.text && c.generatedResult != null,
+        )
         .map((c) => c.generatedResult!)
         .toList();
 
-    final scheduleTime = widget.campaign.scheduledDate?.toUtc().toIso8601String();
+    final scheduleTime = widget.campaign.scheduledDate
+        ?.toUtc()
+        .toIso8601String();
 
     // Only call the API if we have connected accounts (IDs that are UUIDs)
     final useApi = _connectedAccounts.isNotEmpty;
@@ -1157,7 +1195,7 @@ class _SelectOutletPageState extends State<_SelectOutletPage> {
             useApi
                 ? 'Published successfully to ${selectedIds.length} account(s)'
                 : 'Scheduled for: ${selectedIds.join(', ')}',
-            style: GoogleFonts.roboto(color: Colors.white),
+            style: GoogleFonts.montserrat(color: Colors.white),
           ),
           backgroundColor: Colors.green,
           behavior: SnackBarBehavior.floating,
@@ -1167,7 +1205,10 @@ class _SelectOutletPageState extends State<_SelectOutletPage> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Publish failed: $e', style: GoogleFonts.roboto(color: Colors.white)),
+          content: Text(
+            'Publish failed: $e',
+            style: GoogleFonts.montserrat(color: Colors.white),
+          ),
           backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
         ),

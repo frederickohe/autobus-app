@@ -63,7 +63,7 @@ class _SelectPlanState extends State<SelectPlan> with TickerProviderStateMixin {
                       ? Center(
                           child: Text(
                             'No plans available.',
-                            style: GoogleFonts.imprima(color: Colors.white),
+                            style: GoogleFonts.montserrat(color: Colors.white),
                           ),
                         )
                       : Center(
@@ -73,7 +73,7 @@ class _SelectPlanState extends State<SelectPlan> with TickerProviderStateMixin {
                                 const SizedBox(height: 34),
                                 Text(
                                   'User Type',
-                                  style: GoogleFonts.imprima(
+                                  style: GoogleFonts.montserrat(
                                     color: Colors.white,
                                     fontSize: 30,
                                     fontWeight: FontWeight.w700,
@@ -82,7 +82,7 @@ class _SelectPlanState extends State<SelectPlan> with TickerProviderStateMixin {
                                 const SizedBox(height: 8),
                                 Text(
                                   'Select a user type',
-                                  style: GoogleFonts.imprima(
+                                  style: GoogleFonts.montserrat(
                                     color: Colors.white.withOpacity(0.8),
                                     fontSize: 13,
                                   ),
@@ -188,7 +188,7 @@ class _PlanExpandableTile extends StatelessWidget {
               : Center(
                   child: Text(
                     plan.name,
-                    style: GoogleFonts.imprima(
+                    style: GoogleFonts.montserrat(
                       color: Colors.white,
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
@@ -212,7 +212,7 @@ class _ExpandedPlanContent extends StatelessWidget {
       children: [
         Text(
           plan.name,
-          style: GoogleFonts.imprima(
+          style: GoogleFonts.montserrat(
             color: CustColors.mainCol,
             fontSize: 18,
             fontWeight: FontWeight.w700,
@@ -221,7 +221,7 @@ class _ExpandedPlanContent extends StatelessWidget {
         const SizedBox(height: 6),
         Text(
           plan.priceText,
-          style: GoogleFonts.imprima(
+          style: GoogleFonts.montserrat(
             color: CustColors.mainCol,
             fontSize: 34,
             fontWeight: FontWeight.w700,
@@ -244,7 +244,7 @@ class _ExpandedPlanContent extends StatelessWidget {
               Expanded(
                 child: Text(
                   f,
-                  style: GoogleFonts.imprima(
+                  style: GoogleFonts.montserrat(
                     color: CustColors.mainCol.withOpacity(0.85),
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
@@ -294,7 +294,7 @@ class _BottomCta extends StatelessWidget {
                 const SizedBox(width: 34),
                 Text(
                   label,
-                  style: GoogleFonts.imprima(
+                  style: GoogleFonts.montserrat(
                     color: Colors.white,
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
@@ -344,7 +344,7 @@ class _HeaderLogo extends StatelessWidget {
         const SizedBox(width: 4),
         Text(
           'Autobus',
-          style: GoogleFonts.imprima(
+          style: GoogleFonts.montserrat(
             color: Colors.white,
             fontSize: 32,
             fontWeight: FontWeight.w700,

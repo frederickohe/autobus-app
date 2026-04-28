@@ -52,7 +52,7 @@ class _RecoverAccountState extends State<RecoverAccount> {
                   Center(
                     child: Text(
                       'Recover Account',
-                      style: GoogleFonts.imprima(
+                      style: GoogleFonts.montserrat(
                         color: Colors.black,
                         fontSize: 26,
                         fontWeight: FontWeight.w100,
@@ -103,7 +103,7 @@ class _RecoverAccountState extends State<RecoverAccount> {
                 padding: EdgeInsets.only(left: 20.0, right: 20.0),
                 child: Text(
                   'Email',
-                  style: GoogleFonts.imprima(
+                  style: GoogleFonts.montserrat(
                     color: const Color.fromARGB(255, 12, 12, 12),
                     fontSize: 14,
                     fontWeight: FontWeight.w100,

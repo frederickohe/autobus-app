@@ -34,8 +34,12 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
       final revenue = results[0] as double;
       final transactions = results[1] as List<Map<String, dynamic>>;
 
-      final completed = transactions.where((t) => t['status'] == 'completed').length;
-      final pending = transactions.where((t) => t['status'] == 'pending').length;
+      final completed = transactions
+          .where((t) => t['status'] == 'completed')
+          .length;
+      final pending = transactions
+          .where((t) => t['status'] == 'pending')
+          .length;
       final failed = transactions.where((t) => t['status'] == 'failed').length;
       final totalTxn = transactions.length;
       final totalAmount = transactions.fold<double>(
@@ -44,8 +48,21 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
       );
 
       final now = DateTime.now();
-      final monthNames = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      final monthNames = [
+        '',
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec',
+      ];
 
       final growth = totalAmount > 0 && revenue > 0
           ? ((revenue / totalAmount) * 100).clamp(0.0, 100.0)
@@ -131,7 +148,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
 
           Text(
             'Reports',
-            style: GoogleFonts.roboto(
+            style: GoogleFonts.montserrat(
               color: Colors.black,
               fontSize: 20,
               fontWeight: FontWeight.w400,
@@ -210,7 +227,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
       SnackBar(
         content: Text(
           'Star action triggered',
-          style: GoogleFonts.imprima(color: Colors.white),
+          style: GoogleFonts.montserrat(color: Colors.white),
         ),
         backgroundColor: const Color(0xFF2D2D44),
       ),
@@ -237,7 +254,7 @@ class _GrowthWidget extends StatelessWidget {
         children: [
           Text(
             'Growth',
-            style: GoogleFonts.roboto(
+            style: GoogleFonts.montserrat(
               fontSize: 14,
               fontWeight: FontWeight.w500,
               color: Colors.black87,
@@ -268,7 +285,7 @@ class _GrowthWidget extends StatelessWidget {
                     ),
                     Text(
                       '${percentage.toInt()}%',
-                      style: GoogleFonts.roboto(
+                      style: GoogleFonts.montserrat(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
                         color: Colors.black87,
@@ -284,7 +301,7 @@ class _GrowthWidget extends StatelessWidget {
                 children: [
                   Text(
                     'Progress',
-                    style: GoogleFonts.roboto(
+                    style: GoogleFonts.montserrat(
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
                       color: Colors.black87,
@@ -293,7 +310,7 @@ class _GrowthWidget extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     month,
-                    style: GoogleFonts.roboto(
+                    style: GoogleFonts.montserrat(
                       fontSize: 12,
                       fontWeight: FontWeight.w400,
                       color: Colors.black54,
@@ -328,7 +345,7 @@ class _AverageWidget extends StatelessWidget {
         children: [
           Text(
             'Average',
-            style: GoogleFonts.roboto(
+            style: GoogleFonts.montserrat(
               fontSize: 14,
               fontWeight: FontWeight.w500,
               color: Colors.black87,
@@ -356,7 +373,7 @@ class _AverageWidget extends StatelessWidget {
                     children: [
                       Text(
                         'RMA',
-                        style: GoogleFonts.roboto(
+                        style: GoogleFonts.montserrat(
                           fontSize: 11,
                           fontWeight: FontWeight.w400,
                           color: Colors.black54,
@@ -365,7 +382,7 @@ class _AverageWidget extends StatelessWidget {
                       const SizedBox(width: 16),
                       Text(
                         'VAL',
-                        style: GoogleFonts.roboto(
+                        style: GoogleFonts.montserrat(
                           fontSize: 11,
                           fontWeight: FontWeight.w400,
                           color: Colors.black54,
@@ -381,7 +398,7 @@ class _AverageWidget extends StatelessWidget {
                     children: [
                       Text(
                         rmaValue.toString(),
-                        style: GoogleFonts.roboto(
+                        style: GoogleFonts.montserrat(
                           fontSize: 24,
                           fontWeight: FontWeight.w600,
                           color: Colors.black87,
@@ -390,7 +407,7 @@ class _AverageWidget extends StatelessWidget {
                       const SizedBox(width: 24),
                       Text(
                         valValue.toString(),
-                        style: GoogleFonts.roboto(
+                        style: GoogleFonts.montserrat(
                           fontSize: 24,
                           fontWeight: FontWeight.w600,
                           color: Colors.black87,
@@ -441,7 +458,7 @@ class _MetricCard extends StatelessWidget {
           // Title
           Text(
             metric.title,
-            style: GoogleFonts.roboto(
+            style: GoogleFonts.montserrat(
               fontSize: 12,
               fontWeight: FontWeight.w500,
               color: Colors.black87,
@@ -462,7 +479,7 @@ class _MetricCard extends StatelessWidget {
               // Main Value
               Text(
                 metric.value.toString(),
-                style: GoogleFonts.roboto(
+                style: GoogleFonts.montserrat(
                   fontSize: 24,
                   fontWeight: FontWeight.w600,
                   color: Colors.black87,
@@ -481,7 +498,7 @@ class _MetricCard extends StatelessWidget {
                   children: [
                     Text(
                       '${isPositive ? '+' : ''}${metric.percentageChange.toStringAsFixed(2)}%',
-                      style: GoogleFonts.roboto(
+                      style: GoogleFonts.montserrat(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
                         color: changeColor,

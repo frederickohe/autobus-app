@@ -57,7 +57,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                         }
                         return Text(
                           username,
-                          style: GoogleFonts.roboto(
+                          style: GoogleFonts.montserrat(
                             color: Colors.black,
                             fontSize: 20,
                             fontWeight: FontWeight.w300,

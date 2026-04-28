@@ -70,10 +70,10 @@ class _SignupState extends State<Signup> {
                           Center(
                             child: Text(
                               'Sign Up',
-                              style: GoogleFonts.imprima(
+                              style: GoogleFonts.montserrat(
                                 color: Colors.black,
                                 fontSize: 26,
-                                fontWeight: FontWeight.w100,
+                                fontWeight: FontWeight.w300,
                               ),
                             ),
                           ),
@@ -112,10 +112,10 @@ class _SignupState extends State<Signup> {
                         height: MediaQuery.of(context).size.height * 0.1,
                       ),
                       Center(
-                        child: SizedBox(
-                          width: 100,
-                          height: 100,
-                          child: Image.asset('assets/img/bot.png'),
+                        child: const AutobusBranding(
+                          wordmarkFontSize: 26,
+                          markCircleSize: 34,
+                          spacing: 14,
                         ),
                       ),
                       SizedBox(
@@ -134,7 +134,7 @@ class _SignupState extends State<Signup> {
                                 ),
                                 child: Text(
                                   'User Name / Business Name',
-                                  style: GoogleFonts.imprima(
+                                  style: GoogleFonts.montserrat(
                                     color: Colors.black,
                                     fontSize: 14,
                                     fontWeight: FontWeight.w100,
@@ -161,7 +161,7 @@ class _SignupState extends State<Signup> {
                                 ),
                                 child: Text(
                                   'Phone',
-                                  style: GoogleFonts.imprima(
+                                  style: GoogleFonts.montserrat(
                                     color: Colors.black,
                                     fontSize: 14,
                                     fontWeight: FontWeight.w100,
@@ -188,7 +188,7 @@ class _SignupState extends State<Signup> {
                                 ),
                                 child: Text(
                                   'Email',
-                                  style: GoogleFonts.imprima(
+                                  style: GoogleFonts.montserrat(
                                     color: Colors.black,
                                     fontSize: 14,
                                     fontWeight: FontWeight.w100,
@@ -215,7 +215,7 @@ class _SignupState extends State<Signup> {
                                 ),
                                 child: Text(
                                   'Password',
-                                  style: GoogleFonts.imprima(
+                                  style: GoogleFonts.montserrat(
                                     color: Colors.black,
                                     fontSize: 14,
                                     fontWeight: FontWeight.w100,
@@ -279,10 +279,10 @@ class _SignupState extends State<Signup> {
                       Center(
                         child: Text(
                           'Have an Account ?',
-                          style: GoogleFonts.imprima(
+                          style: GoogleFonts.montserrat(
                             color: Colors.black,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w100,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w400,
                           ),
                         ),
                       ),
@@ -304,10 +304,10 @@ class _SignupState extends State<Signup> {
                           },
                           child: Text(
                             'Log In',
-                            style: GoogleFonts.imprima(
+                            style: GoogleFonts.montserrat(
                               color: Colors.black,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w400,
                             ),
                           ),
                         ),

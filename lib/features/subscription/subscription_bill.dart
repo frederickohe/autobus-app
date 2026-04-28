@@ -161,7 +161,7 @@ class _SubscriptionBillPageState extends State<SubscriptionBillPage> {
                       child: Center(
                         child: Text(
                           'Subscription Bill',
-                          style: GoogleFonts.imprima(
+                          style: GoogleFonts.montserrat(
                             color: Colors.white,
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
@@ -176,7 +176,7 @@ class _SubscriptionBillPageState extends State<SubscriptionBillPage> {
                 Text(
                   '${widget.plan.name} \nAccount',
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.imprima(
+                  style: GoogleFonts.montserrat(
                     color: Colors.white,
                     fontSize: 34,
                     fontWeight: FontWeight.w800,
@@ -238,7 +238,7 @@ class _AccountMeta extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    TextStyle metaStyle(Color c) => GoogleFonts.imprima(
+    TextStyle metaStyle(Color c) => GoogleFonts.montserrat(
       color: c,
       fontSize: 13,
       fontWeight: FontWeight.w500,
@@ -249,7 +249,10 @@ class _AccountMeta extends StatelessWidget {
         if (fullname != null && fullname!.isNotEmpty)
           Padding(
             padding: const EdgeInsets.only(bottom: 6),
-            child: Text(fullname!, style: metaStyle(Colors.white.withOpacity(0.9))),
+            child: Text(
+              fullname!,
+              style: metaStyle(Colors.white.withOpacity(0.9)),
+            ),
           ),
         Text(email, style: metaStyle(Colors.white.withOpacity(0.75))),
         if (phone != null && phone!.isNotEmpty) ...[
@@ -333,7 +336,7 @@ class _BillingOptionTile extends StatelessWidget {
           children: [
             Text(
               option.label,
-              style: GoogleFonts.imprima(
+              style: GoogleFonts.montserrat(
                 color: labelColor,
                 fontSize: 16,
                 fontWeight: FontWeight.w800,
@@ -342,7 +345,7 @@ class _BillingOptionTile extends StatelessWidget {
             const SizedBox(height: 2),
             Text(
               option.subtitle,
-              style: GoogleFonts.imprima(
+              style: GoogleFonts.montserrat(
                 color: labelColor.withOpacity(0.85),
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
@@ -351,7 +354,7 @@ class _BillingOptionTile extends StatelessWidget {
             const SizedBox(height: 10),
             Text(
               '\$ ${option.price.toStringAsFixed(0)}',
-              style: GoogleFonts.imprima(
+              style: GoogleFonts.montserrat(
                 color: labelColor,
                 fontSize: 18,
                 fontWeight: FontWeight.w800,
@@ -391,7 +394,7 @@ class _BottomCta extends StatelessWidget {
               const SizedBox(width: 34),
               Text(
                 label,
-                style: GoogleFonts.imprima(
+                style: GoogleFonts.montserrat(
                   color: Colors.white,
                   fontSize: 15,
                   fontWeight: FontWeight.w600,

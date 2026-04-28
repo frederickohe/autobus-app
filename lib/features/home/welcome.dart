@@ -25,7 +25,7 @@ class _WelcomeState extends State<Welcome> {
                       children: [
                         Text(
                           'Operate Business',
-                          style: GoogleFonts.roboto(
+                          style: GoogleFonts.montserrat(
                             color: Colors.white,
                             fontSize: 34,
                             fontWeight: FontWeight.w100,
@@ -33,7 +33,7 @@ class _WelcomeState extends State<Welcome> {
                         ),
                         Text(
                           'With Ai!',
-                          style: GoogleFonts.roboto(
+                          style: GoogleFonts.montserrat(
                             color: Colors.white,
                             fontSize: 92,
                             fontWeight: FontWeight.bold,
