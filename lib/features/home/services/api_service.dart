@@ -390,6 +390,45 @@ class ApiService {
     throw Exception('Upload failed: ${response.statusCode} ${response.body}');
   }
 
+  /// List available files in storage (typically AI training docs).
+  ///
+  /// Backend: `GET /api/v1/storage/list?subfolder=ai-training-files/&extensions=txt,pdf,docx`
+  /// Returns: `{ "files": [ { file_name, file_url, file_size, file_type, last_modified } ] }`
+  Future<List<Map<String, dynamic>>> listStorageFiles({
+    String subfolder = 'ai-training-files/',
+    List<String> extensions = const ['txt', 'pdf', 'docx'],
+    int maxKeys = 200,
+  }) async {
+    final uri = Uri.parse('$baseUrl/storage/list').replace(
+      queryParameters: {
+        'subfolder': subfolder,
+        'extensions': extensions.join(','),
+        'max_keys': maxKeys.toString(),
+      },
+    );
+
+    final response = await httpClient.get(uri);
+    if (response.statusCode == 200) {
+      final decoded = jsonDecode(response.body);
+      final files =
+          (decoded is Map ? (decoded['files'] ?? decoded['data']) : decoded) ??
+          const [];
+      if (files is List) {
+        return files
+            .whereType<Map>()
+            .map((e) => Map<String, dynamic>.from(e))
+            .toList();
+      }
+      return const [];
+    }
+    if (response.statusCode == 401) {
+      throw Exception('Session expired');
+    }
+    throw Exception(
+      'Failed to list storage files: ${response.statusCode} ${response.body}',
+    );
+  }
+
   /// Get available rides with filters
   Future<List<dynamic>> searchRides({
     required String departure,

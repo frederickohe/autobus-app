@@ -7,7 +7,9 @@ import 'chat_state.dart';
 import 'models/chat_message.dart';
 
 class AutoBus extends StatefulWidget {
-  const AutoBus({super.key});
+  final String title;
+
+  const AutoBus({super.key, this.title = 'Orders'});
 
   @override
   State<AutoBus> createState() => _AutoBusState();
@@ -16,7 +18,6 @@ class AutoBus extends StatefulWidget {
 class _AutoBusState extends State<AutoBus> {
   final TextEditingController commandController = TextEditingController();
   String transcription = '';
-  bool isListening = false;
 
   @override
   void initState() {
@@ -94,11 +95,8 @@ class _AutoBusState extends State<AutoBus> {
       create: (_) => ChatBloc(repo),
       child: _AutoBusChatUI(
         user: user,
+        title: widget.title,
         controller: commandController,
-        isListening: isListening,
-        onMicTap: () {
-          setState(() => isListening = !isListening);
-        },
       ),
     );
   }
@@ -106,15 +104,13 @@ class _AutoBusState extends State<AutoBus> {
 
 class _AutoBusChatUI extends StatefulWidget {
   final dynamic user;
+  final String title;
   final TextEditingController controller;
-  final bool isListening;
-  final VoidCallback onMicTap;
 
   const _AutoBusChatUI({
     required this.user,
+    required this.title,
     required this.controller,
-    required this.isListening,
-    required this.onMicTap,
   });
 
   @override
@@ -123,17 +119,24 @@ class _AutoBusChatUI extends StatefulWidget {
 
 class _AutoBusChatUIState extends State<_AutoBusChatUI> {
   late TextEditingController _listen;
+  late VoidCallback _controllerListener;
+
+  static const Color _purple = Color(0xFF2A1447);
+  static const Color _lightGrey = Color(0xFFEBEBEB);
 
   @override
   void initState() {
     super.initState();
     _listen = widget.controller;
-    _listen.addListener(() => setState(() {}));
+    _controllerListener = () {
+      if (mounted) setState(() {});
+    };
+    _listen.addListener(_controllerListener);
   }
 
   @override
   void dispose() {
-    _listen.removeListener(() => setState(() {}));
+    _listen.removeListener(_controllerListener);
     super.dispose();
   }
 
@@ -152,12 +155,186 @@ class _AutoBusChatUIState extends State<_AutoBusChatUI> {
     widget.controller.clear();
   }
 
+  bool get _enableBackendFileBrowse =>
+      widget.title.trim().toLowerCase() == 'chatbot';
+
+  void _insertTextAtCursor(String text) {
+    final controller = widget.controller;
+    final selection = controller.selection;
+    final original = controller.text;
+
+    final start = selection.isValid ? selection.start : original.length;
+    final end = selection.isValid ? selection.end : original.length;
+
+    final newText = original.replaceRange(start, end, text);
+    controller.value = controller.value.copyWith(
+      text: newText,
+      selection: TextSelection.collapsed(offset: start + text.length),
+      composing: TextRange.empty,
+    );
+  }
+
+  Future<void> _openBackendFilesPicker() async {
+    final api = context.read<ApiService>();
+
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 44,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    const Icon(Icons.folder_open_rounded, color: _purple),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'Choose a file',
+                        style: GoogleFonts.montserrat(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: _purple,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                FutureBuilder<List<Map<String, dynamic>>>(
+                  future: api.listStorageFiles(
+                    subfolder: 'ai-training-files/',
+                    extensions: const ['txt', 'pdf', 'docx'],
+                    maxKeys: 200,
+                  ),
+                  builder: (context, snap) {
+                    if (snap.connectionState == ConnectionState.waiting) {
+                      return const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 22),
+                        child: Center(child: CircularProgressIndicator()),
+                      );
+                    }
+                    if (snap.hasError) {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        child: Text(
+                          'Could not load files. ${snap.error}',
+                          style: GoogleFonts.montserrat(
+                            fontSize: 12,
+                            color: Colors.red,
+                          ),
+                        ),
+                      );
+                    }
+
+                    final files = snap.data ?? const [];
+                    if (files.isEmpty) {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        child: Text(
+                          'No files found.',
+                          style: GoogleFonts.montserrat(
+                            fontSize: 12,
+                            color: _purple.withValues(alpha: 0.65),
+                          ),
+                        ),
+                      );
+                    }
+
+                    final maxHeight = MediaQuery.of(context).size.height * 0.55;
+                    return SizedBox(
+                      height: maxHeight,
+                      child: ListView.separated(
+                        shrinkWrap: true,
+                        itemCount: files.length,
+                        separatorBuilder: (_, __) => Divider(
+                          color: Colors.black.withValues(alpha: 0.08),
+                        ),
+                        itemBuilder: (context, index) {
+                          final f = files[index];
+                          final name = (f['file_name'] ?? '').toString();
+                          final url = (f['file_url'] ?? '').toString();
+                          final type = (f['file_type'] ?? '').toString();
+
+                          IconData icon = Icons.insert_drive_file_outlined;
+                          final lower = name.toLowerCase();
+                          if (lower.endsWith('.pdf'))
+                            icon = Icons.picture_as_pdf;
+                          if (lower.endsWith('.docx') ||
+                              lower.endsWith('.doc')) {
+                            icon = Icons.description_outlined;
+                          }
+                          if (lower.endsWith('.txt'))
+                            icon = Icons.text_snippet_outlined;
+
+                          return ListTile(
+                            dense: true,
+                            leading: Icon(icon, color: _purple),
+                            title: Text(
+                              name.isEmpty ? 'Unnamed file' : name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.montserrat(
+                                fontSize: 13,
+                                color: _purple,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            subtitle: Text(
+                              type.isNotEmpty
+                                  ? type
+                                  : (url.isNotEmpty ? 'link' : ''),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.montserrat(
+                                fontSize: 11,
+                                color: _purple.withValues(alpha: 0.55),
+                              ),
+                            ),
+                            onTap: () {
+                              Navigator.pop(context);
+                              final token = url.isNotEmpty
+                                  ? url
+                                  : (name.isNotEmpty ? name : '');
+                              if (token.isNotEmpty) {
+                                final insert = ' $token ';
+                                _insertTextAtCursor(insert);
+                              }
+                            },
+                          );
+                        },
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = widget.user;
     final controller = widget.controller;
-    final isListening = widget.isListening;
-    final onMicTap = widget.onMicTap;
+    final title = widget.title;
     String username = "User";
 
     if (user is Map && user.containsKey('fullname')) {
@@ -165,56 +342,61 @@ class _AutoBusChatUIState extends State<_AutoBusChatUI> {
     }
 
     return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFFF4F4F4), Color(0xFFEDEDED), Color(0xFFE6E6E6)],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-        ),
-      ),
+      color: Colors.white,
       child: SafeArea(
         child: Column(
           children: [
-            const SizedBox(height: 20),
+            const SizedBox(height: 42),
 
-            /// 🔝 HEADER
+            /// 🔝 HEADER (Figma: 64x64 circles, centered title)
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 18),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  /// Back
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: Container(
-                      width: 48,
-                      height: 48,
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: CustColors.mainCol,
-                      ),
-                      child: const Icon(
-                        Icons.arrow_back_ios_new,
-                        color: Colors.white,
-                        size: 18,
+              padding: const EdgeInsets.symmetric(horizontal: 34),
+              child: SizedBox(
+                height: 54,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: GestureDetector(
+                        onTap: () => Navigator.pop(context),
+                        child: Container(
+                          width: 54,
+                          height: 54,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Color(0xFF2A1447),
+                            border: Border.all(
+                              color: Color(0xFFA92FEB),
+                              width: 0.5,
+                            ),
+                          ),
+                          child: const Icon(
+                            Icons.arrow_back_ios_new,
+                            color: Colors.white,
+                            size: 18,
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-
-                  /// Title
-                  Text(
-                    "Autobus on Orders",
-                    style: GoogleFonts.montserrat(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w400,
-                      color: Colors.black87,
+                    Text(
+                      '$title',
+                      style: GoogleFonts.montserrat(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w400,
+                        color: _purple,
+                      ),
                     ),
-                  ),
-                ],
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: _avatarButton(user),
+                    ),
+                  ],
+                ),
               ),
             ),
 
-            const SizedBox(height: 30),
+            const SizedBox(height: 26),
 
             /// 💬 CHAT AREA
             Expanded(
@@ -230,6 +412,7 @@ class _AutoBusChatUIState extends State<_AutoBusChatUI> {
 
                           if (msgs.isEmpty) {
                             return ListView(
+                              padding: const EdgeInsets.only(top: 8),
                               children: [
                                 Align(
                                   alignment: Alignment.centerLeft,
@@ -273,45 +456,93 @@ class _AutoBusChatUIState extends State<_AutoBusChatUI> {
 
             /// ⌨️ INPUT BAR
             Container(
-              margin: const EdgeInsets.all(18),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              margin: const EdgeInsets.fromLTRB(15, 0, 15, 16),
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.85),
-                borderRadius: BorderRadius.circular(24),
+                color: _lightGrey,
+                borderRadius: BorderRadius.circular(25),
               ),
-              child: Row(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  /// Plus Icon
-                  const Icon(Icons.add, color: Colors.black87),
-
-                  const SizedBox(width: 10),
-
-                  /// Input
-                  Expanded(
+                  /// Input (expands upward as it grows)
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxHeight: 140),
                     child: TextField(
                       controller: controller,
-                      decoration: const InputDecoration(
-                        hintText: "Type Your Command Autobus …",
+                      cursorColor: _purple,
+                      keyboardType: TextInputType.multiline,
+                      textInputAction: TextInputAction.newline,
+                      minLines: 1,
+                      maxLines: null,
+                      decoration: InputDecoration(
+                        hintText: "Type Your Command Autobus ...",
+                        hintStyle: GoogleFonts.montserrat(
+                          color: _purple.withValues(alpha: 0.55),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w400,
+                        ),
                         border: InputBorder.none,
+                        isDense: true,
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                      style: GoogleFonts.montserrat(
+                        color: _purple,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w400,
                       ),
                     ),
                   ),
 
-                  /// Send Button (shows if text is not empty)
-                  if (controller.text.isNotEmpty)
-                    GestureDetector(
-                      onTap: _sendMessage,
-                      child: const Icon(Icons.send, color: CustColors.mainCol),
-                    )
-                  else
-                    /// Mic (shows if text is empty)
-                    GestureDetector(
-                      onTap: onMicTap,
-                      child: Icon(
-                        isListening ? Icons.mic_off : Icons.mic,
-                        color: CustColors.mainCol,
+                  const SizedBox(height: 10),
+
+                  Row(
+                    children: [
+                      /// Plus Icon
+                      IconButton(
+                        visualDensity: VisualDensity.compact,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        onPressed: () {},
+                        icon: const Icon(
+                          Icons.add_rounded,
+                          color: _purple,
+                          size: 26,
+                        ),
                       ),
-                    ),
+
+                      if (_enableBackendFileBrowse) ...[
+                        const SizedBox(width: 6),
+                        IconButton(
+                          visualDensity: VisualDensity.compact,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                          tooltip: 'Browse files',
+                          onPressed: _openBackendFilesPicker,
+                          icon: const Icon(
+                            Icons.folder_open_rounded,
+                            color: _purple,
+                            size: 24,
+                          ),
+                        ),
+                      ],
+
+                      const Spacer(),
+
+                      /// Send (enabled only when there is text)
+                      GestureDetector(
+                        onTap:
+                            controller.text.trim().isEmpty ? null : _sendMessage,
+                        child: Icon(
+                          Icons.send_rounded,
+                          size: 24,
+                          color: controller.text.trim().isEmpty
+                              ? _purple.withValues(alpha: 0.35)
+                              : _purple,
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),
@@ -321,17 +552,69 @@ class _AutoBusChatUIState extends State<_AutoBusChatUI> {
     );
   }
 
+  Widget _avatarButton(dynamic user) {
+    String? avatarUrl;
+    String initials = 'U';
+
+    if (user is Map) {
+      final name = (user['fullname'] ?? user['email'] ?? 'User').toString();
+      initials = name.trim().isNotEmpty
+          ? name.trim()[0].toUpperCase()
+          : initials;
+      avatarUrl =
+          (user['avatar'] ??
+                  user['avatar_url'] ??
+                  user['photo'] ??
+                  user['photo_url'])
+              ?.toString();
+      if (avatarUrl != null && avatarUrl.trim().isEmpty) avatarUrl = null;
+    }
+
+    return Container(
+      width: 54,
+      height: 54,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: Color(0xFF2A1447),
+        border: Border.all(color: Color(0xFFA92FEB), width: 0.5),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(4),
+        child: CircleAvatar(
+          backgroundColor: const Color(0xFF2A1447),
+          backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,
+          child: avatarUrl == null
+              ? Text(
+                  initials,
+                  style: GoogleFonts.montserrat(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w500,
+                  ),
+                )
+              : null,
+        ),
+      ),
+    );
+  }
+
   /// 💬 Bubble Widget
   Widget _chatBubble(String text, {required bool isUser}) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      constraints: const BoxConstraints(maxWidth: 260),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: isUser
-            ? Colors.white.withOpacity(0.9)
-            : Colors.white.withOpacity(0.9),
+        color: _lightGrey,
         borderRadius: BorderRadius.circular(14),
       ),
-      child: Text(text, style: const TextStyle(fontSize: 14)),
+      child: Text(
+        text,
+        style: GoogleFonts.montserrat(
+          fontSize: 14,
+          height: 1.35,
+          color: _purple,
+          fontWeight: FontWeight.w400,
+        ),
+      ),
     );
   }
 }

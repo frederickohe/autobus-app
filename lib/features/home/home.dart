@@ -32,13 +32,13 @@ class _HomeState extends State<Home> {
       HomeMenuItem("Orders", Carbon.ibm_watson_orders, () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => const AutoBus()),
+          MaterialPageRoute(builder: (_) => const AutoBus(title: 'Orders')),
         );
       }),
       HomeMenuItem("Chatbot", Mdi.robot_outline, () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => const AutoBus()),
+          MaterialPageRoute(builder: (_) => const AutoBus(title: 'Chatbot')),
         );
       }),
       HomeMenuItem("Marketing", Icons8.advertising, () {
@@ -47,7 +47,12 @@ class _HomeState extends State<Home> {
           MaterialPageRoute(builder: (_) => const DigitalMarketingPage()),
         );
       }),
-      HomeMenuItem("Queries", Carbon.query, () {}),
+      HomeMenuItem("Queries", Carbon.query, () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const AutoBus(title: 'Queries')),
+        );
+      }),
       HomeMenuItem("Products", Icons.shopping_bag_outlined, () {}),
       HomeMenuItem("Messages", Mdi.message_outline, () {}),
       HomeMenuItem("Email", Mdi.email_outline, () {}),
