@@ -29,6 +29,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<SendResetCodeEvent>(_onSendResetCode);
     on<RefreshTokenEvent>(_onRefreshToken);
     on<CheckSessionEvent>(_onCheckSession);
+    on<VerifySignupOtpEvent>(_onVerifySignupOtp);
+    on<ResendSignupOtpEvent>(_onResendSignupOtp);
   }
 
   // Helper method to get headers with auth token
@@ -100,10 +102,17 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         Uri.parse('${AppConfig.backendUrl}/api/v1/auth/signup'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
-          'fullname': event.fullname,
+          // Backend DTO expects `fullname` (we collect it as username in UI).
+          'fullname': event.username,
           'phone': event.phone,
           'email': event.email,
           'password': event.password,
+          'company': event.company,
+          'current_branch': event.currentBranch,
+          'address': event.address,
+          'location': event.location,
+          'ghana_card': event.ghanaCard,
+          'staff_id': event.staffId,
         }),
       );
 
@@ -141,6 +150,80 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       }
     } catch (e) {
       emit(AuthError(message: e.toString(), source: 'signup'));
+    }
+  }
+
+  Future<void> _onVerifySignupOtp(
+    VerifySignupOtpEvent event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(AuthLoading());
+    try {
+      final response = await http.post(
+        Uri.parse('${AppConfig.backendUrl}/api/v1/auth/verify-otp'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({'phone': event.phone, 'otp': event.otp}),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        emit(
+          SignupOtpVerified(
+            phone: event.phone,
+            message: (data is Map && data['message'] != null)
+                ? data['message'].toString()
+                : 'OTP verified successfully',
+          ),
+        );
+      } else {
+        String errorMsg = 'OTP verification failed';
+        try {
+          final errorData = json.decode(response.body);
+          if (errorData is Map && errorData['detail'] != null) {
+            errorMsg = errorData['detail'];
+          }
+        } catch (_) {}
+        emit(AuthError(message: errorMsg, source: 'signup_otp'));
+      }
+    } catch (e) {
+      emit(AuthError(message: e.toString(), source: 'signup_otp'));
+    }
+  }
+
+  Future<void> _onResendSignupOtp(
+    ResendSignupOtpEvent event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(AuthLoading());
+    try {
+      final response = await http.post(
+        Uri.parse('${AppConfig.backendUrl}/api/v1/otp/send'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({'phone': event.phone}),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        emit(
+          SignupOtpResent(
+            phone: event.phone,
+            message: (data is Map && data['message'] != null)
+                ? data['message'].toString()
+                : 'OTP resent successfully',
+          ),
+        );
+      } else {
+        String errorMsg = 'Failed to resend OTP';
+        try {
+          final errorData = json.decode(response.body);
+          if (errorData is Map && errorData['detail'] != null) {
+            errorMsg = errorData['detail'];
+          }
+        } catch (_) {}
+        emit(AuthError(message: errorMsg, source: 'signup_otp_resend'));
+      }
+    } catch (e) {
+      emit(AuthError(message: e.toString(), source: 'signup_otp_resend'));
     }
   }
 

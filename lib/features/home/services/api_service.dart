@@ -218,7 +218,7 @@ class ApiService {
     }
   }
 
-  Future<String?> initializePaystackTransaction({
+  Future<PaystackInitResult?> initializePaystackTransaction({
     required String email,
     required double amount,
   }) async {
@@ -249,7 +249,7 @@ class ApiService {
 
     if (response.statusCode == 200 || response.statusCode == 201) {
       final data = jsonDecode(response.body);
-      return data['access_code'] as String?;
+      return PaystackInitResult.fromJson(data);
     }
     return null;
   }
@@ -407,5 +407,37 @@ class ApiService {
           .toString();
     }
     throw Exception('Agent error: ${response.statusCode}');
+  }
+}
+
+class PaystackInitResult {
+  final String authorizationUrl;
+  final String accessCode;
+  final String reference;
+
+  const PaystackInitResult({
+    required this.authorizationUrl,
+    required this.accessCode,
+    required this.reference,
+  });
+
+  factory PaystackInitResult.fromJson(dynamic json) {
+    if (json is! Map<String, dynamic>) {
+      throw Exception('Invalid Paystack init response');
+    }
+
+    final authorizationUrl = (json['authorization_url'] ?? '').toString();
+    final accessCode = (json['access_code'] ?? '').toString();
+    final reference = (json['reference'] ?? '').toString();
+
+    if (authorizationUrl.isEmpty || reference.isEmpty) {
+      throw Exception('Missing Paystack authorization_url/reference');
+    }
+
+    return PaystackInitResult(
+      authorizationUrl: authorizationUrl,
+      accessCode: accessCode,
+      reference: reference,
+    );
   }
 }

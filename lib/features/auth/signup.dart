@@ -10,11 +10,14 @@ class Signup extends StatefulWidget {
 class _SignupState extends State<Signup> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
-  final TextEditingController nameController = TextEditingController();
+  final TextEditingController usernameController = TextEditingController();
   final TextEditingController phoneController = TextEditingController();
-  final TextEditingController profilePictureController =
-      TextEditingController();
-  final TextEditingController bioController = TextEditingController();
+  final TextEditingController companyController = TextEditingController();
+  final TextEditingController currentBranchController = TextEditingController();
+  final TextEditingController addressController = TextEditingController();
+  final TextEditingController locationController = TextEditingController();
+  final TextEditingController ghanaCardController = TextEditingController();
+  final TextEditingController staffIdController = TextEditingController();
 
   // Add this variable to track password visibility
   bool _isPasswordVisible = false;
@@ -42,12 +45,12 @@ class _SignupState extends State<Signup> {
           BlocListener<AuthBloc, AuthState>(
             listener: (context, state) {
               if (state is Registered) {
-                context.read<SuccessBloc>().add(
-                  ShowSuccessEvent(
-                    message: 'Account creation was successful!',
-                    nextScreen: 'subscribe',
-                    userEmail: emailController.text
-                        .trim(), // capture email here
+                Navigator.of(context).pushReplacement(
+                  PageTransition(
+                    type: PageTransitionType.rightToLeftWithFade,
+                    duration: const Duration(milliseconds: 1000),
+                    reverseDuration: const Duration(milliseconds: 600),
+                    child: SignupOtp(phone: phoneController.text.trim()),
                   ),
                 );
               }
@@ -133,7 +136,7 @@ class _SignupState extends State<Signup> {
                                   right: 20.0,
                                 ),
                                 child: Text(
-                                  'User Name / Business Name',
+                                  'Username',
                                   style: GoogleFonts.montserrat(
                                     color: Colors.black,
                                     fontSize: 14,
@@ -147,7 +150,7 @@ class _SignupState extends State<Signup> {
                                   right: 20.0,
                                 ),
                                 child: TextField(
-                                  controller: nameController,
+                                  controller: usernameController,
                                   decoration: const InputDecoration(
                                     border: UnderlineInputBorder(),
                                   ),
@@ -175,6 +178,168 @@ class _SignupState extends State<Signup> {
                                 ),
                                 child: TextField(
                                   controller: phoneController,
+                                  decoration: const InputDecoration(
+                                    border: UnderlineInputBorder(),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 20),
+                              Padding(
+                                padding: EdgeInsets.only(
+                                  left: 20.0,
+                                  right: 20.0,
+                                ),
+                                child: Text(
+                                  'Current Branch',
+                                  style: GoogleFonts.montserrat(
+                                    color: Colors.black,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w100,
+                                  ),
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.only(
+                                  left: 20.0,
+                                  right: 20.0,
+                                ),
+                                child: TextField(
+                                  controller: currentBranchController,
+                                  decoration: const InputDecoration(
+                                    border: UnderlineInputBorder(),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 20),
+                              Padding(
+                                padding: EdgeInsets.only(
+                                  left: 20.0,
+                                  right: 20.0,
+                                ),
+                                child: Text(
+                                  'Company',
+                                  style: GoogleFonts.montserrat(
+                                    color: Colors.black,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w100,
+                                  ),
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.only(
+                                  left: 20.0,
+                                  right: 20.0,
+                                ),
+                                child: TextField(
+                                  controller: companyController,
+                                  decoration: const InputDecoration(
+                                    border: UnderlineInputBorder(),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 20),
+                              Padding(
+                                padding: EdgeInsets.only(
+                                  left: 20.0,
+                                  right: 20.0,
+                                ),
+                                child: Text(
+                                  'Address',
+                                  style: GoogleFonts.montserrat(
+                                    color: Colors.black,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w100,
+                                  ),
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.only(
+                                  left: 20.0,
+                                  right: 20.0,
+                                ),
+                                child: TextField(
+                                  controller: addressController,
+                                  decoration: const InputDecoration(
+                                    border: UnderlineInputBorder(),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 20),
+                              Padding(
+                                padding: EdgeInsets.only(
+                                  left: 20.0,
+                                  right: 20.0,
+                                ),
+                                child: Text(
+                                  'Location',
+                                  style: GoogleFonts.montserrat(
+                                    color: Colors.black,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w100,
+                                  ),
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.only(
+                                  left: 20.0,
+                                  right: 20.0,
+                                ),
+                                child: TextField(
+                                  controller: locationController,
+                                  decoration: const InputDecoration(
+                                    border: UnderlineInputBorder(),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 20),
+                              Padding(
+                                padding: EdgeInsets.only(
+                                  left: 20.0,
+                                  right: 20.0,
+                                ),
+                                child: Text(
+                                  'Ghana Card',
+                                  style: GoogleFonts.montserrat(
+                                    color: Colors.black,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w100,
+                                  ),
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.only(
+                                  left: 20.0,
+                                  right: 20.0,
+                                ),
+                                child: TextField(
+                                  controller: ghanaCardController,
+                                  decoration: const InputDecoration(
+                                    border: UnderlineInputBorder(),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 20),
+                              Padding(
+                                padding: EdgeInsets.only(
+                                  left: 20.0,
+                                  right: 20.0,
+                                ),
+                                child: Text(
+                                  'Staff ID',
+                                  style: GoogleFonts.montserrat(
+                                    color: Colors.black,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w100,
+                                  ),
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.only(
+                                  left: 20.0,
+                                  right: 20.0,
+                                ),
+                                child: TextField(
+                                  controller: staffIdController,
                                   decoration: const InputDecoration(
                                     border: UnderlineInputBorder(),
                                   ),
@@ -229,8 +394,7 @@ class _SignupState extends State<Signup> {
                                 ),
                                 child: TextField(
                                   controller: passwordController,
-                                  obscureText:
-                                      !_isPasswordVisible, // Control password visibility
+                                  obscureText: !_isPasswordVisible,
                                   decoration: InputDecoration(
                                     border: const UnderlineInputBorder(),
                                     suffixIcon: IconButton(
@@ -241,7 +405,6 @@ class _SignupState extends State<Signup> {
                                         color: Colors.grey,
                                       ),
                                       onPressed: () {
-                                        // Toggle password visibility
                                         setState(() {
                                           _isPasswordVisible =
                                               !_isPasswordVisible;
@@ -256,6 +419,7 @@ class _SignupState extends State<Signup> {
                           ),
                         ),
                       ),
+                      const SizedBox(height: 20),
                       Center(
                         child: BlocBuilder<AuthBloc, AuthState>(
                           builder: (context, state) {
@@ -263,10 +427,17 @@ class _SignupState extends State<Signup> {
                               onPressed: () async {
                                 context.read<AuthBloc>().add(
                                   SignupEvent(
-                                    fullname: nameController.text,
-                                    phone: phoneController.text,
-                                    email: emailController.text,
+                                    username: usernameController.text.trim(),
+                                    phone: phoneController.text.trim(),
+                                    email: emailController.text.trim(),
                                     password: passwordController.text,
+                                    company: companyController.text.trim(),
+                                    currentBranch: currentBranchController.text
+                                        .trim(),
+                                    address: addressController.text.trim(),
+                                    location: locationController.text.trim(),
+                                    ghanaCard: ghanaCardController.text.trim(),
+                                    staffId: staffIdController.text.trim(),
                                   ),
                                 );
                               },

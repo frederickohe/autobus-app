@@ -87,6 +87,26 @@ class PasswordResetSuccess extends AuthState {
   List<Object> get props => [message];
 }
 
+class SignupOtpVerified extends AuthState {
+  final String message;
+  final String phone;
+
+  const SignupOtpVerified({required this.phone, required this.message});
+
+  @override
+  List<Object> get props => [phone, message];
+}
+
+class SignupOtpResent extends AuthState {
+  final String message;
+  final String phone;
+
+  const SignupOtpResent({required this.phone, required this.message});
+
+  @override
+  List<Object> get props => [phone, message];
+}
+
 // Session Management States
 class TokenRefreshing extends AuthState {
   const TokenRefreshing();

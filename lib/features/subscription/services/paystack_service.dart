@@ -1,4 +1,5 @@
 import 'dart:developer';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_paystack_plus/flutter_paystack_plus.dart';
 import 'package:autobus/config/app_config.dart';
@@ -14,12 +15,13 @@ class PaystackService {
     required BuildContext context,
     required String email,
     required String reference,
+    required String authorizationUrl,
     String? planCode, // pass this for subscriptions
     int? amount, // pass this for one-time payments
     String currency = 'GHS', // change to NGN, USD etc as needed
     required String callbackUrl,
-    required VoidCallback onSuccess,
-    required VoidCallback onCancelled,
+    required Future<void> Function() onSuccess,
+    required Future<void> Function() onCancelled,
   }) async {
 
     try {
@@ -27,13 +29,14 @@ class PaystackService {
         context: context,
         publicKey: AppConfig.paystackPublicKey,
         customerEmail: email,
-        reference: reference,
-        plan: planCode,
         amount: amount != null ? (amount * 100).toString() : '0',
+        reference: reference,
+        authorizationUrl: authorizationUrl,
         currency: currency,
+        plan: planCode,
         callBackUrl: callbackUrl,
-        onSuccess: onSuccess,
-        onClosed: onCancelled,
+        onSuccess: () => unawaited(onSuccess()),
+        onClosed: () => unawaited(onCancelled()),
       );
       return reference;
     } catch (e) {

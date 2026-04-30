@@ -31,6 +31,7 @@ export 'package:autobus/features/auth/logorsign.dart';
 export 'package:autobus/features/initial_ui/splash.dart';
 export 'package:autobus/features/auth/signin.dart';
 export 'package:autobus/features/auth/signup.dart';
+export 'package:autobus/features/auth/signup_otp.dart';
 export 'package:autobus/features/initial_ui/initial.dart';
 export 'package:autobus/features/home/home.dart';
 export 'package:autobus/features/auth/authinit.dart';

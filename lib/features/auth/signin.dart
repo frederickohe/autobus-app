@@ -17,16 +17,15 @@ class _SigninState extends State<Signin> {
       backgroundColor: Colors.white,
       body: BlocConsumer<AuthBloc, AuthState>(
         listener: (context, state) {
-          // Handle successful login
           if (state is Authenticated) {
-            // Navigate to welcome page
+            // Ensure something happens even when `Signin` is opened directly
+            // (not rendered inside `AuthWrapper`). `AuthWrapper` contains the
+            // subscription gate.
             Navigator.of(context).pushAndRemoveUntil(
-              MaterialPageRoute(builder: (_) => const Welcome()),
+              MaterialPageRoute(builder: (_) => const AuthWrapper()),
               (route) => false,
             );
-          }
-          // Handle errors
-          else if (state is AuthError && state.source == 'login') {
+          } else if (state is AuthError && state.source == 'login') {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(

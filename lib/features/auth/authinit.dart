@@ -1,4 +1,5 @@
 import 'package:autobus/barrel.dart';
+import 'package:autobus/features/subscription/subscription_guard.dart';
 
 class AuthWrapper extends StatelessWidget {
   const AuthWrapper({super.key});
@@ -29,7 +30,11 @@ class AuthWrapper extends StatelessWidget {
       child: BlocBuilder<AuthBloc, AuthState>(
         builder: (context, state) {
           if (state is Authenticated) {
-            return const Welcome();
+            final dynamic u = state.user;
+            final userMap = (u is Map<String, dynamic>)
+                ? u
+                : (u is Map ? Map<String, dynamic>.from(u) : <String, dynamic>{});
+            return SubscriptionGuard(user: userMap);
           } else if (state is Unauthenticated) {
             return const Signin();
           } else if (state is SessionExpired) {

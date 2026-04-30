@@ -23,6 +23,60 @@ class _SubscriptionBillPageState extends State<SubscriptionBillPage> {
   String? _fullname;
   String? _phone;
 
+  Future<void> _finalizeSubscription({
+    required ApiService api,
+    required ScaffoldMessengerState messenger,
+    required SuccessBloc successBloc,
+    required NavigatorState navigator,
+    required String reference,
+  }) async {
+    final verified = await api.verifyPaystackTransaction(reference);
+
+    if (!verified) {
+      if (!mounted) return;
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Payment verification failed.')),
+      );
+      return;
+    }
+
+    final subscribed = await api.subscribeToPlan(
+      planId: widget.plan.id.toString(),
+      billingId: _selected.id.toString(),
+      reference: reference,
+    );
+
+    if (!subscribed) {
+      if (!mounted) return;
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Subscription activation failed.')),
+      );
+      return;
+    }
+
+    await _storage.saveSelection(
+      planId: widget.plan.id.toString(),
+      billingId: _selected.id,
+    );
+    await _storage.savePlanSnapshot(widget.plan, _selected);
+
+    if (!mounted) return;
+    successBloc.add(
+      ShowSuccessEvent(
+        message: 'Your ${widget.plan.name} subscription is active!',
+        nextScreen: 'welcome',
+      ),
+    );
+
+    navigator.pushReplacement(
+      PageTransition(
+        type: PageTransitionType.rightToLeftWithFade,
+        duration: const Duration(milliseconds: 600),
+        child: const Welcome(),
+      ),
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -45,93 +99,83 @@ class _SubscriptionBillPageState extends State<SubscriptionBillPage> {
     setState(() => _isLoading = true);
 
     try {
+      final api = context.read<ApiService>();
+      final paystack = context.read<PaystackService>();
+      final messenger = ScaffoldMessenger.of(context);
+      final successBloc = context.read<SuccessBloc>();
+      final navigator = Navigator.of(context);
+
       final userEmail = widget.userEmail;
       debugPrint('email resolved: "$userEmail"');
 
-      // Step 1 — initialize transaction on your backend
-      final accessCode = await context
-          .read<ApiService>()
-          .initializePaystackTransaction(
-            email: userEmail,
-            amount: _selected.price,
-          );
+      if (AppConfig.paystackCallbackUrl.isEmpty) {
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Missing PAYSTACK_CALLBACK_URL. Set it in .env and ensure it matches your Paystack dashboard redirect/callback.',
+            ),
+          ),
+        );
+      }
 
-      if (!mounted || accessCode == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
+      // Step 1 — initialize transaction on your backend
+      final init = await api.initializePaystackTransaction(
+        email: userEmail,
+        amount: _selected.price,
+      );
+
+      if (!mounted || init == null) {
+        messenger.showSnackBar(
           const SnackBar(content: Text('Failed to initialize payment.')),
         );
         return;
       }
 
-      String? paymentReference;
+      var handled = false;
 
       // Step 2 — launch Paystack UI
-      await context.read<PaystackService>().launch(
+      await paystack.launch(
         context: context,
         email: userEmail,
-        reference: DateTime.now().millisecondsSinceEpoch.toString(),
+        reference: init.reference,
         amount: _selected.price.toInt(),
         callbackUrl: AppConfig.paystackCallbackUrl,
+        authorizationUrl: init.authorizationUrl,
         onSuccess: () async {
-          final verified = await context
-              .read<ApiService>()
-              .verifyPaystackTransaction(accessCode);
-
-          if (!verified) {
-            if (!mounted) return;
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Payment verification failed.')),
-            );
-            return;
-          }
-
-          final subscribed = await context.read<ApiService>().subscribeToPlan(
-            planId: widget.plan.id.toString(),
-            billingId: _selected.id.toString(),
-            reference: accessCode,
-          );
-
-          if (!subscribed) {
-            if (!mounted) return;
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Subscription activation failed.')),
-            );
-            return;
-          }
-
-          await _storage.saveSelection(
-            planId: widget.plan.id.toString(),
-            billingId: _selected.id,
-          );
-          await _storage.savePlanSnapshot(widget.plan, _selected);
-
-          if (!mounted) return;
-          context.read<SuccessBloc>().add(
-            ShowSuccessEvent(
-              message: 'Your ${widget.plan.name} subscription is active!',
-              nextScreen: 'login',
-            ),
-          );
-          Navigator.of(context).pushReplacement(
-            PageTransition(
-              type: PageTransitionType.rightToLeftWithFade,
-              duration: const Duration(milliseconds: 1000),
-              child: const Success(),
-            ),
+          if (handled) return;
+          handled = true;
+          await _finalizeSubscription(
+            api: api,
+            messenger: messenger,
+            successBloc: successBloc,
+            navigator: navigator,
+            reference: init.reference,
           );
         },
-        onCancelled: () {
+        onCancelled: () async {
           if (!mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
+          messenger.showSnackBar(
             const SnackBar(content: Text('Payment was not completed.')),
           );
         },
       );
+
+      // Fallback: if callback URL was not detected, still verify after WebView closes.
+      if (!handled) {
+        handled = true;
+        await _finalizeSubscription(
+          api: api,
+          messenger: messenger,
+          successBloc: successBloc,
+          navigator: navigator,
+          reference: init.reference,
+        );
+      }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('An error occurred: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('An error occurred: $e')),
+        );
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);

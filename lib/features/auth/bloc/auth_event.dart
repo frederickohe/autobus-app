@@ -18,20 +18,62 @@ class LoginEvent extends AuthEvent {
 }
 
 class SignupEvent extends AuthEvent {
-  final String fullname;
+  final String username;
   final String phone;
   final String email;
   final String password;
+  final String company;
+  final String currentBranch;
+  final String address;
+  final String location;
+  final String ghanaCard;
+  final String staffId;
 
   const SignupEvent({
-    required this.fullname,
-    required this.phone,
     required this.email,
     required this.password,
+    required this.username,
+    required this.phone,
+    required this.company,
+    required this.currentBranch,
+    required this.address,
+    required this.location,
+    required this.ghanaCard,
+    required this.staffId,
   });
 
   @override
-  List<Object> get props => [fullname, phone, email, password];
+  List<Object> get props => [
+    username,
+    phone,
+    email,
+    password,
+    company,
+    currentBranch,
+    address,
+    location,
+    ghanaCard,
+    staffId,
+  ];
+}
+
+class VerifySignupOtpEvent extends AuthEvent {
+  final String phone;
+  final String otp;
+
+  const VerifySignupOtpEvent({required this.phone, required this.otp});
+
+  @override
+  List<Object> get props => [phone, otp];
+}
+
+class ResendSignupOtpEvent extends AuthEvent {
+  final String phone;
+
+  const ResendSignupOtpEvent({required this.phone});
+
+  @override
+  List<Object> get props => [phone];
 }
 
 class CheckAuthEvent extends AuthEvent {}
