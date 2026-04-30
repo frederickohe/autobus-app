@@ -6,7 +6,12 @@ class Security extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final List<SecurityMenuItem> menuItems = [
-      SecurityMenuItem("Change Password", Icons.person_outline, () {}),
+      SecurityMenuItem("Change Password", Icons.person_outline, () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const RecoverAccount()),
+        );
+      }),
       SecurityMenuItem("2FA", Icons.notifications_none, () {}),
     ];
 
@@ -114,7 +119,7 @@ class Security extends StatelessWidget {
 class NotificationMenuTile extends StatelessWidget {
   final SecurityMenuItem item;
 
-  const NotificationMenuTile({required this.item});
+  const NotificationMenuTile({super.key, required this.item});
 
   @override
   Widget build(BuildContext context) {
@@ -140,7 +145,7 @@ class SecurityMenuItem {
 
 class NotificationBackground extends StatelessWidget {
   final Widget child;
-  const NotificationBackground({required this.child});
+  const NotificationBackground({super.key, required this.child});
 
   @override
   Widget build(BuildContext context) {

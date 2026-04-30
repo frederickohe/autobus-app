@@ -1,6 +1,5 @@
 import 'package:autobus/barrel.dart';
 
-import '../models/subscription_plan.dart';
 
 class SubscriptionStorage {
   static const _kPlanId = 'subscription.planId';
@@ -33,7 +32,7 @@ class SubscriptionStorage {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(
       'subscription.snapshot',
-      jsonEncode({'plan': plan.toJson(), 'billing': billing}),
+      jsonEncode({'plan': plan.toJson(), 'billing': billing.toJson()}),
     );
   }
 }

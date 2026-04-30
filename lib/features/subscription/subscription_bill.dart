@@ -21,6 +21,7 @@ class _SubscriptionBillPageState extends State<SubscriptionBillPage> {
   bool _isLoading = false;
 
   String? _fullname;
+  String? _email;
   String? _phone;
 
   Future<void> _finalizeSubscription({
@@ -40,10 +41,42 @@ class _SubscriptionBillPageState extends State<SubscriptionBillPage> {
       return;
     }
 
+    var phone = (_phone ?? '').trim();
+    if (phone.isEmpty) {
+      try {
+        final user = await api.getUserProfile();
+        phone =
+            (user['phone'] ??
+                    user['phone_number'] ??
+                    user['user_phone'] ??
+                    user['mobile'] ??
+                    user['msisdn'] ??
+                    '')
+                .toString()
+                .trim();
+        if (mounted && phone.isNotEmpty) {
+          setState(() => _phone = phone);
+        }
+      } catch (_) {}
+    }
+
+    if (phone.isEmpty) {
+      if (!mounted) return;
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Phone number is required to activate your subscription. Please add your phone number in your profile and try again.',
+          ),
+        ),
+      );
+      return;
+    }
+
     final subscribed = await api.subscribeToPlan(
       planId: widget.plan.id.toString(),
       billingId: _selected.id.toString(),
       reference: reference,
+      phone: phone,
     );
 
     if (!subscribed) {
@@ -54,11 +87,15 @@ class _SubscriptionBillPageState extends State<SubscriptionBillPage> {
       return;
     }
 
-    await _storage.saveSelection(
-      planId: widget.plan.id.toString(),
-      billingId: _selected.id,
-    );
-    await _storage.savePlanSnapshot(widget.plan, _selected);
+    try {
+      await _storage.saveSelection(
+        planId: widget.plan.id.toString(),
+        billingId: _selected.id,
+      );
+      await _storage.savePlanSnapshot(widget.plan, _selected);
+    } catch (e) {
+      debugPrint('Failed to persist subscription snapshot: $e');
+    }
 
     if (!mounted) return;
     successBloc.add(
@@ -90,7 +127,15 @@ class _SubscriptionBillPageState extends State<SubscriptionBillPage> {
       if (!mounted) return;
       setState(() {
         _fullname = (user['fullname'] ?? user['name'] ?? '').toString();
-        _phone = (user['phone'] ?? '').toString();
+        _email = (user['email'] ?? user['user_email'] ?? '').toString();
+        _phone =
+            (user['phone'] ??
+                    user['phone_number'] ??
+                    user['user_phone'] ??
+                    user['mobile'] ??
+                    user['msisdn'] ??
+                    '')
+                .toString();
       });
     } catch (_) {}
   }
@@ -105,8 +150,26 @@ class _SubscriptionBillPageState extends State<SubscriptionBillPage> {
       final successBloc = context.read<SuccessBloc>();
       final navigator = Navigator.of(context);
 
-      final userEmail = widget.userEmail;
+      var userEmail = widget.userEmail.trim();
+      if (userEmail.isEmpty) userEmail = (_email ?? '').trim();
+      if (userEmail.isEmpty) {
+        try {
+          final user = await api.getUserProfile();
+          userEmail = (user['email'] ?? user['user_email'] ?? '').toString().trim();
+        } catch (_) {}
+      }
+
       debugPrint('email resolved: "$userEmail"');
+      if (userEmail.isEmpty) {
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Email is required to initialize payment. Please update your profile email and try again.',
+            ),
+          ),
+        );
+        return;
+      }
 
       if (AppConfig.paystackCallbackUrl.isEmpty) {
         messenger.showSnackBar(

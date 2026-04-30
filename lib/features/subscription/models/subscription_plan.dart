@@ -13,6 +13,13 @@ class BillingOption extends Equatable {
     required this.price,
   });
 
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'label': label,
+    'subtitle': subtitle,
+    'price': price,
+  };
+
   @override
   List<Object?> get props => [id, label, subtitle, price];
 }

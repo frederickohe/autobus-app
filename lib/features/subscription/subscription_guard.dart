@@ -1,7 +1,6 @@
 import 'package:autobus/barrel.dart';
 
 import 'services/subscription_storage.dart';
-import 'userplan.dart';
 
 class SubscriptionGuard extends StatelessWidget {
   final Map<String, dynamic> user;
@@ -56,6 +55,22 @@ class SubscriptionGuard extends StatelessWidget {
       if (v != null && v.toString().trim().isNotEmpty) return true;
     }
 
+    // Some backends represent subscription tier/plan as strings (e.g. "free").
+    const directPlanStrings = [
+      'plan',
+      'plan_name',
+      'planName',
+      'tier',
+      'subscription_tier',
+      'subscriptionTier',
+      'subscription_plan',
+      'subscriptionPlan',
+    ];
+    for (final k in directPlanStrings) {
+      final v = user[k];
+      if (v is String && v.trim().isNotEmpty) return true;
+    }
+
     final nestedCandidates = [
       user['subscription'],
       user['plan'],
@@ -74,6 +89,13 @@ class SubscriptionGuard extends StatelessWidget {
           return true;
         }
         if (m['plan_id'] != null || m['planId'] != null) return true;
+        // Free/trial plans can be identified by a nested name/slug even when
+        // no plan_id is present.
+        final name =
+            (m['name'] ?? m['plan_name'] ?? m['planName'] ?? m['tier'] ?? '')
+                .toString()
+                .trim();
+        if (name.isNotEmpty) return true;
       }
     }
 

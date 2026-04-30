@@ -1,5 +1,8 @@
 import 'package:autobus/barrel.dart';
 import 'dart:developer';
+import 'package:autobus/features/notifications/models/app_notification.dart';
+import 'dart:io';
+import 'package:http/http.dart' as http;
 
 class ApiService {
   final SessionAwareHttpClient httpClient;
@@ -158,15 +161,61 @@ class ApiService {
 
   /// Update user profile
   Future<Map<String, dynamic>> updateUserProfile({
-    String? firstName,
-    String? lastName,
+    String? fullname,
+    String? email,
     String? phone,
+    String? profilePictureUrl,
+    String? nationality,
+    DateTime? dateOfBirth,
+    String? gender,
+    String? staffId,
+    String? ghanaCard,
+    // Notifications preferences
+    bool? inAppNotifications,
+    bool? smsNotifications,
+    // Business / membership
+    String? company,
+    String? currentBranch,
+    String? address,
+    String? location,
+    // Socials
+    String? facebookUrl,
+    String? whatsappNumber,
+    String? linkedinUrl,
+    String? twitterUrl,
+    String? instagramUrl,
   }) async {
     try {
       final body = <String, dynamic>{};
-      if (firstName != null) body['first_name'] = firstName;
-      if (lastName != null) body['last_name'] = lastName;
+      if (fullname != null) body['fullname'] = fullname;
+      if (email != null) body['email'] = email;
       if (phone != null) body['phone'] = phone;
+      if (profilePictureUrl != null) {
+        body['profile_picture_url'] = profilePictureUrl;
+      }
+      if (nationality != null) body['nationality'] = nationality;
+      if (dateOfBirth != null) {
+        body['date_of_birth'] = dateOfBirth.toIso8601String().split('T').first;
+      }
+      if (gender != null) body['gender'] = gender;
+      if (staffId != null) body['staff_id'] = staffId;
+      if (ghanaCard != null) body['ghana_card'] = ghanaCard;
+
+      if (inAppNotifications != null) {
+        body['in_app_notifications'] = inAppNotifications;
+      }
+      if (smsNotifications != null) body['sms_notifications'] = smsNotifications;
+
+      if (company != null) body['company'] = company;
+      if (currentBranch != null) body['current_branch'] = currentBranch;
+      if (address != null) body['address'] = address;
+      if (location != null) body['location'] = location;
+
+      if (facebookUrl != null) body['facebook_url'] = facebookUrl;
+      if (whatsappNumber != null) body['whatsapp_number'] = whatsappNumber;
+      if (linkedinUrl != null) body['linkedin_url'] = linkedinUrl;
+      if (twitterUrl != null) body['twitter_url'] = twitterUrl;
+      if (instagramUrl != null) body['instagram_url'] = instagramUrl;
 
       final response = await httpClient.put(
         Uri.parse('$baseUrl/user/me'),
@@ -187,6 +236,158 @@ class ApiService {
     } catch (e) {
       throw Exception('Error updating profile: $e');
     }
+  }
+
+  /// Patch current user's notification settings.
+  ///
+  /// Backend: `PATCH /api/v1/user/me/notification-settings`
+  /// Body: `{ "in_app_notification": true, "sms_notification": true }`
+  Future<Map<String, dynamic>> patchMyNotificationSettings({
+    bool? inAppNotification,
+    bool? smsNotification,
+  }) async {
+    final body = <String, dynamic>{};
+    if (inAppNotification != null) {
+      body['in_app_notification'] = inAppNotification;
+    }
+    if (smsNotification != null) body['sms_notification'] = smsNotification;
+
+    final response = await httpClient.patch(
+      Uri.parse('$baseUrl/user/me/notification-settings'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(body),
+    );
+
+    if (response.statusCode == 200) {
+      final decoded = jsonDecode(response.body);
+      return decoded is Map<String, dynamic>
+          ? decoded
+          : <String, dynamic>{'data': decoded};
+    } else if (response.statusCode == 401) {
+      throw Exception('Session expired');
+    }
+    throw Exception(
+      'Failed to update notification settings: ${response.statusCode} ${response.body}',
+    );
+  }
+
+  /// Patch a specific user's notification settings by id.
+  ///
+  /// Backend: `PATCH /api/v1/user/{user_id}/notification-settings`
+  Future<Map<String, dynamic>> patchUserNotificationSettings({
+    required String userId,
+    bool? inAppNotification,
+    bool? smsNotification,
+  }) async {
+    final body = <String, dynamic>{};
+    if (inAppNotification != null) {
+      body['in_app_notification'] = inAppNotification;
+    }
+    if (smsNotification != null) body['sms_notification'] = smsNotification;
+
+    final response = await httpClient.patch(
+      Uri.parse('$baseUrl/user/$userId/notification-settings'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(body),
+    );
+
+    if (response.statusCode == 200) {
+      final decoded = jsonDecode(response.body);
+      return decoded is Map<String, dynamic>
+          ? decoded
+          : <String, dynamic>{'data': decoded};
+    } else if (response.statusCode == 401) {
+      throw Exception('Session expired');
+    }
+    throw Exception(
+      'Failed to update notification settings: ${response.statusCode} ${response.body}',
+    );
+  }
+
+  /// Patch current user's profile image URL only.
+  ///
+  /// Backend: `PATCH /api/v1/user/me/profile-image`
+  /// Body: `{ "profile_picture_url": "https://..." }`
+  Future<Map<String, dynamic>> patchMyProfileImage({
+    required String profilePictureUrl,
+  }) async {
+    final response = await httpClient.patch(
+      Uri.parse('$baseUrl/user/me/profile-image'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'profile_picture_url': profilePictureUrl}),
+    );
+
+    if (response.statusCode == 200) {
+      final decoded = jsonDecode(response.body);
+      return decoded is Map<String, dynamic>
+          ? decoded
+          : <String, dynamic>{'data': decoded};
+    } else if (response.statusCode == 401) {
+      throw Exception('Session expired');
+    }
+    throw Exception(
+      'Failed to update profile image: ${response.statusCode} ${response.body}',
+    );
+  }
+
+  /// Patch a specific user's profile image URL by id.
+  ///
+  /// Backend: `PATCH /api/v1/user/{user_id}/profile-image`
+  Future<Map<String, dynamic>> patchUserProfileImage({
+    required String userId,
+    required String profilePictureUrl,
+  }) async {
+    final response = await httpClient.patch(
+      Uri.parse('$baseUrl/user/$userId/profile-image'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'profile_picture_url': profilePictureUrl}),
+    );
+
+    if (response.statusCode == 200) {
+      final decoded = jsonDecode(response.body);
+      return decoded is Map<String, dynamic>
+          ? decoded
+          : <String, dynamic>{'data': decoded};
+    } else if (response.statusCode == 401) {
+      throw Exception('Session expired');
+    }
+    throw Exception(
+      'Failed to update profile image: ${response.statusCode} ${response.body}',
+    );
+  }
+
+  /// Upload a file (image/doc) to storage service.
+  ///
+  /// Backend: `POST /api/v1/storage/upload` (form-data: `file`)
+  /// Returns: `{ file_name, file_url }`
+  Future<String> uploadFile({
+    required File file,
+    String? filename,
+    String fieldName = 'file',
+  }) async {
+    final uri = Uri.parse('$baseUrl/storage/upload');
+    final request = http.MultipartRequest('POST', uri);
+
+    final multipartFile = await http.MultipartFile.fromPath(
+      fieldName,
+      file.path,
+      filename: filename,
+    );
+    request.files.add(multipartFile);
+
+    final streamed = await httpClient.send(request);
+    final response = await http.Response.fromStream(streamed);
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final data = jsonDecode(response.body);
+      final url = (data['file_url'] ?? data['url'] ?? '').toString();
+      if (url.isEmpty) {
+        throw Exception('Upload succeeded but no file_url returned');
+      }
+      return url;
+    }
+
+    throw Exception('Upload failed: ${response.statusCode} ${response.body}');
   }
 
   /// Get available rides with filters
@@ -277,11 +478,13 @@ class ApiService {
     required String planId,
     required String billingId,
     required String reference,
+    required String phone,
   }) async {
-    final body = {
-      'plan_id': planId,
-      'billing_id': billingId,
+    final body = <String, dynamic>{
+      'plan_id': int.tryParse(planId) ?? planId,
+      'billing_id': int.tryParse(billingId) ?? billingId,
       'reference': reference,
+      'phone': phone,
     };
 
     log('subscribeToPlan: POST /api/v1/subscription/subscribe');
@@ -289,7 +492,8 @@ class ApiService {
 
     final response = await httpClient.post(
       Uri.parse('$baseUrl/subscription/subscribe'),
-      body: body,
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode(body),
     );
 
     log('subscribeToPlan: status — ${response.statusCode}');
@@ -407,6 +611,44 @@ class ApiService {
           .toString();
     }
     throw Exception('Agent error: ${response.statusCode}');
+  }
+
+  Future<List<AppNotification>> getNotifications() async {
+    final response = await httpClient.get(Uri.parse('$baseUrl/notification'));
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      final list =
+          data is List
+              ? data
+              : (data is Map
+                    ? (data['notifications'] ??
+                          data['data'] ??
+                          data['items'] ??
+                          data['results'] ??
+                          [])
+                    : []);
+      if (list is List) {
+        return list
+            .whereType<Map>()
+            .map((e) => AppNotification.fromJson(Map<String, dynamic>.from(e)))
+            .toList();
+      }
+      return const [];
+    } else if (response.statusCode == 401) {
+      throw Exception('Session expired');
+    }
+    throw Exception(
+      'Failed to fetch notifications: ${response.statusCode} ${response.body}',
+    );
+  }
+
+  Future<int> getUnreadNotificationCount() async {
+    try {
+      final items = await getNotifications();
+      return items.where((n) => !n.read).length;
+    } catch (_) {
+      return 0;
+    }
   }
 }
 

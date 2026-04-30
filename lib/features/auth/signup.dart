@@ -13,11 +13,7 @@ class _SignupState extends State<Signup> {
   final TextEditingController usernameController = TextEditingController();
   final TextEditingController phoneController = TextEditingController();
   final TextEditingController companyController = TextEditingController();
-  final TextEditingController currentBranchController = TextEditingController();
-  final TextEditingController addressController = TextEditingController();
-  final TextEditingController locationController = TextEditingController();
   final TextEditingController ghanaCardController = TextEditingController();
-  final TextEditingController staffIdController = TextEditingController();
 
   // Add this variable to track password visibility
   bool _isPasswordVisible = false;
@@ -190,33 +186,6 @@ class _SignupState extends State<Signup> {
                                   right: 20.0,
                                 ),
                                 child: Text(
-                                  'Current Branch',
-                                  style: GoogleFonts.montserrat(
-                                    color: Colors.black,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w100,
-                                  ),
-                                ),
-                              ),
-                              Padding(
-                                padding: const EdgeInsets.only(
-                                  left: 20.0,
-                                  right: 20.0,
-                                ),
-                                child: TextField(
-                                  controller: currentBranchController,
-                                  decoration: const InputDecoration(
-                                    border: UnderlineInputBorder(),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 20),
-                              Padding(
-                                padding: EdgeInsets.only(
-                                  left: 20.0,
-                                  right: 20.0,
-                                ),
-                                child: Text(
                                   'Company',
                                   style: GoogleFonts.montserrat(
                                     color: Colors.black,
@@ -244,60 +213,6 @@ class _SignupState extends State<Signup> {
                                   right: 20.0,
                                 ),
                                 child: Text(
-                                  'Address',
-                                  style: GoogleFonts.montserrat(
-                                    color: Colors.black,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w100,
-                                  ),
-                                ),
-                              ),
-                              Padding(
-                                padding: const EdgeInsets.only(
-                                  left: 20.0,
-                                  right: 20.0,
-                                ),
-                                child: TextField(
-                                  controller: addressController,
-                                  decoration: const InputDecoration(
-                                    border: UnderlineInputBorder(),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 20),
-                              Padding(
-                                padding: EdgeInsets.only(
-                                  left: 20.0,
-                                  right: 20.0,
-                                ),
-                                child: Text(
-                                  'Location',
-                                  style: GoogleFonts.montserrat(
-                                    color: Colors.black,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w100,
-                                  ),
-                                ),
-                              ),
-                              Padding(
-                                padding: const EdgeInsets.only(
-                                  left: 20.0,
-                                  right: 20.0,
-                                ),
-                                child: TextField(
-                                  controller: locationController,
-                                  decoration: const InputDecoration(
-                                    border: UnderlineInputBorder(),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 20),
-                              Padding(
-                                padding: EdgeInsets.only(
-                                  left: 20.0,
-                                  right: 20.0,
-                                ),
-                                child: Text(
                                   'Ghana Card',
                                   style: GoogleFonts.montserrat(
                                     color: Colors.black,
@@ -313,33 +228,6 @@ class _SignupState extends State<Signup> {
                                 ),
                                 child: TextField(
                                   controller: ghanaCardController,
-                                  decoration: const InputDecoration(
-                                    border: UnderlineInputBorder(),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 20),
-                              Padding(
-                                padding: EdgeInsets.only(
-                                  left: 20.0,
-                                  right: 20.0,
-                                ),
-                                child: Text(
-                                  'Staff ID',
-                                  style: GoogleFonts.montserrat(
-                                    color: Colors.black,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w100,
-                                  ),
-                                ),
-                              ),
-                              Padding(
-                                padding: const EdgeInsets.only(
-                                  left: 20.0,
-                                  right: 20.0,
-                                ),
-                                child: TextField(
-                                  controller: staffIdController,
                                   decoration: const InputDecoration(
                                     border: UnderlineInputBorder(),
                                   ),
@@ -432,12 +320,7 @@ class _SignupState extends State<Signup> {
                                     email: emailController.text.trim(),
                                     password: passwordController.text,
                                     company: companyController.text.trim(),
-                                    currentBranch: currentBranchController.text
-                                        .trim(),
-                                    address: addressController.text.trim(),
-                                    location: locationController.text.trim(),
                                     ghanaCard: ghanaCardController.text.trim(),
-                                    staffId: staffIdController.text.trim(),
                                   ),
                                 );
                               },

@@ -117,7 +117,7 @@ class HelpPage extends StatelessWidget {
                             fontWeight: FontWeight.w500,
                           ),
                         ),
-                        subtitle: const Text("support@starfoods.com"),
+                        subtitle: const Text("support@useautobus.com"),
                         trailing: const Icon(
                           Icons.chevron_right,
                           color: Colors.black54,
@@ -132,13 +132,13 @@ class HelpPage extends StatelessWidget {
                           color: Colors.black87,
                         ),
                         title: const Text(
-                          "Help Website",
+                          "Our Website",
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
-                        subtitle: const Text("starfoods.com/help"),
+                        subtitle: const Text("www.useautobus.com"),
                         trailing: const Icon(
                           Icons.chevron_right,
                           color: Colors.black54,

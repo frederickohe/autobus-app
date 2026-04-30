@@ -1,6 +1,5 @@
 import 'package:autobus/barrel.dart';
 
-import '../models/subscription_plan.dart';
 
 /// Local subscription catalog.
 /// embedded JSON

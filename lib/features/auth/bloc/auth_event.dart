@@ -23,11 +23,7 @@ class SignupEvent extends AuthEvent {
   final String email;
   final String password;
   final String company;
-  final String currentBranch;
-  final String address;
-  final String location;
   final String ghanaCard;
-  final String staffId;
 
   const SignupEvent({
     required this.email,
@@ -35,11 +31,7 @@ class SignupEvent extends AuthEvent {
     required this.username,
     required this.phone,
     required this.company,
-    required this.currentBranch,
-    required this.address,
-    required this.location,
     required this.ghanaCard,
-    required this.staffId,
   });
 
   @override
@@ -49,11 +41,7 @@ class SignupEvent extends AuthEvent {
     email,
     password,
     company,
-    currentBranch,
-    address,
-    location,
     ghanaCard,
-    staffId,
   ];
 }
 

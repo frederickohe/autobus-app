@@ -1,5 +1,4 @@
 import 'package:autobus/barrel.dart';
-import 'package:autobus/features/subscription/models/subscription_plan.dart';
 
 class Success extends StatefulWidget {
   const Success({super.key});

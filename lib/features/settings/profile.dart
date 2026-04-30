@@ -1,4 +1,6 @@
 import 'package:autobus/barrel.dart';
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
 
 class Profile extends StatefulWidget {
   const Profile({super.key});
@@ -8,13 +10,36 @@ class Profile extends StatefulWidget {
 }
 
 class _ProfileState extends State<Profile> {
+  final _formKey = GlobalKey<FormState>();
+
+  // User profile
+  final TextEditingController fullnameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
-  final TextEditingController passwordController = TextEditingController();
-  final TextEditingController nameController = TextEditingController();
   final TextEditingController phoneController = TextEditingController();
+  final TextEditingController ghanaCardController = TextEditingController();
+  final TextEditingController nationalityController = TextEditingController();
+  final TextEditingController dobController = TextEditingController();
+  final TextEditingController staffIdController = TextEditingController();
+
+  // Business profile
+  final TextEditingController companyController = TextEditingController();
+  final TextEditingController currentBranchController = TextEditingController();
+  final TextEditingController addressController = TextEditingController();
+  final TextEditingController locationController = TextEditingController();
+  final TextEditingController facebookUrlController = TextEditingController();
+  final TextEditingController whatsappNumberController =
+      TextEditingController();
+  final TextEditingController linkedinUrlController = TextEditingController();
+  final TextEditingController twitterUrlController = TextEditingController();
+  final TextEditingController instagramUrlController = TextEditingController();
+
+  DateTime? _dateOfBirth;
+  String? _gender;
+  String? _profilePictureUrl;
 
   bool _loading = true;
   bool _saving = false;
+  bool _uploadingPhoto = false;
   String? _error;
 
   late final ApiService _apiService = ApiService(
@@ -31,9 +56,39 @@ class _ProfileState extends State<Profile> {
     try {
       final user = await _apiService.getUserProfile();
       if (!mounted) return;
-      nameController.text = (user['fullname'] ?? user['name'] ?? '').toString();
+
+      fullnameController.text = (user['fullname'] ?? user['name'] ?? '')
+          .toString();
       phoneController.text = (user['phone'] ?? '').toString();
       emailController.text = (user['email'] ?? '').toString();
+
+      ghanaCardController.text = (user['ghana_card'] ?? '').toString();
+      nationalityController.text = (user['nationality'] ?? '').toString();
+      staffIdController.text = (user['staff_id'] ?? '').toString();
+
+      companyController.text = (user['company'] ?? '').toString();
+      currentBranchController.text = (user['current_branch'] ?? '').toString();
+      addressController.text = (user['address'] ?? '').toString();
+      locationController.text = (user['location'] ?? '').toString();
+
+      facebookUrlController.text = (user['facebook_url'] ?? '').toString();
+      whatsappNumberController.text = (user['whatsapp_number'] ?? '')
+          .toString();
+      linkedinUrlController.text = (user['linkedin_url'] ?? '').toString();
+      twitterUrlController.text = (user['twitter_url'] ?? '').toString();
+      instagramUrlController.text = (user['instagram_url'] ?? '').toString();
+
+      _profilePictureUrl = (user['profile_picture_url'] ?? '').toString();
+      if (_profilePictureUrl?.trim().isEmpty == true) _profilePictureUrl = null;
+
+      final dob = (user['date_of_birth'] ?? '').toString();
+      _dateOfBirth = _tryParseDate(dob);
+      dobController.text = _dateOfBirth == null
+          ? ''
+          : _formatDate(_dateOfBirth!);
+
+      final g = (user['gender'] ?? '').toString().trim();
+      _gender = g.isEmpty ? null : g;
     } catch (e) {
       if (mounted) setState(() => _error = e.toString());
     } finally {
@@ -42,14 +97,53 @@ class _ProfileState extends State<Profile> {
   }
 
   Future<void> _saveProfile() async {
+    if (!_formKey.currentState!.validate()) return;
     setState(() {
       _saving = true;
       _error = null;
     });
     try {
       await _apiService.updateUserProfile(
-        firstName: nameController.text.trim(),
+        fullname: fullnameController.text.trim(),
         phone: phoneController.text.trim(),
+        ghanaCard: ghanaCardController.text.trim().isEmpty
+            ? null
+            : ghanaCardController.text.trim(),
+        nationality: nationalityController.text.trim().isEmpty
+            ? null
+            : nationalityController.text.trim(),
+        dateOfBirth: _dateOfBirth,
+        gender: _gender?.trim().isEmpty == true ? null : _gender,
+        staffId: staffIdController.text.trim().isEmpty
+            ? null
+            : staffIdController.text.trim(),
+        company: companyController.text.trim().isEmpty
+            ? null
+            : companyController.text.trim(),
+        currentBranch: currentBranchController.text.trim().isEmpty
+            ? null
+            : currentBranchController.text.trim(),
+        address: addressController.text.trim().isEmpty
+            ? null
+            : addressController.text.trim(),
+        location: locationController.text.trim().isEmpty
+            ? null
+            : locationController.text.trim(),
+        facebookUrl: facebookUrlController.text.trim().isEmpty
+            ? null
+            : facebookUrlController.text.trim(),
+        whatsappNumber: whatsappNumberController.text.trim().isEmpty
+            ? null
+            : whatsappNumberController.text.trim(),
+        linkedinUrl: linkedinUrlController.text.trim().isEmpty
+            ? null
+            : linkedinUrlController.text.trim(),
+        twitterUrl: twitterUrlController.text.trim().isEmpty
+            ? null
+            : twitterUrlController.text.trim(),
+        instagramUrl: instagramUrlController.text.trim().isEmpty
+            ? null
+            : instagramUrlController.text.trim(),
       );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -59,6 +153,7 @@ class _ProfileState extends State<Profile> {
           behavior: SnackBarBehavior.floating,
         ),
       );
+      await _loadProfile();
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -73,12 +168,134 @@ class _ProfileState extends State<Profile> {
     }
   }
 
+  Future<void> _pickAndUploadPhoto() async {
+    if (_uploadingPhoto) return;
+
+    final picker = ImagePicker();
+
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      showDragHandle: true,
+      backgroundColor: Colors.white,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_camera_outlined),
+              title: const Text('Take photo'),
+              onTap: () => Navigator.pop(context, ImageSource.camera),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined),
+              title: const Text('Choose from gallery'),
+              onTap: () => Navigator.pop(context, ImageSource.gallery),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (source == null) return;
+
+    final picked = await picker.pickImage(
+      source: source,
+      imageQuality: 85,
+      maxWidth: 1400,
+    );
+    if (picked == null) return;
+
+    setState(() => _uploadingPhoto = true);
+    try {
+      final url = await _apiService.uploadFile(
+        file: File(picked.path),
+        filename: picked.name,
+      );
+
+      await _apiService.patchMyProfileImage(profilePictureUrl: url);
+      // Keep local cached user in sync (used by AuthBloc on next session check)
+      try {
+        final updated = await _apiService.getUserProfile();
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('user', jsonEncode(updated));
+      } catch (_) {}
+      if (!mounted) return;
+
+      setState(() => _profilePictureUrl = url);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Profile photo updated'),
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Photo upload failed: $e'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _uploadingPhoto = false);
+    }
+  }
+
+  DateTime? _tryParseDate(String input) {
+    final v = input.trim();
+    if (v.isEmpty) return null;
+    try {
+      // Handles "YYYY-MM-DD" and iso strings
+      return DateTime.parse(v);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  String _formatDate(DateTime date) {
+    final y = date.year.toString().padLeft(4, '0');
+    final m = date.month.toString().padLeft(2, '0');
+    final d = date.day.toString().padLeft(2, '0');
+    return '$y-$m-$d';
+  }
+
+  Future<void> _pickDateOfBirth() async {
+    final now = DateTime.now();
+    final initial = _dateOfBirth ?? DateTime(now.year - 18, now.month, now.day);
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initial,
+      firstDate: DateTime(1900, 1, 1),
+      lastDate: now,
+    );
+    if (picked == null) return;
+    setState(() {
+      _dateOfBirth = picked;
+      dobController.text = _formatDate(picked);
+    });
+  }
+
   @override
   void dispose() {
     emailController.dispose();
-    passwordController.dispose();
-    nameController.dispose();
     phoneController.dispose();
+    fullnameController.dispose();
+    ghanaCardController.dispose();
+    nationalityController.dispose();
+    dobController.dispose();
+    staffIdController.dispose();
+
+    companyController.dispose();
+    currentBranchController.dispose();
+    addressController.dispose();
+    locationController.dispose();
+    facebookUrlController.dispose();
+    whatsappNumberController.dispose();
+    linkedinUrlController.dispose();
+    twitterUrlController.dispose();
+    instagramUrlController.dispose();
     super.dispose();
   }
 
@@ -115,33 +332,16 @@ class _ProfileState extends State<Profile> {
                       ),
                     ),
 
-                    /// Company Name
-                    BlocBuilder<AuthBloc, AuthState>(
-                      builder: (context, state) {
-                        String username = 'Guest';
-                        if (state is Authenticated) {
-                          username =
-                              state.user['fullname'] ??
-                              state.user['email'] ??
-                              'User';
-                        }
-                        return Text(
-                          username,
-                          style: GoogleFonts.montserrat(
-                            color: Colors.black,
-                            fontSize: 20,
-                            fontWeight: FontWeight.w300,
-                          ),
-                        );
-                      },
+                    Text(
+                      'Profile',
+                      style: GoogleFonts.montserrat(
+                        color: Colors.black,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w300,
+                      ),
                     ),
                     GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const Profile()),
-                        );
-                      },
+                      onTap: () {},
                       child: _circleIcon(Icons.share_outlined),
                     ),
                   ],
@@ -155,51 +355,192 @@ class _ProfileState extends State<Profile> {
                   Expanded(
                     child: Padding(
                       padding: const EdgeInsets.all(20.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          if (_error != null)
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: 12),
-                              child: Text(
-                                _error!,
-                                style: GoogleFonts.montserrat(
-                                  color: Colors.red,
-                                  fontSize: 13,
+                      child: Form(
+                        key: _formKey,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (_error != null)
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: Text(
+                                  _error!,
+                                  style: GoogleFonts.montserrat(
+                                    color: Colors.red,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ),
+                            Expanded(
+                              child: SingleChildScrollView(
+                                child: Column(
+                                  children: [
+                                    _profileHeaderCard(context),
+                                    const SizedBox(height: 14),
+                                    _sectionCard(
+                                      title: 'User Profile',
+                                      subtitle:
+                                          'Personal information and account details',
+                                      child: Column(
+                                        children: [
+                                          _input(
+                                            label: 'Full name',
+                                            controller: fullnameController,
+                                            textInputAction:
+                                                TextInputAction.next,
+                                            validator: (v) {
+                                              if ((v ?? '').trim().isEmpty) {
+                                                return 'Full name is required';
+                                              }
+                                              return null;
+                                            },
+                                          ),
+                                          const SizedBox(height: 20),
+                                          _input(
+                                            label: 'Email',
+                                            controller: emailController,
+                                            readOnly: true,
+                                            helperText:
+                                                'Email can’t be changed here',
+                                          ),
+                                          const SizedBox(height: 20),
+                                          _input(
+                                            label: 'Phone',
+                                            controller: phoneController,
+                                            keyboardType: TextInputType.phone,
+                                            textInputAction:
+                                                TextInputAction.next,
+                                          ),
+                                          const SizedBox(height: 20),
+                                          _input(
+                                            label: 'Ghana card',
+                                            controller: ghanaCardController,
+                                            textInputAction:
+                                                TextInputAction.next,
+                                          ),
+                                          const SizedBox(height: 20),
+                                          _input(
+                                            label: 'Nationality',
+                                            controller: nationalityController,
+                                            textInputAction:
+                                                TextInputAction.next,
+                                          ),
+                                          const SizedBox(height: 20),
+                                          _input(
+                                            label: 'Date of birth',
+                                            controller: dobController,
+                                            readOnly: true,
+                                            onTap: _pickDateOfBirth,
+                                            suffixIcon: Icons.calendar_today,
+                                          ),
+                                          const SizedBox(height: 20),
+                                          _genderDropdown(),
+                                          const SizedBox(height: 20),
+                                          _input(
+                                            label: 'Staff ID',
+                                            controller: staffIdController,
+                                            textInputAction:
+                                                TextInputAction.next,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(height: 14),
+                                    _sectionCard(
+                                      title: 'Business Profile',
+                                      subtitle:
+                                          'Company details and social profiles',
+                                      child: Column(
+                                        children: [
+                                          _input(
+                                            label: 'Company',
+                                            controller: companyController,
+                                            textInputAction:
+                                                TextInputAction.next,
+                                          ),
+                                          const SizedBox(height: 20),
+                                          _input(
+                                            label: 'Current branch',
+                                            controller: currentBranchController,
+                                            textInputAction:
+                                                TextInputAction.next,
+                                          ),
+                                          const SizedBox(height: 20),
+                                          _input(
+                                            label: 'Address',
+                                            controller: addressController,
+                                            textInputAction:
+                                                TextInputAction.next,
+                                          ),
+                                          const SizedBox(height: 20),
+                                          _input(
+                                            label: 'Location',
+                                            controller: locationController,
+                                            textInputAction:
+                                                TextInputAction.next,
+                                          ),
+                                          const SizedBox(height: 20),
+                                          _input(
+                                            label: 'WhatsApp number',
+                                            controller:
+                                                whatsappNumberController,
+                                            keyboardType: TextInputType.phone,
+                                            textInputAction:
+                                                TextInputAction.next,
+                                          ),
+                                          const SizedBox(height: 20),
+                                          _input(
+                                            label: 'Facebook URL',
+                                            controller: facebookUrlController,
+                                            keyboardType: TextInputType.url,
+                                            textInputAction:
+                                                TextInputAction.next,
+                                          ),
+                                          const SizedBox(height: 20),
+                                          _input(
+                                            label: 'LinkedIn URL',
+                                            controller: linkedinUrlController,
+                                            keyboardType: TextInputType.url,
+                                            textInputAction:
+                                                TextInputAction.next,
+                                          ),
+                                          const SizedBox(height: 20),
+                                          _input(
+                                            label: 'Twitter/X URL',
+                                            controller: twitterUrlController,
+                                            keyboardType: TextInputType.url,
+                                            textInputAction:
+                                                TextInputAction.next,
+                                          ),
+                                          const SizedBox(height: 20),
+                                          _input(
+                                            label: 'Instagram URL',
+                                            controller: instagramUrlController,
+                                            keyboardType: TextInputType.url,
+                                            textInputAction:
+                                                TextInputAction.done,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(height: 18),
+                                  ],
                                 ),
                               ),
                             ),
-                          Expanded(
-                            child: SingleChildScrollView(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  _fieldLabel('User Name / Business Name'),
-                                  _fieldInput(nameController),
-                                  const SizedBox(height: 20),
-                                  _fieldLabel('Phone'),
-                                  _fieldInput(
-                                    phoneController,
-                                    keyboardType: TextInputType.phone,
-                                  ),
-                                  const SizedBox(height: 20),
-                                  _fieldLabel('Email'),
-                                  _fieldInput(emailController, readOnly: true),
-                                  const SizedBox(height: 20),
-                                ],
+                            Center(
+                              child: AppButton(
+                                onPressed: _saving
+                                    ? () {}
+                                    : () => _saveProfile(),
+                                buttonText: _saving
+                                    ? 'Saving...'
+                                    : 'Save Changes',
                               ),
                             ),
-                          ),
-                          Center(
-                            child: AppButton(
-                              onPressed: _saving ? () {} : () => _saveProfile(),
-                              buttonText: _saving
-                                  ? 'Saving...'
-                                  : 'Save Changes',
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                        ],
+                            const SizedBox(height: 10),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -212,35 +553,232 @@ class _ProfileState extends State<Profile> {
     );
   }
 
-  Widget _fieldLabel(String text) => Padding(
-    padding: const EdgeInsets.only(left: 20, right: 20),
-    child: Text(
-      text,
-      style: GoogleFonts.montserrat(
-        color: Colors.black,
-        fontSize: 14,
-        fontWeight: FontWeight.w100,
-      ),
-    ),
-  );
+  Widget _profileHeaderCard(BuildContext context) {
+    final title = fullnameController.text.trim().isEmpty
+        ? 'Your profile'
+        : fullnameController.text.trim();
+    final subtitle = emailController.text.trim().isEmpty
+        ? 'Update your details'
+        : emailController.text.trim();
 
-  Widget _fieldInput(
-    TextEditingController controller, {
+    final imgUrl = _profilePictureUrl;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Column(
+        children: [
+          Center(
+            child: Stack(
+              children: [
+                CircleAvatar(
+                  radius: 58,
+                  backgroundColor: CustColors.mainCol.withOpacity(0.12),
+                  backgroundImage:
+                      (imgUrl != null) ? NetworkImage(imgUrl) : null,
+                  child: (imgUrl == null)
+                      ? const Icon(
+                          Icons.person,
+                          color: CustColors.mainCol,
+                          size: 44,
+                        )
+                      : null,
+                ),
+                Positioned(
+                  right: 2,
+                  bottom: 2,
+                  child: Material(
+                    color: CustColors.mainCol,
+                    shape: const CircleBorder(),
+                    child: InkWell(
+                      customBorder: const CircleBorder(),
+                      onTap: _uploadingPhoto ? null : _pickAndUploadPhoto,
+                      child: Padding(
+                        padding: const EdgeInsets.all(12.0),
+                        child: _uploadingPhoto
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Icon(
+                                Icons.camera_alt_outlined,
+                                size: 18,
+                                color: Colors.white,
+                              ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.montserrat(
+              color: Colors.black,
+              fontSize: 18,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            subtitle,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.montserrat(
+              color: Colors.black.withOpacity(0.6),
+              fontSize: 12,
+              fontWeight: FontWeight.w300,
+            ),
+          ),
+          const SizedBox(height: 8),
+          TextButton(
+            onPressed: _uploadingPhoto ? null : _pickAndUploadPhoto,
+            child: Text(
+              _uploadingPhoto ? 'Uploading...' : 'Change profile photo',
+              style: GoogleFonts.montserrat(
+                color: CustColors.mainCol,
+                fontSize: 13,
+                fontWeight: FontWeight.w400,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _sectionCard({
+    required String title,
+    required String subtitle,
+    required Widget child,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: CustColors.mainCol.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.badge_outlined,
+                  color: CustColors.mainCol,
+                  size: 18,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: GoogleFonts.montserrat(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: GoogleFonts.montserrat(
+                        fontSize: 11,
+                        color: Colors.black.withOpacity(0.6),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          child,
+        ],
+      ),
+    );
+  }
+
+  Widget _genderDropdown() {
+    final items = const [
+      DropdownMenuItem(value: 'Male', child: Text('Male')),
+      DropdownMenuItem(value: 'Female', child: Text('Female')),
+      DropdownMenuItem(value: 'Other', child: Text('Other')),
+      DropdownMenuItem(
+        value: 'Prefer not to say',
+        child: Text('Prefer not to say'),
+      ),
+    ];
+
+    return DropdownButtonFormField<String>(
+      value: _gender,
+      items: items,
+      onChanged: (v) => setState(() => _gender = v),
+      decoration: _underlineDecoration(label: 'Gender'),
+    );
+  }
+
+  Widget _input({
+    required String label,
+    required TextEditingController controller,
     TextInputType keyboardType = TextInputType.text,
+    TextInputAction textInputAction = TextInputAction.next,
     bool readOnly = false,
-  }) => Padding(
-    padding: const EdgeInsets.only(left: 20, right: 20),
-    child: TextField(
+    String? helperText,
+    IconData? suffixIcon,
+    VoidCallback? onTap,
+    String? Function(String?)? validator,
+  }) {
+    return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
+      textInputAction: textInputAction,
       readOnly: readOnly,
-      decoration: InputDecoration(
-        border: const UnderlineInputBorder(),
-        filled: readOnly,
-        fillColor: readOnly ? Colors.grey.shade100 : null,
+      onTap: onTap,
+      validator: validator,
+      decoration: _underlineDecoration(
+        label: label,
+        helperText: helperText,
+        suffixIcon: suffixIcon,
+        readOnly: readOnly,
       ),
-    ),
-  );
+    );
+  }
+
+  InputDecoration _underlineDecoration({
+    required String label,
+    String? helperText,
+    IconData? suffixIcon,
+    bool readOnly = false,
+  }) {
+    return InputDecoration(
+      labelText: label,
+      helperText: helperText,
+      border: const UnderlineInputBorder(),
+      enabledBorder: UnderlineInputBorder(
+        borderSide: BorderSide(color: Colors.black.withOpacity(0.25)),
+      ),
+      focusedBorder: const UnderlineInputBorder(
+        borderSide: BorderSide(color: CustColors.mainCol, width: 1.6),
+      ),
+      disabledBorder: UnderlineInputBorder(
+        borderSide: BorderSide(color: Colors.black.withOpacity(0.10)),
+      ),
+      suffixIcon: suffixIcon == null ? null : Icon(suffixIcon, size: 18),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 2, vertical: 12),
+    );
+  }
 
   Widget _circleIcon(dynamic icon) {
     return Container(
@@ -248,11 +786,12 @@ class _ProfileState extends State<Profile> {
       height: 54,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        border: Border.all(color: Colors.white24),
+        color: Colors.white.withOpacity(0.85),
+        border: Border.all(color: Colors.black.withOpacity(0.08)),
       ),
       child: icon is IconData
-          ? Icon(icon, color: Colors.white70, size: 18)
-          : Iconify(icon, color: Colors.white70, size: 8),
+          ? Icon(icon, color: Colors.black87, size: 18)
+          : Iconify(icon, color: Colors.black87, size: 8),
     );
   }
 }

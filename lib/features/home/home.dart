@@ -1,12 +1,41 @@
 import 'package:autobus/barrel.dart';
 
-class Home extends StatelessWidget {
+class Home extends StatefulWidget {
   const Home({super.key});
+
+  @override
+  State<Home> createState() => _HomeState();
+}
+
+class _HomeState extends State<Home> {
+  Future<int>? _unreadCountFuture;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _unreadCountFuture ??= context
+        .read<ApiService>()
+        .getUnreadNotificationCount();
+  }
+
+  Future<void> _refreshUnread() async {
+    setState(() {
+      _unreadCountFuture = context
+          .read<ApiService>()
+          .getUnreadNotificationCount();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final List<HomeMenuItem> menuItems = [
       HomeMenuItem("Orders", Carbon.ibm_watson_orders, () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const AutoBus()),
+        );
+      }),
+      HomeMenuItem("Chatbot", Mdi.robot_outline, () {
         Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => const AutoBus()),
@@ -18,9 +47,10 @@ class Home extends StatelessWidget {
           MaterialPageRoute(builder: (_) => const DigitalMarketingPage()),
         );
       }),
-      HomeMenuItem("Payments", FluentEmojiHighContrast.money_bag, () {}),
-      HomeMenuItem("Messages", Mdi.phone_message_outline, () {}),
-      HomeMenuItem("Records", Mdi.database_arrow_down_outline, () {}),
+      HomeMenuItem("Queries", Carbon.query, () {}),
+      HomeMenuItem("Products", Icons.shopping_bag_outlined, () {}),
+      HomeMenuItem("Messages", Mdi.message_outline, () {}),
+      HomeMenuItem("Email", Mdi.email_outline, () {}),
       HomeMenuItem("Reports", MaterialSymbols.data_usage, () {
         Navigator.push(
           context,
@@ -42,37 +72,25 @@ class Home extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const NotificationsPage(),
-                          ),
+                    FutureBuilder<int>(
+                      future: _unreadCountFuture,
+                      builder: (context, snap) {
+                        final unread = snap.data ?? 0;
+                        return GestureDetector(
+                          onTap: () async {
+                            await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const NotificationsInboxPage(),
+                              ),
+                            );
+                            await _refreshUnread();
+                          },
+                          child: _notificationBell(unreadCount: unread),
                         );
                       },
-                      child: _circleIcon(Icons.notifications_none),
                     ),
 
-                    BlocBuilder<AuthBloc, AuthState>(
-                      builder: (context, state) {
-                        String username = 'Guest';
-                        if (state is Authenticated) {
-                          username =
-                              state.user['fullname'] ??
-                              state.user['email'] ??
-                              'User';
-                        }
-                        return Text(
-                          username,
-                          style: GoogleFonts.montserrat(
-                            color: Colors.white,
-                            fontSize: 20,
-                            fontWeight: FontWeight.w300,
-                          ),
-                        );
-                      },
-                    ),
                     GestureDetector(
                       onTap: () {
                         Navigator.push(
@@ -82,12 +100,72 @@ class Home extends StatelessWidget {
                           ),
                         );
                       },
-                      child: _circleIcon(Icons.settings_outlined),
+                      child: _avatarCircle(),
                     ),
                   ],
                 ),
 
-                const SizedBox(height: 80),
+                const SizedBox(height: 18),
+
+                /// 👋 Greeting
+                BlocBuilder<AuthBloc, AuthState>(
+                  builder: (context, state) {
+                    String displayName = 'Guest';
+                    if (state is Authenticated) {
+                      displayName =
+                          (state.user['fullname'] ??
+                                  state.user['email'] ??
+                                  'User')
+                              .toString();
+                    }
+
+                    final firstName = displayName.trim().split(' ').first;
+
+                    return Column(
+                      children: [
+                        Text(
+                          'Hello $firstName',
+                          style: GoogleFonts.montserrat(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w300,
+                          ),
+                        ),
+                        const SizedBox(height: 22),
+                        Iconify(
+                          Ion.sparkles_sharp,
+                          color: const Color(0xFF6A53E7),
+                          size: 18,
+                        ),
+                      ],
+                    );
+                  },
+                ),
+
+                const SizedBox(height: 18),
+
+                /// ⚠️ Action boxes
+                _AlertBox(
+                  text: 'You need to set up your business profile',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const Profile()),
+                    );
+                  },
+                ),
+                const SizedBox(height: 12),
+                _AlertBox(
+                  text: 'Enable 2FA to ensure added security',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const Security()),
+                    );
+                  },
+                ),
+
+                const SizedBox(height: 18),
 
                 /// 📊 Grid Menu
                 Expanded(
@@ -115,17 +193,88 @@ class Home extends StatelessWidget {
     );
   }
 
-  Widget _circleIcon(dynamic icon) {
+  Widget _avatarCircle() {
+    return BlocBuilder<AuthBloc, AuthState>(
+      builder: (context, state) {
+        String? avatarUrl;
+        String initials = 'U';
+
+        if (state is Authenticated) {
+          final u = state.user;
+          final name = (u['fullname'] ?? u['email'] ?? 'User').toString();
+          initials = name.trim().isNotEmpty
+              ? name.trim()[0].toUpperCase()
+              : 'U';
+
+          avatarUrl =
+              (u['avatar'] ?? u['avatar_url'] ?? u['photo'] ?? u['photo_url'])
+                  ?.toString();
+          if (avatarUrl != null && avatarUrl.trim().isEmpty) avatarUrl = null;
+        }
+
+        return Container(
+          width: 54,
+          height: 54,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: const Color(0xFF2A1447),
+            border: Border.all(color: const Color(0xFFA92FEB), width: 0.5),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(4),
+            child: CircleAvatar(
+              backgroundColor: Color(0xFF2A1447),
+              backgroundImage: avatarUrl != null
+                  ? NetworkImage(avatarUrl)
+                  : null,
+              child: avatarUrl == null
+                  ? Text(
+                      initials,
+                      style: GoogleFonts.montserrat(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    )
+                  : null,
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _notificationBell({required int unreadCount}) {
     return Container(
       width: 54,
       height: 54,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        border: Border.all(color: Colors.white24),
+        border: Border.all(color: const Color(0xFFA92FEB), width: 0.5),
       ),
-      child: icon is IconData
-          ? Icon(icon, color: Colors.white70, size: 18)
-          : Iconify(icon, color: Colors.white70, size: 8),
+      child: Stack(
+        children: [
+          const Center(
+            child: Icon(
+              Icons.notifications_none,
+              color: Colors.white,
+              size: 22,
+            ),
+          ),
+          if (unreadCount > 0)
+            Positioned(
+              right: 14,
+              top: 14,
+              child: Container(
+                width: 10,
+                height: 10,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFE53935),
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
@@ -142,15 +291,7 @@ class _DashboardCard extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.white24),
-          gradient: LinearGradient(
-            colors: [
-              Colors.white.withOpacity(0.05),
-              Colors.white.withOpacity(0.02),
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+          border: Border.all(color: const Color(0xFFA92FEB), width: 1),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -197,11 +338,6 @@ class _GradientBackground extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        image: const DecorationImage(
-          image: AssetImage("assets/img/dashimg.png"),
-          fit: BoxFit.cover,
-          opacity: 0.1,
-        ),
         gradient: LinearGradient(
           colors: [Color(0xFF130522), Color(0xFF2D0C51), Color(0xFF130522)],
           begin: Alignment.topCenter,
@@ -209,6 +345,50 @@ class _GradientBackground extends StatelessWidget {
         ),
       ),
       child: child,
+    );
+  }
+}
+
+class _AlertBox extends StatelessWidget {
+  final String text;
+  final VoidCallback onTap;
+
+  const _AlertBox({required this.text, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 48,
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFA92FEB), width: 1),
+          color: Colors.black.withValues(alpha: 0.05),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.error_outline, color: Color(0xFFD60000), size: 22),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                text,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.montserrat(
+                  color: Colors.white,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w300,
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            const Icon(Icons.arrow_outward, color: Color(0xFFD60000), size: 18),
+          ],
+        ),
+      ),
     );
   }
 }

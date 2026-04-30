@@ -8,9 +8,87 @@ class NotificationsPage extends StatefulWidget {
 }
 
 class _NotificationsPageState extends State<NotificationsPage> {
-  bool showNotifications = true;
-  bool reminders = true;
+  late final ApiService _apiService;
+
+  bool _loading = true;
+  bool _saving = false;
+  String? _error;
+
+  bool showNotifications = true; // in_app_notifications
+  bool smsNotifications = true; // sms_notifications
   String sound = "Pulse";
+
+  @override
+  void initState() {
+    super.initState();
+    _apiService = context.read<ApiService>();
+    _loadSettings();
+  }
+
+  Future<void> _loadSettings() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final user = await _apiService.getUserProfile();
+      if (!mounted) return;
+
+      final inApp =
+          user['in_app_notification'] ??
+          user['in_app_notifications']; // legacy fallback
+      final sms =
+          user['sms_notification'] ??
+          user['sms_notifications'] ??
+          user['sms_nofiticaitons']; // legacy fallback
+
+      setState(() {
+        showNotifications = inApp is bool ? inApp : true;
+        smsNotifications = sms is bool ? sms : true;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _error = e.toString());
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _persist({
+    bool? inAppNotifications,
+    bool? smsNotifications,
+    required VoidCallback rollback,
+  }) async {
+    if (_saving) return;
+    setState(() => _saving = true);
+    try {
+      await _apiService.patchMyNotificationSettings(
+        inAppNotification: inAppNotifications,
+        smsNotification: smsNotifications,
+      );
+
+      // Fetch fresh user profile so local cache stays consistent
+      final updated = await _apiService.getUserProfile();
+
+      // Keep local cached user in sync (used by AuthBloc on next session check)
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('user', jsonEncode(updated));
+      } catch (_) {}
+    } catch (e) {
+      rollback();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to update notification settings: $e'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -84,17 +162,49 @@ class _NotificationsPageState extends State<NotificationsPage> {
                 Container(
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.6),
+                    color: Colors.white.withValues(alpha: 0.6),
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Column(
                     children: [
+                      if (_loading)
+                        const Padding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 10,
+                          ),
+                          child: LinearProgressIndicator(minHeight: 2),
+                        ),
+                      if (_error != null && _error!.trim().isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                          child: Text(
+                            _error!,
+                            style: const TextStyle(
+                              color: Colors.red,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+
                       /// Show Notifications Toggle
                       SwitchListTile(
                         value: showNotifications,
-                        onChanged: (val) {
-                          setState(() => showNotifications = val);
-                        },
+                        onChanged: (_loading || _saving)
+                            ? null
+                            : (val) {
+                                final prev = showNotifications;
+                                setState(() => showNotifications = val);
+                                _persist(
+                                  inAppNotifications: val,
+                                  rollback: () => setState(
+                                    () => showNotifications = prev,
+                                  ),
+                                );
+                              },
                         title: const Text(
                           "Show Notifications",
                           style: TextStyle(
@@ -102,7 +212,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                             fontWeight: FontWeight.w500,
                           ),
                         ),
-                        activeColor: CustColors.mainCol,
+                        activeThumbColor: CustColors.mainCol,
                       ),
 
                       /// Sound Tile
@@ -136,20 +246,29 @@ class _NotificationsPageState extends State<NotificationsPage> {
                         ),
                       ),
 
-                      /// Reminders Toggle
+                      /// SMS Notifications Toggle
                       SwitchListTile(
-                        value: reminders,
-                        onChanged: (val) {
-                          setState(() => reminders = val);
-                        },
+                        value: smsNotifications,
+                        onChanged: (_loading || _saving)
+                            ? null
+                            : (val) {
+                                final prev = smsNotifications;
+                                setState(() => smsNotifications = val);
+                                _persist(
+                                  smsNotifications: val,
+                                  rollback: () => setState(
+                                    () => smsNotifications = prev,
+                                  ),
+                                );
+                              },
                         title: const Text(
-                          "Reminders",
+                          "SMS Notifications",
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
-                        activeColor: CustColors.mainCol,
+                        activeThumbColor: CustColors.mainCol,
                       ),
                     ],
                   ),

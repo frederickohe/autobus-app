@@ -51,7 +51,7 @@ class _RecoverAccountState extends State<RecoverAccount> {
                   // Centered text
                   Center(
                     child: Text(
-                      'Recover Account',
+                      'Verify Email',
                       style: GoogleFonts.montserrat(
                         color: Colors.black,
                         fontSize: 26,

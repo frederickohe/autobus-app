@@ -1,6 +1,5 @@
 import 'package:http/http.dart' as http;
 import 'package:autobus/barrel.dart';
-import 'package:autobus/config/app_config.dart';
 
 /// HTTP Client wrapper with automatic token injection and refresh
 /// This client automatically:
