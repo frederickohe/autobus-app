@@ -204,7 +204,8 @@ class ApiService {
       if (inAppNotifications != null) {
         body['in_app_notifications'] = inAppNotifications;
       }
-      if (smsNotifications != null) body['sms_notifications'] = smsNotifications;
+      if (smsNotifications != null)
+        body['sms_notifications'] = smsNotifications;
 
       if (company != null) body['company'] = company;
       if (currentBranch != null) body['current_branch'] = currentBranch;
@@ -392,10 +393,10 @@ class ApiService {
 
   /// List available files in storage (typically AI training docs).
   ///
-  /// Backend: `GET /api/v1/storage/list?subfolder=ai-training-files/&extensions=txt,pdf,docx`
+  /// Backend: `GET /api/v1/storage/list?subfolder=chatbot-files/&extensions=txt,pdf,docx`
   /// Returns: `{ "files": [ { file_name, file_url, file_size, file_type, last_modified } ] }`
   Future<List<Map<String, dynamic>>> listStorageFiles({
-    String subfolder = 'ai-training-files/',
+    String subfolder = 'chatbot-files/',
     List<String> extensions = const ['txt', 'pdf', 'docx'],
     int maxKeys = 200,
   }) async {
@@ -426,6 +427,121 @@ class ApiService {
     }
     throw Exception(
       'Failed to list storage files: ${response.statusCode} ${response.body}',
+    );
+  }
+
+  /// List files for the authenticated user under:
+  /// `operations/<folder>/<jwtSubject>/`
+  ///
+  /// Backend: `GET /api/v1/storage/me/files?folder=<folder>`
+  /// Returns: `List[FileDTO]` (each includes a presigned URL)
+  Future<List<Map<String, dynamic>>> listMyStorageFiles({
+    required String folder,
+  }) async {
+    final normalizedFolder = folder.trim().replaceAll('\\', '/');
+    final uri = Uri.parse(
+      '$baseUrl/storage/me/files',
+    ).replace(queryParameters: {'folder': normalizedFolder});
+
+    final response = await httpClient.get(uri);
+    if (response.statusCode == 200) {
+      final decoded = jsonDecode(response.body);
+      final data =
+          (decoded is Map ? (decoded['files'] ?? decoded['data']) : decoded) ??
+          const [];
+      if (data is List) {
+        return data
+            .whereType<Map>()
+            .map((e) => Map<String, dynamic>.from(e))
+            .toList();
+      }
+      return const [];
+    }
+    if (response.statusCode == 401) {
+      throw Exception('Session expired');
+    }
+    throw Exception(
+      'Failed to list my storage files: ${response.statusCode} ${response.body}',
+    );
+  }
+
+  /// Download a user's file.
+  ///
+  /// Backend: `GET /api/v1/storage/me/download/{file_name}?folder=<folder>`
+  /// Note: This may return bytes or a redirect depending on backend.
+  Uri myStorageDownloadUri({required String folder, required String fileName}) {
+    final normalizedFolder = folder.trim().replaceAll('\\', '/');
+    return Uri.parse(
+      '$baseUrl/storage/me/download/${Uri.encodeComponent(fileName)}',
+    ).replace(queryParameters: {'folder': normalizedFolder});
+  }
+
+  /// Delete a user's file.
+  ///
+  /// Backend: `DELETE /api/v1/storage/me/file/{file_name}?folder=<folder>`
+  Future<void> deleteMyStorageFile({
+    required String folder,
+    required String fileName,
+  }) async {
+    final normalizedFolder = folder.trim().replaceAll('\\', '/');
+    final uri = Uri.parse(
+      '$baseUrl/storage/me/file/${Uri.encodeComponent(fileName)}',
+    ).replace(queryParameters: {'folder': normalizedFolder});
+
+    final response = await httpClient.delete(uri);
+    if (response.statusCode == 200 ||
+        response.statusCode == 202 ||
+        response.statusCode == 204) {
+      return;
+    }
+    if (response.statusCode == 401) {
+      throw Exception('Session expired');
+    }
+    throw Exception(
+      'Failed to delete file: ${response.statusCode} ${response.body}',
+    );
+  }
+
+  /// Upload a file to the authenticated user's folder.
+  ///
+  /// Backend: `POST /api/v1/storage/me/upload-multiple?folder=<folder>`
+  /// Form-data: `files` (one or more)
+  /// Returns: `List[FileDTO]` (each includes a presigned URL)
+  Future<Map<String, dynamic>> uploadMyStorageFile({
+    required String folder,
+    required File file,
+    String fieldName = 'files',
+    String? filename,
+  }) async {
+    final normalizedFolder = folder.trim().replaceAll('\\', '/');
+    final uri = Uri.parse(
+      '$baseUrl/storage/me/upload-multiple',
+    ).replace(queryParameters: {'folder': normalizedFolder});
+
+    final request = http.MultipartRequest('POST', uri);
+    final multipartFile = await http.MultipartFile.fromPath(
+      fieldName,
+      file.path,
+      filename: filename,
+    );
+    request.files.add(multipartFile);
+
+    final streamed = await httpClient.send(request);
+    final response = await http.Response.fromStream(streamed);
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final decoded = jsonDecode(response.body);
+      if (decoded is List && decoded.isNotEmpty && decoded.first is Map) {
+        return Map<String, dynamic>.from(decoded.first as Map);
+      }
+      if (decoded is Map<String, dynamic>) return decoded;
+      throw Exception('Upload succeeded but response shape was unexpected');
+    }
+    if (response.statusCode == 401) {
+      throw Exception('Session expired');
+    }
+    throw Exception(
+      'Failed to upload file: ${response.statusCode} ${response.body}',
     );
   }
 
@@ -656,16 +772,15 @@ class ApiService {
     final response = await httpClient.get(Uri.parse('$baseUrl/notification'));
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
-      final list =
-          data is List
-              ? data
-              : (data is Map
-                    ? (data['notifications'] ??
-                          data['data'] ??
-                          data['items'] ??
-                          data['results'] ??
-                          [])
-                    : []);
+      final list = data is List
+          ? data
+          : (data is Map
+                ? (data['notifications'] ??
+                      data['data'] ??
+                      data['items'] ??
+                      data['results'] ??
+                      [])
+                : []);
       if (list is List) {
         return list
             .whereType<Map>()

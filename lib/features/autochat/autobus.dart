@@ -1,5 +1,8 @@
 import 'package:autobus/barrel.dart';
+import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:file_picker/file_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'services/autochat_repository.dart';
 import 'chat_bloc.dart';
 import 'chat_event.dart';
@@ -184,147 +187,413 @@ class _AutoBusChatUIState extends State<_AutoBusChatUI> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
       ),
       builder: (context) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 44,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    const Icon(Icons.folder_open_rounded, color: _purple),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        'Choose a file',
-                        style: GoogleFonts.montserrat(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          color: _purple,
-                        ),
+        final folderController = TextEditingController(text: 'chatbot-files');
+        String folder = folderController.text.trim();
+        bool uploading = false;
+        bool uploadSuccess = false;
+        String? uploadError;
+
+        Future<List<Map<String, dynamic>>> load() {
+          final f = folder.trim();
+          return api.listMyStorageFiles(
+            folder: f.isEmpty ? 'chatbot-files' : f,
+          );
+        }
+
+        Future<void> openUri(Uri uri) async {
+          final ok = await canLaunchUrl(uri);
+          if (!ok) {
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Could not open link')),
+              );
+            }
+            return;
+          }
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+        }
+
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            Future<void> pickAndUpload() async {
+              final activeFolder =
+                  folder.trim().isEmpty ? 'chatbot-files' : folder.trim();
+
+              setSheetState(() {
+                uploading = true;
+                uploadSuccess = false;
+                uploadError = null;
+              });
+
+              try {
+                final result = await FilePicker.platform.pickFiles(
+                  allowMultiple: false,
+                  withData: false,
+                );
+                if (result == null || result.files.isEmpty) {
+                  setSheetState(() => uploading = false);
+                  return;
+                }
+
+                final picked = result.files.first;
+                final path = picked.path;
+                if (path == null || path.trim().isEmpty) {
+                  throw Exception('Selected file has no path');
+                }
+
+                await api.uploadMyStorageFile(
+                  folder: activeFolder,
+                  file: File(path),
+                  filename: picked.name,
+                );
+
+                setSheetState(() {
+                  uploading = false;
+                  uploadSuccess = true;
+                });
+
+                // Refresh list so uploaded file appears.
+                setSheetState(() {});
+
+                // Auto-hide the success check after a moment.
+                if (mounted) {
+                  Future<void>.delayed(const Duration(seconds: 2), () {
+                    if (!mounted) return;
+                    setSheetState(() => uploadSuccess = false);
+                  });
+                }
+              } catch (e) {
+                setSheetState(() {
+                  uploading = false;
+                  uploadSuccess = false;
+                  uploadError = e.toString();
+                });
+              }
+            }
+
+            return SafeArea(
+              child: SizedBox(
+                height: MediaQuery.of(context).size.height * 0.75,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.max,
+                    children: [
+                    Container(
+                      width: 44,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(20),
                       ),
                     ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                FutureBuilder<List<Map<String, dynamic>>>(
-                  future: api.listStorageFiles(
-                    subfolder: 'ai-training-files/',
-                    extensions: const ['txt', 'pdf', 'docx'],
-                    maxKeys: 200,
-                  ),
-                  builder: (context, snap) {
-                    if (snap.connectionState == ConnectionState.waiting) {
-                      return const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 22),
-                        child: Center(child: CircularProgressIndicator()),
-                      );
-                    }
-                    if (snap.hasError) {
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        const Icon(Icons.folder_open_rounded, color: _purple),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'Choose a file',
+                            style: GoogleFonts.montserrat(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              color: _purple,
+                            ),
+                          ),
+                        ),
+                        if (uploadSuccess) ...[
+                          const Icon(
+                            Icons.check_circle_rounded,
+                            color: Colors.green,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                        ],
+                        const SizedBox(width: 8),
+                        TextButton.icon(
+                          onPressed: uploading ? null : pickAndUpload,
+                          icon: uploading
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Icon(Icons.upload_file_rounded),
+                          label: Text(
+                            uploading ? 'Uploading…' : 'Upload file',
+                            style: GoogleFonts.montserrat(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: _purple,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: folderController,
+                            decoration: InputDecoration(
+                              hintText: 'Folder (e.g. chatbot-files)',
+                              isDense: true,
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 10,
+                              ),
+                              filled: true,
+                              fillColor: Colors.black.withValues(alpha: 0.04),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide.none,
+                              ),
+                            ),
+                            style: GoogleFonts.montserrat(
+                              fontSize: 12,
+                              color: _purple,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            onSubmitted: (_) {
+                              setSheetState(() {
+                                folder = folderController.text.trim();
+                              });
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        IconButton(
+                          tooltip: 'Refresh',
+                          onPressed: () {
+                            setSheetState(() {
+                              folder = folderController.text.trim();
+                            });
+                          },
+                          icon: const Icon(
+                            Icons.refresh_rounded,
+                            color: _purple,
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (uploadError != null) ...[
+                      const SizedBox(height: 8),
+                      Align(
+                        alignment: Alignment.centerLeft,
                         child: Text(
-                          'Could not load files. ${snap.error}',
+                          uploadError!,
                           style: GoogleFonts.montserrat(
                             fontSize: 12,
                             color: Colors.red,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
-                      );
-                    }
-
-                    final files = snap.data ?? const [];
-                    if (files.isEmpty) {
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        child: Text(
-                          'No files found.',
-                          style: GoogleFonts.montserrat(
-                            fontSize: 12,
-                            color: _purple.withValues(alpha: 0.65),
-                          ),
-                        ),
-                      );
-                    }
-
-                    final maxHeight = MediaQuery.of(context).size.height * 0.55;
-                    return SizedBox(
-                      height: maxHeight,
-                      child: ListView.separated(
-                        shrinkWrap: true,
-                        itemCount: files.length,
-                        separatorBuilder: (_, __) => Divider(
-                          color: Colors.black.withValues(alpha: 0.08),
-                        ),
-                        itemBuilder: (context, index) {
-                          final f = files[index];
-                          final name = (f['file_name'] ?? '').toString();
-                          final url = (f['file_url'] ?? '').toString();
-                          final type = (f['file_type'] ?? '').toString();
-
-                          IconData icon = Icons.insert_drive_file_outlined;
-                          final lower = name.toLowerCase();
-                          if (lower.endsWith('.pdf'))
-                            icon = Icons.picture_as_pdf;
-                          if (lower.endsWith('.docx') ||
-                              lower.endsWith('.doc')) {
-                            icon = Icons.description_outlined;
+                      ),
+                    ],
+                    const SizedBox(height: 12),
+                    Expanded(
+                      child: FutureBuilder<List<Map<String, dynamic>>>(
+                        future: load(),
+                        builder: (context, snap) {
+                          if (snap.connectionState ==
+                              ConnectionState.waiting) {
+                            return const Center(
+                              child: CircularProgressIndicator(),
+                            );
                           }
-                          if (lower.endsWith('.txt'))
-                            icon = Icons.text_snippet_outlined;
+                          if (snap.hasError) {
+                            return Align(
+                              alignment: Alignment.topLeft,
+                              child: Text(
+                                'Could not load files. ${snap.error}',
+                                style: GoogleFonts.montserrat(
+                                  fontSize: 12,
+                                  color: Colors.red,
+                                ),
+                              ),
+                            );
+                          }
 
-                          return ListTile(
-                            dense: true,
-                            leading: Icon(icon, color: _purple),
-                            title: Text(
-                              name.isEmpty ? 'Unnamed file' : name,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.montserrat(
-                                fontSize: 13,
-                                color: _purple,
-                                fontWeight: FontWeight.w500,
+                          final files = snap.data ?? const [];
+                          if (files.isEmpty) {
+                            return Align(
+                              alignment: Alignment.topLeft,
+                              child: Text(
+                                'No files found in "${folder.isEmpty ? 'chatbot-files' : folder}".',
+                                style: GoogleFonts.montserrat(
+                                  fontSize: 12,
+                                  color: _purple.withValues(alpha: 0.65),
+                                ),
                               ),
+                            );
+                          }
+
+                          return ListView.separated(
+                            itemCount: files.length,
+                            separatorBuilder: (_, __) => Divider(
+                              color: Colors.black.withValues(alpha: 0.08),
                             ),
-                            subtitle: Text(
-                              type.isNotEmpty
-                                  ? type
-                                  : (url.isNotEmpty ? 'link' : ''),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.montserrat(
-                                fontSize: 11,
-                                color: _purple.withValues(alpha: 0.55),
-                              ),
-                            ),
-                            onTap: () {
-                              Navigator.pop(context);
-                              final token = url.isNotEmpty
-                                  ? url
-                                  : (name.isNotEmpty ? name : '');
-                              if (token.isNotEmpty) {
-                                final insert = ' $token ';
-                                _insertTextAtCursor(insert);
+                            itemBuilder: (context, index) {
+                              final f = files[index];
+                              final name = (f['file_name'] ?? f['name'] ?? '')
+                                  .toString();
+                              final url =
+                                  (f['file_url'] ??
+                                          f['url'] ??
+                                          f['presigned_url'] ??
+                                          '')
+                                      .toString();
+                              final type =
+                                  (f['file_type'] ?? f['content_type'] ?? '')
+                                      .toString();
+
+                              IconData icon = Icons.insert_drive_file_outlined;
+                              final lower = name.toLowerCase();
+                              if (lower.endsWith('.pdf')) {
+                                icon = Icons.picture_as_pdf;
                               }
+                              if (lower.endsWith('.docx') ||
+                                  lower.endsWith('.doc')) {
+                                icon = Icons.description_outlined;
+                              }
+                              if (lower.endsWith('.txt')) {
+                                icon = Icons.text_snippet_outlined;
+                              }
+
+                              final activeFolder = folder.trim().isEmpty
+                                  ? 'chatbot-files'
+                                  : folder.trim();
+                              final downloadUri = api.myStorageDownloadUri(
+                                folder: activeFolder,
+                                fileName: name,
+                              );
+
+                              return ListTile(
+                                dense: true,
+                                leading: Icon(icon, color: _purple),
+                                title: Text(
+                                  name.isEmpty ? 'Unnamed file' : name,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: GoogleFonts.montserrat(
+                                    fontSize: 13,
+                                    color: _purple,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                subtitle: Text(
+                                  type.isNotEmpty
+                                      ? type
+                                      : (url.isNotEmpty
+                                            ? 'presigned link'
+                                            : ''),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: GoogleFonts.montserrat(
+                                    fontSize: 11,
+                                    color: _purple.withValues(alpha: 0.55),
+                                  ),
+                                ),
+                                trailing: PopupMenuButton<String>(
+                                  tooltip: 'Actions',
+                                  onSelected: (action) async {
+                                    if (action == 'insert') {
+                                      Navigator.pop(context);
+                                      final token = url.isNotEmpty
+                                          ? url
+                                          : (name.isNotEmpty ? name : '');
+                                      if (token.isNotEmpty) {
+                                        _insertTextAtCursor(' $token ');
+                                      }
+                                      return;
+                                    }
+                                    if (action == 'open') {
+                                      final uri = Uri.tryParse(url);
+                                      if (uri != null) await openUri(uri);
+                                      return;
+                                    }
+                                    if (action == 'download') {
+                                      await openUri(downloadUri);
+                                      return;
+                                    }
+                                    if (action == 'delete') {
+                                      try {
+                                        await api.deleteMyStorageFile(
+                                          folder: activeFolder,
+                                          fileName: name,
+                                        );
+                                        if (context.mounted) {
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
+                                            SnackBar(
+                                              content: Text('Deleted $name'),
+                                            ),
+                                          );
+                                        }
+                                        setSheetState(() {});
+                                      } catch (e) {
+                                        if (context.mounted) {
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                'Delete failed: $e',
+                                              ),
+                                            ),
+                                          );
+                                        }
+                                      }
+                                      return;
+                                    }
+                                  },
+                                  itemBuilder: (_) => [
+                                    const PopupMenuItem(
+                                      value: 'insert',
+                                      child: Text('Insert into chat'),
+                                    ),
+                                    PopupMenuItem(
+                                      value: 'open',
+                                      enabled: url.isNotEmpty,
+                                      child: const Text('Open presigned link'),
+                                    ),
+                                    const PopupMenuItem(
+                                      value: 'download',
+                                      child: Text('Download'),
+                                    ),
+                                    const PopupMenuDivider(),
+                                    const PopupMenuItem(
+                                      value: 'delete',
+                                      child: Text('Delete'),
+                                    ),
+                                  ],
+                                ),
+                                onTap: () {
+                                  Navigator.pop(context);
+                                  final token = url.isNotEmpty
+                                      ? url
+                                      : (name.isNotEmpty ? name : '');
+                                  if (token.isNotEmpty) {
+                                    _insertTextAtCursor(' $token ');
+                                  }
+                                },
+                              );
                             },
                           );
                         },
                       ),
-                    );
-                  },
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
-          ),
+            );
+          },
         );
       },
     );
@@ -380,7 +649,7 @@ class _AutoBusChatUIState extends State<_AutoBusChatUI> {
                       ),
                     ),
                     Text(
-                      '$title',
+                      title,
                       style: GoogleFonts.montserrat(
                         fontSize: 20,
                         fontWeight: FontWeight.w400,
@@ -531,8 +800,9 @@ class _AutoBusChatUIState extends State<_AutoBusChatUI> {
 
                       /// Send (enabled only when there is text)
                       GestureDetector(
-                        onTap:
-                            controller.text.trim().isEmpty ? null : _sendMessage,
+                        onTap: controller.text.trim().isEmpty
+                            ? null
+                            : _sendMessage,
                         child: Icon(
                           Icons.send_rounded,
                           size: 24,
