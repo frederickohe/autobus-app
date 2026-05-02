@@ -34,7 +34,11 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     emit(ChatLoadSuccess(List.from(current)));
 
     try {
-      final botReply = await repository.sendMessage(event.phone, event.message);
+      final botReply = await repository.sendMessage(
+        event.phone,
+        event.message,
+        context: event.context,
+      );
 
       // mark user message as sent
       final updated = current.map((m) {

@@ -205,15 +205,52 @@ class _ExpandedPlanContent extends StatelessWidget {
   final SubscriptionPlan plan;
   const _ExpandedPlanContent({required this.plan});
 
+  static Widget _itemRow({
+    required IconData icon,
+    required String label,
+    required Color baseColor,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            height: 18,
+            width: 18,
+            decoration: BoxDecoration(
+              color: baseColor,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, size: 12, color: Colors.white),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              label,
+              style: GoogleFonts.montserrat(
+                color: baseColor.withOpacity(0.85),
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final col = CustColors.mainCol;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           plan.name,
           style: GoogleFonts.montserrat(
-            color: CustColors.mainCol,
+            color: col,
             fontSize: 18,
             fontWeight: FontWeight.w700,
           ),
@@ -222,38 +259,44 @@ class _ExpandedPlanContent extends StatelessWidget {
         Text(
           plan.priceText,
           style: GoogleFonts.montserrat(
-            color: CustColors.mainCol,
+            color: col,
             fontSize: 34,
             fontWeight: FontWeight.w700,
           ),
         ),
         const SizedBox(height: 14),
-        for (final f in plan.features) ...[
-          Row(
-            children: [
-              Container(
-                height: 18,
-                width: 18,
-                decoration: BoxDecoration(
-                  color: CustColors.mainCol,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(Icons.check, size: 12, color: Colors.white),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  f,
-                  style: GoogleFonts.montserrat(
-                    color: CustColors.mainCol.withOpacity(0.85),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-            ],
+        if (plan.features.isNotEmpty) ...[
+          Text(
+            'Features',
+            style: GoogleFonts.montserrat(
+              color: col.withOpacity(0.75),
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.4,
+            ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
+          for (final f in plan.features)
+            _itemRow(icon: Icons.check, label: f, baseColor: col),
+        ],
+        if (plan.agents.isNotEmpty) ...[
+          if (plan.features.isNotEmpty) const SizedBox(height: 6),
+          Text(
+            'Agents',
+            style: GoogleFonts.montserrat(
+              color: col.withOpacity(0.75),
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.4,
+            ),
+          ),
+          const SizedBox(height: 8),
+          for (final a in plan.agents)
+            _itemRow(
+              icon: Icons.smart_toy_outlined,
+              label: a,
+              baseColor: col,
+            ),
         ],
       ],
     );

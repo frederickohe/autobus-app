@@ -12,7 +12,30 @@ import 'models/chat_message.dart';
 class AutoBus extends StatefulWidget {
   final String title;
 
-  const AutoBus({super.key, this.title = 'Orders'});
+  /// Webhook `context` when set; otherwise inferred from [title].
+  final String? webhookContext;
+
+  const AutoBus({super.key, this.title = 'Orders', this.webhookContext});
+
+  /// Maps dashboard titles to backend `context` values for `start-dialog`.
+  static String defaultWebhookContextForTitle(String title) {
+    switch (title.trim().toLowerCase()) {
+      case 'orders':
+        return 'order_agent';
+      case 'chatbot':
+        return 'chatbot_agent';
+      case 'queries':
+        return 'web_search_agent';
+      case 'products':
+        return 'products_agent';
+      case 'messages':
+        return 'chatbot_agent';
+      case 'email':
+        return 'email_agent';
+      default:
+        return 'chatbot_agent';
+    }
+  }
 
   @override
   State<AutoBus> createState() => _AutoBusState();
@@ -94,11 +117,15 @@ class _AutoBusState extends State<AutoBus> {
   Widget _buildAuthenticatedAutoBus(dynamic user) {
     final repo = AutoChatRepository(client: http.Client());
 
+    final ctx = widget.webhookContext ??
+        AutoBus.defaultWebhookContextForTitle(widget.title);
+
     return BlocProvider(
       create: (_) => ChatBloc(repo),
       child: _AutoBusChatUI(
         user: user,
         title: widget.title,
+        webhookContext: ctx,
         controller: commandController,
       ),
     );
@@ -108,11 +135,13 @@ class _AutoBusState extends State<AutoBus> {
 class _AutoBusChatUI extends StatefulWidget {
   final dynamic user;
   final String title;
+  final String webhookContext;
   final TextEditingController controller;
 
   const _AutoBusChatUI({
     required this.user,
     required this.title,
+    required this.webhookContext,
     required this.controller,
   });
 
@@ -153,7 +182,11 @@ class _AutoBusChatUIState extends State<_AutoBusChatUI> {
         : 'unknown';
 
     context.read<ChatBloc>().add(
-      SendMessage(phone: phone, message: widget.controller.text),
+      SendMessage(
+        phone: phone,
+        message: widget.controller.text,
+        context: widget.webhookContext,
+      ),
     );
     widget.controller.clear();
   }

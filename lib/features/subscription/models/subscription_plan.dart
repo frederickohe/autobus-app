@@ -29,6 +29,7 @@ class SubscriptionPlan extends Equatable {
   final String name;
   final double price;
   final List<String> features;
+  final List<String> agents;
   final String description;
   final bool isActive;
 
@@ -37,6 +38,7 @@ class SubscriptionPlan extends Equatable {
     required this.name,
     required this.price,
     required this.features,
+    this.agents = const [],
     required this.description,
     required this.isActive,
   });
@@ -53,6 +55,9 @@ class SubscriptionPlan extends Equatable {
       features: ((json['features'] as List?) ?? [])
           .map((e) => e.toString())
           .toList(),
+      agents: ((json['agents'] as List?) ?? [])
+          .map((e) => e.toString())
+          .toList(),
       description: (json['description'] ?? '').toString(),
       isActive: json['is_active'] == true,
     );
@@ -64,6 +69,7 @@ class SubscriptionPlan extends Equatable {
       'name': name,
       'price': price,
       'features': features,
+      'agents': agents,
       'description': description,
       'is_active': isActive,
     };
@@ -90,5 +96,5 @@ class SubscriptionPlan extends Equatable {
   String get priceText => price == 0 ? 'Free' : 'from GHS $price/mo';
 
   @override
-  List<Object?> get props => [id, name, price, features, description, isActive];
+  List<Object?> get props => [id, name, price, features, agents, description, isActive];
 }

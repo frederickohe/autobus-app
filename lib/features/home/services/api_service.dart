@@ -30,6 +30,27 @@ class ApiService {
     }
   }
 
+  /// GET /api/v1/subscription/status/{phone} — server truth for active subscription.
+  Future<Map<String, dynamic>?> getSubscriptionStatusByPhone(String phone) async {
+    final trimmed = phone.trim();
+    if (trimmed.isEmpty) return null;
+    try {
+      final uri = Uri.parse(
+        '$baseUrl/subscription/status/${Uri.encodeComponent(trimmed)}',
+      );
+      final response = await httpClient.get(uri);
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data is Map<String, dynamic>) return data;
+        if (data is Map) return Map<String, dynamic>.from(data);
+      }
+      return null;
+    } catch (e) {
+      debugPrint('getSubscriptionStatusByPhone: $e');
+      return null;
+    }
+  }
+
   /// Get all rides/buses
   Future<List<dynamic>> getRides() async {
     try {

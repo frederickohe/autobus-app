@@ -12,11 +12,21 @@ class AutoChatRepository {
   AutoChatRepository({http.Client? client}) : client = client ?? http.Client();
 
   /// Sends a message to the webhook and returns the bot reply as a ChatMessage.
-  Future<ChatMessage> sendMessage(String phone, String message) async {
+  ///
+  /// [context] is the backend agent key (e.g. `order_agent`, `chatbot_agent`).
+  Future<ChatMessage> sendMessage(
+    String phone,
+    String message, {
+    required String context,
+  }) async {
     final res = await client.post(
       endpoint,
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'userid': phone, 'message': message}),
+      body: jsonEncode({
+        'userid': phone,
+        'message': message,
+        'context': context,
+      }),
     );
 
     if (res.statusCode != 200) {

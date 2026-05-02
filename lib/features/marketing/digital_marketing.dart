@@ -1,6 +1,9 @@
 import 'package:autobus/barrel.dart';
 
 const _kPrimary = Color(0xFF1A1A2E);
+const _kHeaderPurple = Color(0xFF2A1447);
+const _kHeaderBorder = Color(0xFFA92FEB);
+const _kNextButtonPurple = Color(0xFF2A1447);
 const _kPurple = Color(0xFF6C63FF);
 const _kRed = Color(0xFFE63946);
 
@@ -73,53 +76,75 @@ class _MarketingScaffold extends StatelessWidget {
       body: SafeArea(
         child: Column(
           children: [
-            const SizedBox(height: 20),
+            const SizedBox(height: 42),
+
+            /// Header to match Chatbot / Orders
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 18),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: Container(
-                      width: 48,
-                      height: 48,
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: _kPrimary,
-                      ),
-                      child: const Icon(
-                        Icons.arrow_back_ios_new,
-                        color: Colors.white,
-                        size: 18,
+              padding: const EdgeInsets.symmetric(horizontal: 34),
+              child: SizedBox(
+                height: 54,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: GestureDetector(
+                        onTap: () => Navigator.pop(context),
+                        child: Container(
+                          width: 54,
+                          height: 54,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: _kHeaderPurple,
+                            border: Border.all(
+                              color: _kHeaderBorder,
+                              width: 0.5,
+                            ),
+                          ),
+                          child: const Icon(
+                            Icons.arrow_back_ios_new,
+                            color: Colors.white,
+                            size: 18,
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-                  Text(
-                    'Digital Marketing',
-                    style: GoogleFonts.montserrat(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w400,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  if (showStar)
-                    Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(color: _kPrimary, width: 2),
-                        color: Colors.white,
+                    Text(
+                      'Digital Marketing',
+                      style: GoogleFonts.montserrat(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w400,
+                        color: _kHeaderPurple,
                       ),
-                      child: const Icon(Icons.star, color: _kRed, size: 24),
-                    )
-                  else
-                    const SizedBox(width: 48),
-                ],
+                    ),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: showStar
+                          ? Container(
+                              width: 54,
+                              height: 54,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: _kHeaderPurple,
+                                border: Border.all(
+                                  color: _kHeaderBorder,
+                                  width: 0.5,
+                                ),
+                              ),
+                              child: const Icon(
+                                Icons.star,
+                                color: _kRed,
+                                size: 24,
+                              ),
+                            )
+                          : const _MarketingAvatarButton(),
+                    ),
+                  ],
+                ),
               ),
             ),
-            const SizedBox(height: 30),
+
+            const SizedBox(height: 26),
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 18),
@@ -133,42 +158,122 @@ class _MarketingScaffold extends StatelessWidget {
   }
 }
 
-class _DarkButton extends StatelessWidget {
-  final String label;
-  final VoidCallback? onTap;
-  final bool showArrows;
-
-  const _DarkButton({required this.label, this.onTap, this.showArrows = true});
+class _MarketingAvatarButton extends StatelessWidget {
+  const _MarketingAvatarButton();
 
   @override
   Widget build(BuildContext context) {
+    return BlocBuilder<AuthBloc, AuthState>(
+      builder: (context, state) {
+        final dynamic user = state is Authenticated ? state.user : null;
+
+        String? avatarUrl;
+        String initials = 'U';
+
+        if (user is Map) {
+          final name = (user['fullname'] ?? user['email'] ?? 'User').toString();
+          initials = name.trim().isNotEmpty
+              ? name.trim()[0].toUpperCase()
+              : initials;
+          avatarUrl =
+              (user['avatar'] ??
+                      user['avatar_url'] ??
+                      user['photo'] ??
+                      user['photo_url'])
+                  ?.toString();
+          if (avatarUrl != null && avatarUrl.trim().isEmpty) avatarUrl = null;
+        }
+
+        return Container(
+          width: 54,
+          height: 54,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: _kHeaderPurple,
+            border: Border.all(color: _kHeaderBorder, width: 0.5),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(4),
+            child: CircleAvatar(
+              backgroundColor: _kHeaderPurple,
+              backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,
+              child: avatarUrl == null
+                  ? Text(
+                      initials,
+                      style: GoogleFonts.montserrat(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    )
+                  : null,
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _DarkButton extends StatelessWidget {
+  final String label;
+  final VoidCallback? onTap;
+
+  const _DarkButton({required this.label, this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = onTap != null;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 16),
+        height: 74,
+        padding: const EdgeInsets.symmetric(horizontal: 22),
         decoration: BoxDecoration(
-          color: onTap != null ? _kPrimary : Colors.grey.shade300,
-          borderRadius: BorderRadius.circular(30),
+          color: enabled ? _kNextButtonPurple : Colors.grey.shade300,
+          borderRadius: BorderRadius.circular(50),
+          border: Border.all(
+            color: enabled
+                ? Colors.white
+                : Colors.white.withValues(alpha: 0.0),
+            width: 0.5,
+          ),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.max,
           children: [
             Text(
               label,
               style: GoogleFonts.montserrat(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
-                color: Colors.white,
+                color: enabled ? Colors.white : Colors.white70,
               ),
             ),
-            if (showArrows) ...[
-              const SizedBox(width: 12),
-              const Text(
-                '›  ›  ›',
-                style: TextStyle(color: Colors.white, fontSize: 13),
-              ),
-            ],
+            const SizedBox(width: 12),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.arrow_forward_ios,
+                  size: 14,
+                  color: Colors.white.withValues(alpha: enabled ? 1.0 : 0.7),
+                ),
+                const SizedBox(width: 10),
+                Icon(
+                  Icons.arrow_forward_ios,
+                  size: 14,
+                  color: Colors.white.withValues(alpha: enabled ? 0.8 : 0.55),
+                ),
+                const SizedBox(width: 10),
+                Icon(
+                  Icons.arrow_forward_ios,
+                  size: 14,
+                  color: Colors.white.withValues(alpha: enabled ? 0.6 : 0.4),
+                ),
+              ],
+            ),
           ],
         ),
       ),
@@ -273,9 +378,9 @@ class _DigitalMarketingPageState extends State<DigitalMarketingPage> {
   @override
   Widget build(BuildContext context) {
     return _MarketingScaffold(
-      showStar: true,
+      showStar: false,
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Center(
             child: Text(
@@ -330,7 +435,7 @@ class _DigitalMarketingPageState extends State<DigitalMarketingPage> {
           const Spacer(),
 
           _DarkButton(
-            label: 'Get Started',
+            label: 'Next',
             onTap: _selected.isNotEmpty ? _onGetStarted : null,
           ),
           const SizedBox(height: 20),
@@ -511,6 +616,7 @@ class _GenerateMediaPageState extends State<_GenerateMediaPage> {
         _content.genState != MediaGenState.generating;
 
     return _MarketingScaffold(
+      showStar: false,
       child: Column(
         children: [
           Text(
@@ -1052,7 +1158,7 @@ class _SelectOutletPageState extends State<_SelectOutletPage> {
         : _outlets.length;
 
     return _MarketingScaffold(
-      showStar: true,
+      showStar: false,
       child: Column(
         children: [
           Text(

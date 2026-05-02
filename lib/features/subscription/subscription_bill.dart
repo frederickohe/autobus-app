@@ -30,15 +30,18 @@ class _SubscriptionBillPageState extends State<SubscriptionBillPage> {
     required SuccessBloc successBloc,
     required NavigatorState navigator,
     required String reference,
+    bool verifyPaystackPayment = true,
   }) async {
-    final verified = await api.verifyPaystackTransaction(reference);
+    if (verifyPaystackPayment) {
+      final verified = await api.verifyPaystackTransaction(reference);
 
-    if (!verified) {
-      if (!mounted) return;
-      messenger.showSnackBar(
-        const SnackBar(content: Text('Payment verification failed.')),
-      );
-      return;
+      if (!verified) {
+        if (!mounted) return;
+        messenger.showSnackBar(
+          const SnackBar(content: Text('Payment verification failed.')),
+        );
+        return;
+      }
     }
 
     var phone = (_phone ?? '').trim();
@@ -140,6 +143,14 @@ class _SubscriptionBillPageState extends State<SubscriptionBillPage> {
     } catch (_) {}
   }
 
+  /// True when Paystack init would send a zero amount, or the user picked an explicit free tier.
+  bool _skipPaystackForSelectedBilling() {
+    if ((_selected.price * 100).toInt() <= 0) return true;
+    final id = _selected.id.toLowerCase().trim();
+    final label = _selected.label.toLowerCase().trim();
+    return id == 'free' || label == 'free';
+  }
+
   Future<void> _handleSubscription() async {
     setState(() => _isLoading = true);
 
@@ -149,6 +160,8 @@ class _SubscriptionBillPageState extends State<SubscriptionBillPage> {
       final messenger = ScaffoldMessenger.of(context);
       final successBloc = context.read<SuccessBloc>();
       final navigator = Navigator.of(context);
+
+      final skipPaystack = _skipPaystackForSelectedBilling();
 
       var userEmail = widget.userEmail.trim();
       if (userEmail.isEmpty) userEmail = (_email ?? '').trim();
@@ -160,7 +173,7 @@ class _SubscriptionBillPageState extends State<SubscriptionBillPage> {
       }
 
       debugPrint('email resolved: "$userEmail"');
-      if (userEmail.isEmpty) {
+      if (!skipPaystack && userEmail.isEmpty) {
         messenger.showSnackBar(
           const SnackBar(
             content: Text(
@@ -171,7 +184,7 @@ class _SubscriptionBillPageState extends State<SubscriptionBillPage> {
         return;
       }
 
-      if (AppConfig.paystackCallbackUrl.isEmpty) {
+      if (!skipPaystack && AppConfig.paystackCallbackUrl.isEmpty) {
         messenger.showSnackBar(
           const SnackBar(
             content: Text(
@@ -179,6 +192,20 @@ class _SubscriptionBillPageState extends State<SubscriptionBillPage> {
             ),
           ),
         );
+      }
+
+      if (skipPaystack) {
+        final freeRef =
+            'free_${widget.plan.id}_${_selected.id}_${DateTime.now().millisecondsSinceEpoch}';
+        await _finalizeSubscription(
+          api: api,
+          messenger: messenger,
+          successBloc: successBloc,
+          navigator: navigator,
+          reference: freeRef,
+          verifyPaystackPayment: false,
+        );
+        return;
       }
 
       // Step 1 — initialize transaction on your backend

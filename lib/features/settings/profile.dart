@@ -12,6 +12,8 @@ class Profile extends StatefulWidget {
 class _ProfileState extends State<Profile> {
   final _formKey = GlobalKey<FormState>();
 
+  Map<String, dynamic>? _userProfileRaw;
+
   // User profile
   final TextEditingController fullnameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
@@ -57,6 +59,8 @@ class _ProfileState extends State<Profile> {
       final user = await _apiService.getUserProfile();
       if (!mounted) return;
 
+      _userProfileRaw = Map<String, dynamic>.from(user as Map);
+
       fullnameController.text = (user['fullname'] ?? user['name'] ?? '')
           .toString();
       phoneController.text = (user['phone'] ?? '').toString();
@@ -94,6 +98,167 @@ class _ProfileState extends State<Profile> {
     } finally {
       if (mounted) setState(() => _loading = false);
     }
+  }
+
+  bool _isPresent(dynamic value) {
+    if (value == null) return false;
+    if (value is String) return value.trim().isNotEmpty;
+    if (value is Iterable) return value.isNotEmpty;
+    if (value is Map) return value.isNotEmpty;
+    return true;
+  }
+
+  ({int completed, int total, int percent, List<String> missingLabels})
+      _profileCompletion() {
+    // If the backend returns a different set of keys, tweak this list only.
+    final fields = <({String label, dynamic value})>[
+      (label: 'Full name', value: _userProfileRaw?['fullname'] ?? _userProfileRaw?['name']),
+      (label: 'Phone', value: _userProfileRaw?['phone']),
+      (label: 'Ghana card', value: _userProfileRaw?['ghana_card']),
+      (label: 'Nationality', value: _userProfileRaw?['nationality']),
+      (label: 'Date of birth', value: _userProfileRaw?['date_of_birth']),
+      (label: 'Gender', value: _userProfileRaw?['gender']),
+      (label: 'Staff ID', value: _userProfileRaw?['staff_id']),
+      (label: 'Company', value: _userProfileRaw?['company']),
+      (label: 'Current branch', value: _userProfileRaw?['current_branch']),
+      (label: 'Address', value: _userProfileRaw?['address']),
+      (label: 'Location', value: _userProfileRaw?['location']),
+      (label: 'WhatsApp number', value: _userProfileRaw?['whatsapp_number']),
+      (label: 'Facebook URL', value: _userProfileRaw?['facebook_url']),
+      (label: 'LinkedIn URL', value: _userProfileRaw?['linkedin_url']),
+      (label: 'Twitter/X URL', value: _userProfileRaw?['twitter_url']),
+      (label: 'Instagram URL', value: _userProfileRaw?['instagram_url']),
+      (label: 'Profile photo', value: _userProfileRaw?['profile_picture_url']),
+    ];
+
+    final total = fields.length;
+    var completed = 0;
+    final missing = <String>[];
+    for (final f in fields) {
+      if (_isPresent(f.value)) {
+        completed += 1;
+      } else {
+        missing.add(f.label);
+      }
+    }
+
+    final percent = total == 0 ? 0 : ((completed / total) * 100).round();
+    return (
+      completed: completed,
+      total: total,
+      percent: percent.clamp(0, 100),
+      missingLabels: missing,
+    );
+  }
+
+  Widget _profileCompletionCard() {
+    final info = _profileCompletion();
+    final pct = info.percent;
+    final progress = info.total == 0 ? 0.0 : info.completed / info.total;
+
+    final missingTop = info.missingLabels.take(3).toList();
+    final missingExtra = info.missingLabels.length - missingTop.length;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.85),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.black.withValues(alpha: 0.06)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.task_alt, size: 18, color: CustColors.mainCol),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Profile completion',
+                  style: GoogleFonts.montserrat(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black,
+                  ),
+                ),
+              ),
+              Text(
+                '$pct%',
+                style: GoogleFonts.montserrat(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: CustColors.mainCol,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(99),
+            child: LinearProgressIndicator(
+              value: progress.clamp(0.0, 1.0),
+              minHeight: 8,
+              backgroundColor: Colors.black.withValues(alpha: 0.08),
+              valueColor: const AlwaysStoppedAnimation(CustColors.mainCol),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            '${info.completed} of ${info.total} fields completed',
+            style: GoogleFonts.montserrat(
+              fontSize: 11,
+              fontWeight: FontWeight.w400,
+              color: Colors.black.withValues(alpha: 0.65),
+            ),
+          ),
+          if (missingTop.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final m in missingTop)
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: CustColors.mainCol.withValues(alpha: 0.10),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      m,
+                      style: GoogleFonts.montserrat(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                        color: CustColors.mainCol,
+                      ),
+                    ),
+                  ),
+                if (missingExtra > 0)
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.06),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      '+$missingExtra more',
+                      style: GoogleFonts.montserrat(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.black.withValues(alpha: 0.65),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
   }
 
   Future<void> _saveProfile() async {
@@ -376,6 +541,8 @@ class _ProfileState extends State<Profile> {
                                 child: Column(
                                   children: [
                                     _profileHeaderCard(context),
+                                    const SizedBox(height: 12),
+                                    _profileCompletionCard(),
                                     const SizedBox(height: 14),
                                     _sectionCard(
                                       title: 'User Profile',

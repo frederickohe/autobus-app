@@ -12,6 +12,17 @@ class SubscriptionGuard extends StatelessWidget {
     return v.toString();
   }
 
+  static String _extractPhone(Map<String, dynamic> u) {
+    final v =
+        u['phone'] ??
+        u['user_phone'] ??
+        u['userPhone'] ??
+        u['phone_number'] ??
+        u['phoneNumber'] ??
+        '';
+    return v.toString().trim();
+  }
+
   static bool _truthy(dynamic v) {
     if (v == null) return false;
     if (v is bool) return v;
@@ -105,23 +116,36 @@ class SubscriptionGuard extends StatelessWidget {
   Future<({bool subscribed, String email})> _resolve(
     BuildContext context,
   ) async {
+    final api = context.read<ApiService>();
     var resolvedEmail = _extractEmail(user);
+    var profile = user;
 
-    // 1) Prefer server truth (if backend already includes subscription fields).
+    // 1) Profile from server (may include subscription-shaped fields).
     try {
-      final latest = await context.read<ApiService>().getUserProfile();
-      resolvedEmail = _extractEmail(latest).isNotEmpty
-          ? _extractEmail(latest)
+      profile = await api.getUserProfile();
+      resolvedEmail = _extractEmail(profile).isNotEmpty
+          ? _extractEmail(profile)
           : resolvedEmail;
 
-      if (_isSubscribedFromUser(latest)) {
+      if (_isSubscribedFromUser(profile)) {
         return (subscribed: true, email: resolvedEmail);
       }
     } catch (_) {
-      // Fall back to local cache below.
+      // Keep [user] as profile; fall back to subscription/status + local cache.
     }
 
-    // 2) Fallback: if the app previously completed a subscribe flow on this
+    // 2) Backend subscription by phone (profile /me does not include plan flags).
+    final phone = _extractPhone(profile);
+    if (phone.isNotEmpty) {
+      try {
+        final status = await api.getSubscriptionStatusByPhone(phone);
+        if (status != null && _truthy(status['has_active_subscription'])) {
+          return (subscribed: true, email: resolvedEmail);
+        }
+      } catch (_) {}
+    }
+
+    // 3) Fallback: if the app previously completed a subscribe flow on this
     // device, it stores the selection.
     final (planId, _) = await SubscriptionStorage().loadSelection();
     final subscribed = planId != null && planId.trim().isNotEmpty;

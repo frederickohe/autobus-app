@@ -53,9 +53,24 @@ class _HomeState extends State<Home> {
           MaterialPageRoute(builder: (_) => const AutoBus(title: 'Queries')),
         );
       }),
-      HomeMenuItem("Products", Icons.shopping_bag_outlined, () {}),
-      HomeMenuItem("Messages", Mdi.message_outline, () {}),
-      HomeMenuItem("Email", Mdi.email_outline, () {}),
+      HomeMenuItem("Products", Icons.shopping_bag_outlined, () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const AutoBus(title: 'Products')),
+        );
+      }),
+      HomeMenuItem("Messages", Mdi.message_outline, () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const AutoBus(title: 'Messages')),
+        );
+      }),
+      HomeMenuItem("Email", Mdi.email_outline, () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const AutoBus(title: 'Email')),
+        );
+      }),
       HomeMenuItem("Reports", MaterialSymbols.data_usage, () {
         Navigator.push(
           context,
