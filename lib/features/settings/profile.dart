@@ -109,10 +109,13 @@ class _ProfileState extends State<Profile> {
   }
 
   ({int completed, int total, int percent, List<String> missingLabels})
-      _profileCompletion() {
+  _profileCompletion() {
     // If the backend returns a different set of keys, tweak this list only.
     final fields = <({String label, dynamic value})>[
-      (label: 'Full name', value: _userProfileRaw?['fullname'] ?? _userProfileRaw?['name']),
+      (
+        label: 'Full name',
+        value: _userProfileRaw?['fullname'] ?? _userProfileRaw?['name'],
+      ),
       (label: 'Phone', value: _userProfileRaw?['phone']),
       (label: 'Ghana card', value: _userProfileRaw?['ghana_card']),
       (label: 'Nationality', value: _userProfileRaw?['nationality']),
@@ -221,8 +224,10 @@ class _ProfileState extends State<Profile> {
               children: [
                 for (final m in missingTop)
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: CustColors.mainCol.withValues(alpha: 0.10),
                       borderRadius: BorderRadius.circular(999),
@@ -238,8 +243,10 @@ class _ProfileState extends State<Profile> {
                   ),
                 if (missingExtra > 0)
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.black.withValues(alpha: 0.06),
                       borderRadius: BorderRadius.circular(999),
@@ -502,7 +509,7 @@ class _ProfileState extends State<Profile> {
                       style: GoogleFonts.montserrat(
                         color: Colors.black,
                         fontSize: 20,
-                        fontWeight: FontWeight.w300,
+                        fontWeight: FontWeight.w400,
                       ),
                     ),
                     GestureDetector(
@@ -740,8 +747,9 @@ class _ProfileState extends State<Profile> {
                 CircleAvatar(
                   radius: 58,
                   backgroundColor: CustColors.mainCol.withOpacity(0.12),
-                  backgroundImage:
-                      (imgUrl != null) ? NetworkImage(imgUrl) : null,
+                  backgroundImage: (imgUrl != null)
+                      ? NetworkImage(imgUrl)
+                      : null,
                   child: (imgUrl == null)
                       ? const Icon(
                           Icons.person,
@@ -765,8 +773,9 @@ class _ProfileState extends State<Profile> {
                             ? const SizedBox(
                                 width: 18,
                                 height: 18,
-                                child:
-                                    CircularProgressIndicator(strokeWidth: 2),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
                               )
                             : const Icon(
                                 Icons.camera_alt_outlined,
@@ -824,9 +833,7 @@ class _ProfileState extends State<Profile> {
   }) {
     return Container(
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(16)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

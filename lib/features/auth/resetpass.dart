@@ -37,7 +37,7 @@ class _ResetPasswordState extends State<ResetPassword> {
                         style: GoogleFonts.montserrat(
                           color: Colors.black,
                           fontSize: 26,
-                          fontWeight: FontWeight.w100,
+                          fontWeight: FontWeight.w300,
                         ),
                       ),
                     ),
@@ -87,8 +87,8 @@ class _ResetPasswordState extends State<ResetPassword> {
                     'New Password',
                     style: GoogleFonts.montserrat(
                       color: const Color.fromARGB(255, 12, 12, 12),
-                      fontSize: 14,
-                      fontWeight: FontWeight.w100,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w400,
                     ),
                   ),
                 ),
@@ -109,8 +109,8 @@ class _ResetPasswordState extends State<ResetPassword> {
                     'Confirm Password',
                     style: GoogleFonts.montserrat(
                       color: Colors.black,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w100,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w400,
                     ),
                   ),
                 ),
@@ -134,8 +134,8 @@ class _ResetPasswordState extends State<ResetPassword> {
                       'At least 8 characters, 1 uppercase, 1 lowercase, 1 number',
                       style: GoogleFonts.montserrat(
                         color: Colors.black,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w100,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w400,
                       ),
                     ),
                   ),
@@ -182,8 +182,8 @@ class _ResetPasswordState extends State<ResetPassword> {
                     'Dont have an Account ?',
                     style: GoogleFonts.montserrat(
                       color: Colors.black,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w100,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w400,
                     ),
                   ),
                 ),
@@ -206,7 +206,7 @@ class _ResetPasswordState extends State<ResetPassword> {
                       style: GoogleFonts.montserrat(
                         color: Colors.black,
                         fontSize: 16,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w400,
                       ),
                     ),
                   ),

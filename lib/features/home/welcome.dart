@@ -72,7 +72,7 @@ class _WelcomeState extends State<Welcome> {
                                 label: 'Get Started',
                                 onPressed: () {
                                   Navigator.of(context).pushReplacement(
-                                    MaterialPageRoute(builder: (context) => const Home()),
+                                    Home.routeFromWelcome(),
                                   );
                                 },
                               ),

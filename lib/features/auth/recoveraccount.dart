@@ -55,7 +55,7 @@ class _RecoverAccountState extends State<RecoverAccount> {
                       style: GoogleFonts.montserrat(
                         color: Colors.black,
                         fontSize: 26,
-                        fontWeight: FontWeight.w100,
+                        fontWeight: FontWeight.w300,
                       ),
                     ),
                   ),
@@ -105,8 +105,8 @@ class _RecoverAccountState extends State<RecoverAccount> {
                   'Email',
                   style: GoogleFonts.montserrat(
                     color: const Color.fromARGB(255, 12, 12, 12),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w100,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w400,
                   ),
                 ),
               ),

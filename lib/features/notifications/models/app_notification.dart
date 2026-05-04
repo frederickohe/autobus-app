@@ -33,6 +33,11 @@ class AppNotification {
   }
 
   factory AppNotification.fromJson(Map<String, dynamic> json) {
+    final nested = json['data'];
+    final Map<String, dynamic> data = nested is Map
+        ? Map<String, dynamic>.from(nested)
+        : <String, dynamic>{};
+
     final id =
         (json['id'] ??
                 json['_id'] ??
@@ -41,26 +46,38 @@ class AppNotification {
                 '')
             .toString();
 
-    final title =
-        (json['title'] ?? json['subject'] ?? json['type'] ?? 'Notification')
-            .toString();
+    final typeStr = (json['type'] ?? data['type'] ?? '').toString();
+    final title = (data['title'] ??
+            data['subject'] ??
+            json['title'] ??
+            json['subject'] ??
+            (typeStr.isNotEmpty ? typeStr : null) ??
+            'Notification')
+        .toString();
 
-    final body =
-        (json['body'] ??
-                json['message'] ??
-                json['content'] ??
-                json['detail'] ??
-                '')
-            .toString();
+    final body = (data['body'] ??
+            data['message'] ??
+            data['content'] ??
+            json['body'] ??
+            json['message'] ??
+            json['content'] ??
+            json['detail'] ??
+            '')
+        .toString();
 
     final createdAt = _parseDate(
       json['created_at'] ??
           json['createdAt'] ??
           json['timestamp'] ??
-          json['time'],
+          json['time'] ??
+          data['created_at'],
     );
 
-    final read = _truthy(json['read'] ?? json['is_read'] ?? json['isRead']);
+    final status = (json['status'] ?? data['status'] ?? '').toString().toUpperCase();
+    final readAt = _parseDate(json['read_at'] ?? json['readAt']);
+    final read = status == 'READ' ||
+        readAt != null ||
+        _truthy(json['read'] ?? json['is_read'] ?? json['isRead']);
 
     return AppNotification(
       id: id.isEmpty ? title.hashCode.toString() : id,

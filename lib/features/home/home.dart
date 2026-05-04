@@ -1,14 +1,68 @@
+import 'dart:math' as math;
+
 import 'package:autobus/barrel.dart';
 
 class Home extends StatefulWidget {
   const Home({super.key});
 
+  /// Full-screen entrance when leaving the welcome screen (fade, lift, scale with ease-out back).
+  static Route<void> routeFromWelcome() {
+    return PageRouteBuilder<void>(
+      settings: const RouteSettings(name: 'Home'),
+      pageBuilder: (context, animation, secondaryAnimation) => const Home(),
+      transitionDuration: const Duration(milliseconds: 1600),
+      reverseTransitionDuration: const Duration(milliseconds: 700),
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        final curved = CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOutCubic,
+          reverseCurve: Curves.easeInCubic,
+        );
+        final scaleCurved = CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOutBack,
+          reverseCurve: Curves.easeInBack,
+        );
+        return FadeTransition(
+          opacity: Tween<double>(begin: 0, end: 1).animate(curved),
+          child: SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0, 0.1),
+              end: Offset.zero,
+            ).animate(curved),
+            child: ScaleTransition(
+              scale: Tween<double>(begin: 0.78, end: 1).animate(scaleCurved),
+              alignment: Alignment.center,
+              child: child,
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   State<Home> createState() => _HomeState();
 }
 
-class _HomeState extends State<Home> {
+class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
   Future<int>? _unreadCountFuture;
+  late final AnimationController _bgDriftController;
+
+  @override
+  void initState() {
+    super.initState();
+    _bgDriftController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 26),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _bgDriftController.dispose();
+    super.dispose();
+  }
 
   @override
   void didChangeDependencies() {
@@ -80,135 +134,155 @@ class _HomeState extends State<Home> {
     ];
 
     return Scaffold(
-      body: _GradientBackground(
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Column(
-              children: [
-                const SizedBox(height: 20),
+      backgroundColor: const Color(0xFF130522),
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          Positioned.fill(
+            child: IgnorePointer(
+              child: _CosmosDriftingBackground(controller: _bgDriftController),
+            ),
+          ),
+          Positioned.fill(
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      const Color(0xFF000000).withValues(alpha: 0.68),
+                      const Color(0xFF0A0610).withValues(alpha: 0.62),
+                      const Color(0xFF000000).withValues(alpha: 0.72),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          SafeArea(
+            child: SingleChildScrollView(
+              padding: EdgeInsets.fromLTRB(
+                20,
+                28,
+                20,
+                32 +
+                    MediaQuery.viewPaddingOf(context).bottom +
+                    56,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      FutureBuilder<int>(
+                        future: _unreadCountFuture,
+                        builder: (context, snap) {
+                          final unread = snap.data ?? 0;
+                          return GestureDetector(
+                            onTap: () async {
+                              await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      const NotificationsInboxPage(),
+                                ),
+                              );
+                              await _refreshUnread();
+                            },
+                            child: _notificationBell(unreadCount: unread),
+                          );
+                        },
+                      ),
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const SettingsPage(),
+                            ),
+                          );
+                        },
+                        child: _avatarCircle(),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 32),
+                  BlocBuilder<AuthBloc, AuthState>(
+                    builder: (context, state) {
+                      String displayName = 'Guest';
+                      if (state is Authenticated) {
+                        displayName =
+                            (state.user['fullname'] ??
+                                    state.user['email'] ??
+                                    'User')
+                                .toString();
+                      }
 
-                /// 🔔 Top Bar
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    FutureBuilder<int>(
-                      future: _unreadCountFuture,
-                      builder: (context, snap) {
-                        final unread = snap.data ?? 0;
-                        return GestureDetector(
-                          onTap: () async {
-                            await Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const NotificationsInboxPage(),
-                              ),
-                            );
-                            await _refreshUnread();
-                          },
-                          child: _notificationBell(unreadCount: unread),
-                        );
-                      },
-                    ),
+                      final firstName = displayName.trim().split(' ').first;
 
-                    GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const SettingsPage(),
+                      return Column(
+                        children: [
+                          Text(
+                            'Hello $firstName',
+                            style: GoogleFonts.montserrat(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w300,
+                            ),
                           ),
-                        );
-                      },
-                      child: _avatarCircle(),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 18),
-
-                /// 👋 Greeting
-                BlocBuilder<AuthBloc, AuthState>(
-                  builder: (context, state) {
-                    String displayName = 'Guest';
-                    if (state is Authenticated) {
-                      displayName =
-                          (state.user['fullname'] ??
-                                  state.user['email'] ??
-                                  'User')
-                              .toString();
-                    }
-
-                    final firstName = displayName.trim().split(' ').first;
-
-                    return Column(
-                      children: [
-                        Text(
-                          'Hello $firstName',
-                          style: GoogleFonts.montserrat(
-                            color: Colors.white,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w300,
+                          const SizedBox(height: 28),
+                          Iconify(
+                            Ion.sparkles_sharp,
+                            color: const Color(0xFF6A53E7),
+                            size: 18,
                           ),
-                        ),
-                        const SizedBox(height: 22),
-                        Iconify(
-                          Ion.sparkles_sharp,
-                          color: const Color(0xFF6A53E7),
-                          size: 18,
-                        ),
-                      ],
-                    );
-                  },
-                ),
-
-                const SizedBox(height: 18),
-
-                /// ⚠️ Action boxes
-                _AlertBox(
-                  text: 'You need to set up your business profile',
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const Profile()),
-                    );
-                  },
-                ),
-                const SizedBox(height: 12),
-                _AlertBox(
-                  text: 'Enable 2FA to ensure added security',
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const Security()),
-                    );
-                  },
-                ),
-
-                const SizedBox(height: 18),
-
-                /// 📊 Grid Menu
-                Expanded(
-                  child: GridView.builder(
+                        ],
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 32),
+                  _AlertBox(
+                    text: 'You need to set up your business profile',
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const Profile()),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 20),
+                  _AlertBox(
+                    text: 'Enable 2FA to ensure added security',
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const Security()),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 36),
+                  GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
                     itemCount: menuItems.length,
                     gridDelegate:
                         const SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: 2,
-                          crossAxisSpacing: 30,
-                          mainAxisSpacing: 30,
-                          childAspectRatio: 1.55,
+                          crossAxisSpacing: 36,
+                          mainAxisSpacing: 36,
+                          childAspectRatio: 1.5,
                         ),
                     itemBuilder: (context, index) {
-                      final item = menuItems[index];
-
-                      return _DashboardCard(item: item);
+                      return _DashboardCard(item: menuItems[index]);
                     },
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -311,7 +385,6 @@ class _DashboardCard extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: const Color(0xFFA92FEB), width: 1),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -350,21 +423,66 @@ class HomeMenuItem {
   HomeMenuItem(this.title, this.icon, this.onTap);
 }
 
-class _GradientBackground extends StatelessWidget {
-  final Widget child;
-  const _GradientBackground({required this.child});
+/// Full-bleed nebula with a slow drift (no scroll parallax).
+class _CosmosDriftingBackground extends StatelessWidget {
+  const _CosmosDriftingBackground({required this.controller});
+
+  final AnimationController controller;
+
+  static const String _asset = 'assets/img/cosmos_background.png';
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFF130522), Color(0xFF2D0C51), Color(0xFF130522)],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-        ),
+    return AnimatedBuilder(
+      animation: controller,
+      builder: (context, child) {
+        final t = controller.value * 2 * math.pi;
+        final dx = math.sin(t) * 16;
+        final dy = math.cos(t * 0.71) * 14;
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final w = constraints.maxWidth;
+            final h = constraints.maxHeight;
+            if (w <= 0 || h <= 0) {
+              return const ColoredBox(color: Color(0xFF130522));
+            }
+            return ClipRect(
+              child: Transform.translate(
+                offset: Offset(dx, dy),
+                child: Transform.scale(
+                  scale: 1.12,
+                  alignment: Alignment.center,
+                  child: SizedBox(
+                    width: w,
+                    height: h,
+                    child: child,
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+      child: Image.asset(
+        _asset,
+        fit: BoxFit.cover,
+        alignment: Alignment.center,
+        filterQuality: FilterQuality.high,
+        errorBuilder: (_, __, ___) {
+          return Container(
+            color: const Color(0xFF130522),
+            alignment: Alignment.center,
+            child: Text(
+              'Add assets/img/cosmos_background.png',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.montserrat(
+                color: Colors.white54,
+                fontSize: 12,
+              ),
+            ),
+          );
+        },
       ),
-      child: child,
     );
   }
 }

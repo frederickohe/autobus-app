@@ -46,7 +46,7 @@ class _VerifyCodeState extends State<VerifyCode> {
                       style: GoogleFonts.montserrat(
                         color: Colors.black,
                         fontSize: 26,
-                        fontWeight: FontWeight.w100,
+                        fontWeight: FontWeight.w300,
                       ),
                     ),
                   ),
@@ -96,8 +96,8 @@ class _VerifyCodeState extends State<VerifyCode> {
                   'Enter Code',
                   style: GoogleFonts.montserrat(
                     color: Colors.black,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w100,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w400,
                   ),
                 ),
               ),
@@ -121,8 +121,8 @@ class _VerifyCodeState extends State<VerifyCode> {
                     'Did Not Receeve Code? Resend Code',
                     style: GoogleFonts.montserrat(
                       color: Colors.black,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w100,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w400,
                     ),
                   ),
                 ),
@@ -157,8 +157,8 @@ class _VerifyCodeState extends State<VerifyCode> {
                   'Dont have an Account ?',
                   style: GoogleFonts.montserrat(
                     color: Colors.black,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w100,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w400,
                   ),
                 ),
               ),
@@ -181,7 +181,7 @@ class _VerifyCodeState extends State<VerifyCode> {
                     style: GoogleFonts.montserrat(
                       color: Colors.black,
                       fontSize: 16,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w400,
                     ),
                   ),
                 ),

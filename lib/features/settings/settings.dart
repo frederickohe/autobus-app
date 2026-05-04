@@ -79,7 +79,7 @@ class _SettingsPageState extends State<SettingsPage> {
                             style: GoogleFonts.montserrat(
                               color: Colors.black,
                               fontSize: 20,
-                              fontWeight: FontWeight.w300,
+                              fontWeight: FontWeight.w400,
                             ),
                           );
                         },
@@ -131,8 +131,8 @@ class _SettingsPageState extends State<SettingsPage> {
                                 isLoading ? 'Logging out...' : "Logout",
                                 style: GoogleFonts.montserrat(
                                   color: isLoading ? Colors.grey : Colors.red,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w300,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w400,
                                 ),
                               ),
                               if (isLoading)
@@ -235,7 +235,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   'Log out?',
                   textAlign: TextAlign.center,
                   style: GoogleFonts.montserrat(
-                    fontSize: 18,
+                    fontSize: 16,
                     fontWeight: FontWeight.w600,
                     color: Colors.black87,
                   ),
@@ -259,7 +259,9 @@ class _SettingsPageState extends State<SettingsPage> {
                         onPressed: () => Navigator.pop(context),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: Colors.black87,
-                          side: BorderSide(color: Colors.black.withOpacity(0.12)),
+                          side: BorderSide(
+                            color: Colors.black.withOpacity(0.12),
+                          ),
                           padding: const EdgeInsets.symmetric(vertical: 12),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -270,7 +272,9 @@ class _SettingsPageState extends State<SettingsPage> {
                         ),
                         child: Text(
                           'Cancel',
-                          style: GoogleFonts.montserrat(fontWeight: FontWeight.w600),
+                          style: GoogleFonts.montserrat(
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                     ),
@@ -293,8 +297,10 @@ class _SettingsPageState extends State<SettingsPage> {
                           ),
                         ),
                         child: Text(
-                          'Log out',
-                          style: GoogleFonts.montserrat(fontWeight: FontWeight.w700),
+                          'Continue',
+                          style: GoogleFonts.montserrat(
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ),
                     ),
@@ -333,7 +339,7 @@ class _SettingsMenuTile extends StatelessWidget {
       leading: Icon(item.icon, color: Colors.black87),
       title: Text(
         item.title,
-        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
       ),
       trailing: const Icon(Icons.chevron_right, color: Colors.black54),
     );

@@ -789,8 +789,16 @@ class ApiService {
     throw Exception('Agent error: ${response.statusCode}');
   }
 
-  Future<List<AppNotification>> getNotifications() async {
-    final response = await httpClient.get(Uri.parse('$baseUrl/notification'));
+  /// GET /api/v1/user/me/notifications — paged list for the current user.
+  /// Also accepts the legacy shape from GET /api/v1/notification/.
+  Future<List<AppNotification>> getNotifications({int page = 1, int size = 100}) async {
+    final uri = Uri.parse('$baseUrl/user/me/notifications').replace(
+      queryParameters: {
+        'page': '$page',
+        'size': '$size',
+      },
+    );
+    final response = await httpClient.get(uri);
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
       final list = data is List

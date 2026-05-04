@@ -35,16 +35,16 @@ class _SignupOtpState extends State<SignupOtp> {
               );
             }
             if (state is SignupOtpResent) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(state.message)),
-              );
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(SnackBar(content: Text(state.message)));
             }
             if (state is AuthError &&
                 (state.source == 'signup_otp' ||
                     state.source == 'signup_otp_resend')) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(state.message)),
-              );
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(SnackBar(content: Text(state.message)));
             }
           },
         ),
@@ -67,7 +67,7 @@ class _SignupOtpState extends State<SignupOtp> {
                       style: GoogleFonts.montserrat(
                         color: Colors.black,
                         fontSize: 26,
-                        fontWeight: FontWeight.w100,
+                        fontWeight: FontWeight.w300,
                       ),
                     ),
                   ),
@@ -113,8 +113,8 @@ class _SignupOtpState extends State<SignupOtp> {
                   'Enter the OTP sent to ${widget.phone}',
                   style: GoogleFonts.montserrat(
                     color: Colors.black,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w100,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w300,
                   ),
                 ),
               ),
@@ -133,16 +133,16 @@ class _SignupOtpState extends State<SignupOtp> {
                 padding: const EdgeInsets.only(left: 20.0, right: 20.0),
                 child: GestureDetector(
                   onTap: () {
-                    context
-                        .read<AuthBloc>()
-                        .add(ResendSignupOtpEvent(phone: widget.phone));
+                    context.read<AuthBloc>().add(
+                      ResendSignupOtpEvent(phone: widget.phone),
+                    );
                   },
                   child: Text(
                     'Did not receive code? Resend',
                     style: GoogleFonts.montserrat(
                       color: Colors.black,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w100,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w300,
                     ),
                   ),
                 ),
@@ -159,7 +159,9 @@ class _SignupOtpState extends State<SignupOtp> {
                         if (codeController.text.trim().isEmpty) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                              content: Text('Please enter the verification code'),
+                              content: Text(
+                                'Please enter the verification code',
+                              ),
                               backgroundColor: Colors.red,
                             ),
                           );
@@ -167,11 +169,11 @@ class _SignupOtpState extends State<SignupOtp> {
                         }
 
                         context.read<AuthBloc>().add(
-                              VerifySignupOtpEvent(
-                                phone: widget.phone,
-                                otp: codeController.text.trim(),
-                              ),
-                            );
+                          VerifySignupOtpEvent(
+                            phone: widget.phone,
+                            otp: codeController.text.trim(),
+                          ),
+                        );
                       },
                       buttonText: isLoading ? 'Verifying...' : 'Verify',
                     );
@@ -185,4 +187,3 @@ class _SignupOtpState extends State<SignupOtp> {
     );
   }
 }
-

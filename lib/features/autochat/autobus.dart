@@ -194,6 +194,44 @@ class _AutoBusChatUIState extends State<_AutoBusChatUI> {
   bool get _enableBackendFileBrowse =>
       widget.title.trim().toLowerCase() == 'chatbot';
 
+  PopupMenuItem<String> _storageFileMenuItem({
+    required String value,
+    required IconData icon,
+    required String label,
+    bool enabled = true,
+    bool destructive = false,
+  }) {
+    final Color base = destructive
+        ? const Color(0xFFC62828)
+        : _purple;
+    final Color fg = enabled
+        ? base
+        : base.withValues(alpha: 0.38);
+    return PopupMenuItem<String>(
+      value: value,
+      enabled: enabled,
+      height: 48,
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      child: Row(
+        children: [
+          Icon(icon, size: 22, color: fg),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              label,
+              style: GoogleFonts.montserrat(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: fg,
+                letterSpacing: -0.2,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _insertTextAtCursor(String text) {
     final controller = widget.controller;
     final selection = controller.selection;
@@ -532,7 +570,38 @@ class _AutoBusChatUIState extends State<_AutoBusChatUI> {
                                   ),
                                 ),
                                 trailing: PopupMenuButton<String>(
-                                  tooltip: 'Actions',
+                                  tooltip: 'File actions',
+                                  offset: const Offset(0, 10),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  color: Colors.white,
+                                  elevation: 12,
+                                  shadowColor: _purple.withValues(alpha: 0.18),
+                                  surfaceTintColor: Colors.transparent,
+                                  constraints: const BoxConstraints(
+                                    minWidth: 44,
+                                    minHeight: 40,
+                                  ),
+                                  padding: EdgeInsets.zero,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 6,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: _purple.withValues(alpha: 0.07),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: _purple.withValues(alpha: 0.1),
+                                      ),
+                                    ),
+                                    child: Icon(
+                                      Icons.more_horiz_rounded,
+                                      color: _purple.withValues(alpha: 0.85),
+                                      size: 22,
+                                    ),
+                                  ),
                                   onSelected: (action) async {
                                     if (action == 'insert') {
                                       Navigator.pop(context);
@@ -586,23 +655,32 @@ class _AutoBusChatUIState extends State<_AutoBusChatUI> {
                                     }
                                   },
                                   itemBuilder: (_) => [
-                                    const PopupMenuItem(
+                                    _storageFileMenuItem(
                                       value: 'insert',
-                                      child: Text('Insert into chat'),
+                                      icon: Icons.chat_bubble_outline_rounded,
+                                      label: 'Insert into chat',
                                     ),
-                                    PopupMenuItem(
+                                    _storageFileMenuItem(
                                       value: 'open',
+                                      icon: Icons.open_in_new_rounded,
+                                      label: 'Open link',
                                       enabled: url.isNotEmpty,
-                                      child: const Text('Open presigned link'),
                                     ),
-                                    const PopupMenuItem(
+                                    _storageFileMenuItem(
                                       value: 'download',
-                                      child: Text('Download'),
+                                      icon: Icons.download_rounded,
+                                      label: 'Download',
                                     ),
-                                    const PopupMenuDivider(),
-                                    const PopupMenuItem(
+                                    const PopupMenuDivider(
+                                      height: 1,
+                                      indent: 12,
+                                      endIndent: 12,
+                                    ),
+                                    _storageFileMenuItem(
                                       value: 'delete',
-                                      child: Text('Delete'),
+                                      icon: Icons.delete_outline_rounded,
+                                      label: 'Delete',
+                                      destructive: true,
                                     ),
                                   ],
                                 ),

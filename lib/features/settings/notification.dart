@@ -138,7 +138,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                           style: GoogleFonts.montserrat(
                             color: Colors.black,
                             fontSize: 20,
-                            fontWeight: FontWeight.w300,
+                            fontWeight: FontWeight.w400,
                           ),
                         );
                       },
@@ -200,9 +200,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                 setState(() => showNotifications = val);
                                 _persist(
                                   inAppNotifications: val,
-                                  rollback: () => setState(
-                                    () => showNotifications = prev,
-                                  ),
+                                  rollback: () =>
+                                      setState(() => showNotifications = prev),
                                 );
                               },
                         title: const Text(
@@ -256,9 +255,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                 setState(() => smsNotifications = val);
                                 _persist(
                                   smsNotifications: val,
-                                  rollback: () => setState(
-                                    () => smsNotifications = prev,
-                                  ),
+                                  rollback: () =>
+                                      setState(() => smsNotifications = prev),
                                 );
                               },
                         title: const Text(

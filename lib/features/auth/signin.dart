@@ -107,8 +107,8 @@ class _SigninState extends State<Signin> {
                         'Email',
                         style: GoogleFonts.montserrat(
                           color: const Color.fromARGB(255, 12, 12, 12),
-                          fontSize: 14,
-                          fontWeight: FontWeight.w100,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w400,
                         ),
                       ),
                     ),
@@ -130,8 +130,8 @@ class _SigninState extends State<Signin> {
                         'Password',
                         style: GoogleFonts.montserrat(
                           color: Colors.black,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w100,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w400,
                         ),
                       ),
                     ),
