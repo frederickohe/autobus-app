@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 
 import 'package:autobus/barrel.dart';
 
@@ -140,7 +141,10 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
         children: [
           Positioned.fill(
             child: IgnorePointer(
-              child: _CosmosDriftingBackground(controller: _bgDriftController),
+              child: Opacity(
+                opacity: 0.95,
+                child: _CosmosDriftingBackground(controller: _bgDriftController),
+              ),
             ),
           ),
           Positioned.fill(
@@ -151,12 +155,20 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      const Color(0xFF000000).withValues(alpha: 0.68),
-                      const Color(0xFF0A0610).withValues(alpha: 0.62),
-                      const Color(0xFF000000).withValues(alpha: 0.72),
+                      const Color(0xFF000000).withValues(alpha: 0.88),
+                      const Color(0xFF0A0610).withValues(alpha: 0.82),
+                      const Color(0xFF000000).withValues(alpha: 0.92),
                     ],
                   ),
                 ),
+              ),
+            ),
+          ),
+          Positioned.fill(
+            child: IgnorePointer(
+              child: BackdropFilter(
+                filter: ui.ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+                child: const SizedBox.expand(),
               ),
             ),
           ),

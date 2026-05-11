@@ -1,4 +1,5 @@
 import 'package:autobus/barrel.dart';
+import 'package:flutter/services.dart';
 
 class Signin extends StatefulWidget {
   const Signin({super.key});
@@ -8,7 +9,71 @@ class Signin extends StatefulWidget {
 
 class _SigninState extends State<Signin> {
   final TextEditingController emailController = TextEditingController();
-  final TextEditingController passwordController = TextEditingController();
+  final List<TextEditingController> _pinControllers =
+      List.generate(4, (_) => TextEditingController());
+  final List<FocusNode> _pinFocusNodes = List.generate(4, (_) => FocusNode());
+
+  String get _pin => _pinControllers.map((c) => c.text).join();
+
+  @override
+  void dispose() {
+    emailController.dispose();
+    for (final c in _pinControllers) {
+      c.dispose();
+    }
+    for (final n in _pinFocusNodes) {
+      n.dispose();
+    }
+    super.dispose();
+  }
+
+  Widget _buildPinInput({required bool enabled}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: List.generate(4, (index) {
+        return SizedBox(
+          width: 52,
+          child: TextField(
+            controller: _pinControllers[index],
+            focusNode: _pinFocusNodes[index],
+            enabled: enabled,
+            textAlign: TextAlign.center,
+            keyboardType: TextInputType.number,
+            obscureText: true,
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly,
+              LengthLimitingTextInputFormatter(1),
+            ],
+            decoration: const InputDecoration(
+              border: OutlineInputBorder(),
+              counterText: '',
+            ),
+            onChanged: (val) {
+              if (val.isNotEmpty) {
+                if (index < 3) {
+                  _pinFocusNodes[index + 1].requestFocus();
+                } else {
+                  _pinFocusNodes[index].unfocus();
+                }
+              }
+            },
+            onTap: () {
+              // If user taps a later box, keep caret at end
+              _pinControllers[index].selection = TextSelection.collapsed(
+                offset: _pinControllers[index].text.length,
+              );
+            },
+            onSubmitted: (_) {
+              if (index < 3) _pinFocusNodes[index + 1].requestFocus();
+            },
+            onEditingComplete: () {
+              // no-op; prevents default "done" behavior moving focus oddly
+            },
+          ),
+        );
+      }),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -127,7 +192,7 @@ class _SigninState extends State<Signin> {
                     Padding(
                       padding: EdgeInsets.only(left: 20.0, right: 20.0),
                       child: Text(
-                        'Password',
+                        'PIN',
                         style: GoogleFonts.montserrat(
                           color: Colors.black,
                           fontSize: 13,
@@ -137,15 +202,7 @@ class _SigninState extends State<Signin> {
                     ),
                     Padding(
                       padding: const EdgeInsets.only(left: 20.0, right: 20.0),
-                      child: TextField(
-                        controller: passwordController,
-                        enabled: !isLoading,
-                        decoration: const InputDecoration(
-                          hintText: '',
-                          border: UnderlineInputBorder(),
-                        ),
-                        obscureText: true,
-                      ),
+                      child: _buildPinInput(enabled: !isLoading),
                     ),
                     const SizedBox(height: 15),
                     Padding(
@@ -170,7 +227,7 @@ class _SigninState extends State<Signin> {
                                 );
                               },
                         child: Text(
-                          'Forgot Password ?',
+                          'Forgot PIN ?',
                           style: GoogleFonts.montserrat(
                             color: isLoading ? Colors.grey : Colors.black,
                             fontSize: 13,
@@ -186,11 +243,11 @@ class _SigninState extends State<Signin> {
                             ? () {}
                             : () {
                                 if (emailController.text.isEmpty ||
-                                    passwordController.text.isEmpty) {
+                                    _pin.length != 4) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
                                       content: Text(
-                                        'Please fill all fields',
+                                        'Please enter email and 4-digit PIN',
                                         style: GoogleFonts.montserrat(
                                           color: Colors.white,
                                           fontSize: 14,
@@ -205,7 +262,7 @@ class _SigninState extends State<Signin> {
                                 context.read<AuthBloc>().add(
                                   LoginEvent(
                                     email: emailController.text,
-                                    password: passwordController.text,
+                                    password: _pin,
                                   ),
                                 );
                               },

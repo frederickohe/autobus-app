@@ -1,4 +1,5 @@
 import 'package:autobus/barrel.dart';
+import 'package:flutter/services.dart';
 
 class Signup extends StatefulWidget {
   const Signup({super.key});
@@ -9,14 +10,76 @@ class Signup extends StatefulWidget {
 
 class _SignupState extends State<Signup> {
   final TextEditingController emailController = TextEditingController();
-  final TextEditingController passwordController = TextEditingController();
   final TextEditingController usernameController = TextEditingController();
   final TextEditingController phoneController = TextEditingController();
   final TextEditingController companyController = TextEditingController();
   final TextEditingController ghanaCardController = TextEditingController();
 
-  // Add this variable to track password visibility
-  bool _isPasswordVisible = false;
+  final List<TextEditingController> _pinControllers =
+      List.generate(4, (_) => TextEditingController());
+  final List<FocusNode> _pinFocusNodes = List.generate(4, (_) => FocusNode());
+
+  String get _pin => _pinControllers.map((c) => c.text).join();
+
+  @override
+  void dispose() {
+    emailController.dispose();
+    usernameController.dispose();
+    phoneController.dispose();
+    companyController.dispose();
+    ghanaCardController.dispose();
+    for (final c in _pinControllers) {
+      c.dispose();
+    }
+    for (final n in _pinFocusNodes) {
+      n.dispose();
+    }
+    super.dispose();
+  }
+
+  Widget _buildPinInput() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: List.generate(4, (index) {
+        return SizedBox(
+          width: 52,
+          child: TextField(
+            controller: _pinControllers[index],
+            focusNode: _pinFocusNodes[index],
+            textAlign: TextAlign.center,
+            keyboardType: TextInputType.number,
+            obscureText: true,
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly,
+              LengthLimitingTextInputFormatter(1),
+            ],
+            decoration: const InputDecoration(
+              border: OutlineInputBorder(),
+              counterText: '',
+            ),
+            onChanged: (val) {
+              if (val.isNotEmpty) {
+                if (index < 3) {
+                  _pinFocusNodes[index + 1].requestFocus();
+                } else {
+                  _pinFocusNodes[index].unfocus();
+                }
+              }
+            },
+            onTap: () {
+              _pinControllers[index].selection = TextSelection.collapsed(
+                offset: _pinControllers[index].text.length,
+              );
+            },
+            onSubmitted: (_) {
+              if (index < 3) _pinFocusNodes[index + 1].requestFocus();
+            },
+            onEditingComplete: () {},
+          ),
+        );
+      }),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -267,7 +330,7 @@ class _SignupState extends State<Signup> {
                                   right: 20.0,
                                 ),
                                 child: Text(
-                                  'Password',
+                                  'PIN',
                                   style: GoogleFonts.montserrat(
                                     color: Colors.black,
                                     fontSize: 13,
@@ -280,27 +343,7 @@ class _SignupState extends State<Signup> {
                                   left: 20.0,
                                   right: 20.0,
                                 ),
-                                child: TextField(
-                                  controller: passwordController,
-                                  obscureText: !_isPasswordVisible,
-                                  decoration: InputDecoration(
-                                    border: const UnderlineInputBorder(),
-                                    suffixIcon: IconButton(
-                                      icon: Icon(
-                                        _isPasswordVisible
-                                            ? Icons.visibility
-                                            : Icons.visibility_off,
-                                        color: Colors.grey,
-                                      ),
-                                      onPressed: () {
-                                        setState(() {
-                                          _isPasswordVisible =
-                                              !_isPasswordVisible;
-                                        });
-                                      },
-                                    ),
-                                  ),
-                                ),
+                                child: _buildPinInput(),
                               ),
                               const SizedBox(height: 50),
                             ],
@@ -313,12 +356,21 @@ class _SignupState extends State<Signup> {
                           builder: (context, state) {
                             return AppButton(
                               onPressed: () async {
+                                if (_pin.length != 4) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Please enter a 4-digit PIN'),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                  return;
+                                }
                                 context.read<AuthBloc>().add(
                                   SignupEvent(
                                     username: usernameController.text.trim(),
                                     phone: phoneController.text.trim(),
                                     email: emailController.text.trim(),
-                                    password: passwordController.text,
+                                    password: _pin,
                                     company: companyController.text.trim(),
                                     ghanaCard: ghanaCardController.text.trim(),
                                   ),
