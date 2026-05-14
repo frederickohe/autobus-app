@@ -155,19 +155,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
             ),
           ),
 
-          GestureDetector(
-            onTap: _handleStarAction,
-            child: Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: const Color(0xFF2D2D44), width: 2),
-                color: Colors.white,
-              ),
-              child: const Icon(Icons.star, color: Color(0xFFE63946), size: 24),
-            ),
-          ),
+          const UserAvatar(size: 48),
         ],
       ),
     );
@@ -222,17 +210,6 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
     );
   }
 
-  void _handleStarAction() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Star action triggered',
-          style: GoogleFonts.montserrat(color: Colors.white),
-        ),
-        backgroundColor: const Color(0xFF2D2D44),
-      ),
-    );
-  }
 }
 
 class _GrowthWidget extends StatelessWidget {

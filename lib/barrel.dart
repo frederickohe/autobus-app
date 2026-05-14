@@ -36,7 +36,16 @@ export 'package:autobus/features/initial_ui/initial.dart';
 export 'package:autobus/features/home/home.dart';
 export 'package:autobus/features/auth/authinit.dart';
 export 'package:autobus/features/home/welcome.dart';
+export 'package:autobus/features/email/manage_emails.dart';
+export 'package:autobus/features/products/manage_products.dart';
+export 'package:autobus/features/chat/manage_chats.dart';
+export 'package:autobus/features/chat/manage_channels.dart';
+export 'package:autobus/features/chat/live_chats.dart';
+export 'package:autobus/features/chat/all_chats.dart';
+export 'package:autobus/features/products/view_products_list.dart';
+export 'package:autobus/features/marketing/manage_marketing.dart';
 export 'package:autobus/common_design/widgets/ctabutton.dart';
+export 'package:autobus/common_design/widgets/user_avatar.dart';
 export 'package:autobus/features/auth/recoveraccount.dart';
 export 'package:autobus/features/auth/resetpass.dart';
 export 'package:autobus/features/auth/verifycode.dart';
@@ -44,6 +53,8 @@ export 'package:autobus/common_design/widgets/success.dart';
 export 'package:autobus/common_design/widgets/trans_ctabutton.dart';
 export 'package:autobus/common_design/widgets/autobus_branding.dart';
 export 'package:autobus/features/autochat/autobus.dart';
+export 'package:autobus/features/interactions/manage_interactions.dart';
+export 'package:autobus/features/intelligence/manage_intelligence.dart';
 export 'package:autobus/features/settings/settings.dart';
 export 'package:autobus/features/settings/profile.dart';
 export 'package:autobus/features/settings/notification.dart';
@@ -58,6 +69,11 @@ export 'package:autobus/features/subscription/subscription_bill.dart';
 // barrel.dart
 export 'package:autobus/features/subscription/models/subscription_plan.dart';
 export 'package:autobus/features/marketing/digital_marketing.dart';
+export 'package:autobus/features/marketing/digital_marketing_selection.dart';
+export 'package:autobus/features/marketing/manage_outlets.dart';
+export 'package:autobus/features/orders/manage_orders.dart';
+export 'package:autobus/features/orders/active_queries.dart';
+export 'package:autobus/features/orders/all_orders_history.dart';
 // Icons import
 export 'package:flutter_bloc/flutter_bloc.dart';
 

@@ -154,9 +154,11 @@ class SubscriptionGuard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    print('=== SUBSCRIPTION GUARD BUILDING ===');
     return FutureBuilder<({bool subscribed, String email})>(
       future: _resolve(context),
       builder: (context, snap) {
+        print('ConnectionState: ${snap.connectionState}, hasData: ${snap.hasData}');
         if (snap.connectionState != ConnectionState.done) {
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
@@ -165,8 +167,13 @@ class SubscriptionGuard extends StatelessWidget {
 
         final data = snap.data;
         final subscribed = data?.subscribed == true;
-        if (subscribed) return const Welcome();
+        print('Subscribed: $subscribed, Email: ${data?.email}');
+        if (subscribed) {
+          print('✓ Showing Welcome Screen');
+          return const Welcome();
+        }
 
+        print('✗ Showing SelectPlan Screen');
         return SelectPlan(userEmail: data?.email ?? '');
       },
     );

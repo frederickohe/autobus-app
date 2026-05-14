@@ -1,6 +1,41 @@
 import 'package:autobus/barrel.dart';
 import 'package:flutter/services.dart';
 
+// Ghana Card Formatter: User enters 467835625-4 → displays as GHA-467835625-4
+class GhanaCardFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    String text = newValue.text.replaceAll('-', '');
+    
+    // Only allow digits and max 10 characters (9 digits + 1 digit)
+    if (text.isEmpty) {
+      return newValue.copyWith(text: '');
+    }
+
+    // Limit to 10 digits total
+    if (text.length > 10) {
+      text = text.substring(0, 10);
+    }
+
+    // Format: XXXXXXXXX-X (9 digits + dash + 1 digit)
+    String formatted = '';
+    
+    if (text.length <= 9) {
+      formatted = text;
+    } else {
+      formatted = text.substring(0, 9) + '-' + text.substring(9, 10);
+    }
+
+    return newValue.copyWith(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: formatted.length),
+    );
+  }
+}
+
 class Signup extends StatefulWidget {
   const Signup({super.key});
 
@@ -64,6 +99,10 @@ class _SignupState extends State<Signup> {
                 } else {
                   _pinFocusNodes[index].unfocus();
                 }
+              } else if (val.isEmpty && index > 0) {
+                // Handle backspace: move focus to previous field and clear it
+                _pinControllers[index - 1].clear();
+                _pinFocusNodes[index - 1].requestFocus();
               }
             },
             onTap: () {
@@ -291,8 +330,21 @@ class _SignupState extends State<Signup> {
                                 ),
                                 child: TextField(
                                   controller: ghanaCardController,
-                                  decoration: const InputDecoration(
-                                    border: UnderlineInputBorder(),
+                                  keyboardType: TextInputType.number,
+                                  inputFormatters: [
+                                    GhanaCardFormatter(),
+                                  ],
+                                  decoration: InputDecoration(
+                                    border: const UnderlineInputBorder(),
+                                    hintText: 'XXXXXXXXX-X',
+                                    prefix: Text(
+                                      'GHA-',
+                                      style: GoogleFonts.montserrat(
+                                        color: Colors.black,
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w400,
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ),

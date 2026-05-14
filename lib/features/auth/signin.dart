@@ -45,7 +45,7 @@ class _SigninState extends State<Signin> {
               LengthLimitingTextInputFormatter(1),
             ],
             decoration: const InputDecoration(
-              border: OutlineInputBorder(),
+              border: UnderlineInputBorder(),
               counterText: '',
             ),
             onChanged: (val) {
@@ -54,7 +54,15 @@ class _SigninState extends State<Signin> {
                   _pinFocusNodes[index + 1].requestFocus();
                 } else {
                   _pinFocusNodes[index].unfocus();
+                  // Auto-login when all 4 digits are entered and email is filled
+                  if (emailController.text.isNotEmpty && _pin.length == 4) {
+                    _submitLogin();
+                  }
                 }
+              } else if (val.isEmpty && index > 0) {
+                // Handle backspace: move focus to previous field and clear it
+                _pinControllers[index - 1].clear();
+                _pinFocusNodes[index - 1].requestFocus();
               }
             },
             onTap: () {
@@ -75,17 +83,28 @@ class _SigninState extends State<Signin> {
     );
   }
 
+  void _submitLogin() {
+    if (emailController.text.isEmpty || _pin.length != 4) {
+      return;
+    }
+
+    context.read<AuthBloc>().add(
+      LoginEvent(
+        email: emailController.text,
+        password: _pin,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    print('=== SIGNIN SCREEN BUILDING ===');
     return Scaffold(
       resizeToAvoidBottomInset: false,
       backgroundColor: Colors.white,
       body: BlocConsumer<AuthBloc, AuthState>(
         listener: (context, state) {
           if (state is Authenticated) {
-            // Ensure something happens even when `Signin` is opened directly
-            // (not rendered inside `AuthWrapper`). `AuthWrapper` contains the
-            // subscription gate.
             Navigator.of(context).pushAndRemoveUntil(
               MaterialPageRoute(builder: (_) => const AuthWrapper()),
               (route) => false,
@@ -103,220 +122,174 @@ class _SigninState extends State<Signin> {
           }
         },
         builder: (context, state) {
-          // Show loading indicator
-          bool isLoading = state is AuthLoading;
+          final bool isLoading = state is AuthLoading;
 
-          return Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: Stack(
-              children: [
-                // Your existing UI
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+          return SafeArea(
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 24.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    SizedBox(height: MediaQuery.of(context).size.height * 0.03),
                     Stack(
                       alignment: Alignment.center,
                       children: [
-                        Center(
-                          child: Text(
-                            'Sign In',
-                            style: GoogleFonts.montserrat(
-                              color: Colors.black,
-                              fontSize: 26,
-                              fontWeight: FontWeight.w300,
-                            ),
-                          ),
-                        ),
                         Positioned(
                           left: 0,
                           child: GestureDetector(
-                            onTap: () {
-                              Navigator.of(context).pop();
-                            },
+                            onTap: () => Navigator.of(context).pop(),
                             child: Container(
-                              height: 35,
-                              width: 35,
+                              width: 48,
+                              height: 48,
                               decoration: BoxDecoration(
-                                color: CustColors.mainCol,
                                 shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: CustColors.mainCol,
-                                  width: 1.5,
-                                ),
+                                color: CustColors.mainCol,
                               ),
-                              child: Center(
+                              child: const Center(
                                 child: Icon(
                                   Icons.arrow_back_ios_new,
                                   color: Colors.white,
-                                  size: 50 * 0.35,
+                                  size: 18,
                                 ),
                               ),
+                            ),
+                          ),
+                        ),
+                        Center(
+                          child: Text(
+                            'Login',
+                            style: GoogleFonts.montserrat(
+                              color: Colors.black,
+                              fontSize: 22,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ),
                       ],
                     ),
-                    SizedBox(height: MediaQuery.of(context).size.height * 0.1),
-                    Center(
-                      child: AutobusBranding(
-                        wordmarkFontSize: 26,
-                        markCircleSize: 34,
-                        spacing: 14,
+
+                    const SizedBox(height: 36),
+
+                    Text(
+                      'Email or Username',
+                      style: GoogleFonts.montserrat(
+                        color: Colors.black87,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w400,
                       ),
                     ),
-                    SizedBox(height: MediaQuery.of(context).size.height * 0.1),
-                    Padding(
-                      padding: EdgeInsets.only(left: 20.0, right: 20.0),
-                      child: Text(
-                        'Email',
-                        style: GoogleFonts.montserrat(
-                          color: const Color.fromARGB(255, 12, 12, 12),
-                          fontSize: 13,
-                          fontWeight: FontWeight.w400,
-                        ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: emailController,
+                      decoration: InputDecoration(
+                        hintText: 'Email or Username',
+                        border: const UnderlineInputBorder(),
+                        contentPadding: const EdgeInsets.symmetric(vertical: 12),
                       ),
                     ),
-                    Padding(
-                      padding: const EdgeInsets.only(left: 20.0, right: 20.0),
-                      child: TextField(
-                        controller: emailController,
-                        enabled: !isLoading,
-                        decoration: const InputDecoration(
-                          hintText: '',
-                          border: UnderlineInputBorder(),
-                        ),
-                      ),
-                    ),
+
                     const SizedBox(height: 20),
-                    Padding(
-                      padding: EdgeInsets.only(left: 20.0, right: 20.0),
-                      child: Text(
-                        'PIN',
-                        style: GoogleFonts.montserrat(
-                          color: Colors.black,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w400,
-                        ),
+
+                    Text(
+                      'Password',
+                      style: GoogleFonts.montserrat(
+                        color: Colors.black87,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w300,
                       ),
                     ),
+                    const SizedBox(height: 8),
                     Padding(
-                      padding: const EdgeInsets.only(left: 20.0, right: 20.0),
+                      padding: const EdgeInsets.only(right: 80.0),
                       child: _buildPinInput(enabled: !isLoading),
                     ),
-                    const SizedBox(height: 15),
-                    Padding(
-                      padding: const EdgeInsets.only(left: 20.0, right: 20.0),
+
+                    const SizedBox(height: 12),
+                    Align(
+                      alignment: Alignment.centerLeft,
                       child: GestureDetector(
-                        onTap: isLoading
-                            ? null
-                            : () {
-                                Navigator.of(context).push(
-                                  PageTransition(
-                                    type:
-                                        PageTransitionType.rightToLeftWithFade,
-                                    childCurrent: const RecoverAccount(),
-                                    duration: const Duration(
-                                      milliseconds: 1000,
-                                    ),
-                                    reverseDuration: const Duration(
-                                      milliseconds: 600,
-                                    ),
-                                    child: const RecoverAccount(),
-                                  ),
-                                );
-                              },
+                        onTap: () {
+                          Navigator.of(context).push(
+                            PageTransition(
+                              type: PageTransitionType.rightToLeftWithFade,
+                              child: const RecoverAccount(),
+                            ),
+                          );
+                        },
                         child: Text(
-                          'Forgot PIN ?',
+                          'Forgot Password ?',
                           style: GoogleFonts.montserrat(
-                            color: isLoading ? Colors.grey : Colors.black,
+                            color: Colors.black87,
                             fontSize: 13,
                             fontWeight: FontWeight.w400,
                           ),
                         ),
                       ),
                     ),
-                    SizedBox(height: MediaQuery.of(context).size.height * 0.05),
-                    Center(
-                      child: AppButton(
-                        onPressed: isLoading
-                            ? () {}
-                            : () {
-                                if (emailController.text.isEmpty ||
-                                    _pin.length != 4) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        'Please enter email and 4-digit PIN',
-                                        style: GoogleFonts.montserrat(
-                                          color: Colors.white,
-                                          fontSize: 14,
-                                        ),
-                                      ),
-                                      backgroundColor: Colors.red,
-                                    ),
-                                  );
-                                  return;
-                                }
 
-                                context.read<AuthBloc>().add(
-                                  LoginEvent(
-                                    email: emailController.text,
-                                    password: _pin,
-                                  ),
-                                );
-                              },
-                        buttonText: isLoading ? 'Signing in...' : 'Signin',
-                      ),
-                    ),
-                    SizedBox(height: MediaQuery.of(context).size.height * 0.1),
+                    const SizedBox(height: 28),
                     Center(
-                      child: Text(
-                        'Dont have an Account ?',
-                        style: GoogleFonts.montserrat(
-                          color: isLoading ? Colors.grey : Colors.black,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w400,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Center(
-                      child: GestureDetector(
-                        onTap: isLoading
-                            ? null
-                            : () {
-                                Navigator.of(context).push(
-                                  PageTransition(
-                                    type:
-                                        PageTransitionType.rightToLeftWithFade,
-                                    childCurrent: const Signup(),
-                                    duration: const Duration(
-                                      milliseconds: 1000,
-                                    ),
-                                    reverseDuration: const Duration(
-                                      milliseconds: 600,
-                                    ),
-                                    child: const Signup(),
-                                  ),
-                                );
-                              },
-                        child: Text(
-                          'Sign Up ',
-                          style: GoogleFonts.montserrat(
-                            color: isLoading ? Colors.grey : Colors.black,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w400,
+                      child: SizedBox(
+                        width: 220,
+                        height: 48,
+                        child: ElevatedButton(
+                          onPressed: isLoading ? null : _submitLogin,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: CustColors.mainCol,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: Text(
+                            'Login',
+                            style: GoogleFonts.montserrat(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         ),
                       ),
                     ),
+
+                    SizedBox(height: MediaQuery.of(context).size.height * 0.25),
+
+                    Center(
+                      child: Column(
+                        children: [
+                          Text(
+                            "Dont have an Account ?",
+                            style: GoogleFonts.montserrat(
+                              color: Colors.black54,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w300,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.of(context).push(
+                                PageTransition(
+                                  type: PageTransitionType.leftToRightWithFade,
+                                  child: const Signup(),
+                                ),
+                              );
+                            },
+                            child: Text(
+                              'Sign Up',
+                              style: GoogleFonts.montserrat(
+                                color: CustColors.mainCol,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
-
-                // Loading overlay
-                if (isLoading) const Center(child: CircularProgressIndicator()),
-              ],
+              ),
             ),
           );
         },

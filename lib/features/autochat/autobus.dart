@@ -32,6 +32,8 @@ class AutoBus extends StatefulWidget {
         return 'chatbot_agent';
       case 'email':
         return 'email_agent';
+      case 'interactions':
+        return 'interactions_agent';
       default:
         return 'chatbot_agent';
     }
@@ -951,30 +953,16 @@ class _AutoBusChatUIState extends State<_AutoBusChatUI> {
       if (avatarUrl != null && avatarUrl.trim().isEmpty) avatarUrl = null;
     }
 
-    return Container(
-      width: 54,
-      height: 54,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: Color(0xFF2A1447),
-        border: Border.all(color: Color(0xFFA92FEB), width: 0.5),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(4),
-        child: CircleAvatar(
-          backgroundColor: const Color(0xFF2A1447),
-          backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,
-          child: avatarUrl == null
-              ? Text(
-                  initials,
-                  style: GoogleFonts.montserrat(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w500,
-                  ),
-                )
-              : null,
-        ),
-      ),
+    return UserAvatar(
+      size: 54,
+      avatarUrl: avatarUrl,
+      initials: initials,
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const SettingsPage()),
+        );
+      },
     );
   }
 

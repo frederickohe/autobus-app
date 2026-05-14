@@ -9,11 +9,15 @@ late PaystackService _paystackService;
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  print('=== APP STARTING ===');
+
   // Initialize environment variables
   await AppConfig.init();
+  print('✓ AppConfig initialized');
 
   // Initialize Google Fonts
   await GoogleFonts.pendingFonts([GoogleFonts.montserrat()]);
+  print('✓ Google Fonts loaded');
 
   // Initialize session handling services
   _tokenService = TokenService();
@@ -24,6 +28,7 @@ void main() async {
   _apiService = ApiService(httpClient: _httpClient);
 
   _paystackService = PaystackService();
+  print('✓ Services initialized');
 
   // Create blocs
   final successBloc = SuccessBloc();
@@ -31,6 +36,7 @@ void main() async {
     tokenService: _tokenService,
     successBloc: successBloc,
   );
+  print('✓ BLoCs created');
 
   runApp(
     MultiRepositoryProvider(
@@ -51,6 +57,7 @@ void main() async {
       ),
     ),
   );
+  print('=== APP INITIALIZED ===');
 }
 
 //Getters

@@ -48,7 +48,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       final response = await http.post(
         Uri.parse('${AppConfig.backendUrl}/api/v1/auth/signin'),
         headers: {'Content-Type': 'application/json'},
-        body: json.encode({'email': event.email, 'password': event.password}),
+        body: json.encode({
+          'username': event.email,
+          'email': event.email,
+          'password': event.password,
+        }),
       );
 
       if (response.statusCode == 200) {
@@ -85,9 +89,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         try {
           final errorData = json.decode(response.body);
           if (errorData is Map && errorData['detail'] != null) {
-            errorMsg = errorData['detail'];
+            errorMsg = errorData['detail'].toString();
           }
         } catch (_) {}
+        if (errorMsg.toLowerCase().contains('invalid username and password')) {
+          errorMsg = 'Invalid email/username or PIN';
+        }
         emit(AuthError(message: errorMsg, source: 'login'));
       }
     } catch (e) {

@@ -29,17 +29,23 @@ class AuthWrapper extends StatelessWidget {
       },
       child: BlocBuilder<AuthBloc, AuthState>(
         builder: (context, state) {
+          print('=== AuthWrapper State: ${state.runtimeType} ===');
+          
           if (state is Authenticated) {
+            print('✓ User is Authenticated');
             final dynamic u = state.user;
             final userMap = (u is Map<String, dynamic>)
                 ? u
                 : (u is Map ? Map<String, dynamic>.from(u) : <String, dynamic>{});
             return SubscriptionGuard(user: userMap);
           } else if (state is Unauthenticated) {
+            print('✗ User is Unauthenticated - showing Signin');
             return const Signin();
           } else if (state is SessionExpired) {
+            print('✗ Session Expired - showing LogorSign');
             return const LogorSign();
           } else if (state is AuthError) {
+            print('✗ Auth Error: ${state.message}');
             WidgetsBinding.instance.addPostFrameCallback((_) {
               ScaffoldMessenger.of(
                 context,
@@ -52,10 +58,15 @@ class AuthWrapper extends StatelessWidget {
               return const Signin();
             }
           } else if (state is TokenRefreshing) {
+            print('⏳ Token Refreshing...');
             return const Scaffold(
               body: Center(child: CircularProgressIndicator()),
             );
+          } else if (state is TokenRefreshFailed) {
+            print('✗ Token Refresh Failed: ${state.message} - showing Signin');
+            return const Signin();
           } else {
+            print('⏳ Initial Loading State: $state');
             return const Scaffold(
               body: Center(child: CircularProgressIndicator()),
             );

@@ -9,13 +9,19 @@ class Welcome extends StatefulWidget {
 
 class _WelcomeState extends State<Welcome> {
   @override
+  void initState() {
+    super.initState();
+    print('=== WELCOME SCREEN INITIATED ===');
+  }
+
+  @override
   Widget build(BuildContext context) {
+    print('=== WELCOME SCREEN BUILDING ===');
     return Scaffold(
       body: _GradientBackground(
         child: SafeArea(
           child: BlocBuilder<AuthBloc, AuthState>(
             builder: (context, state) {
-              // Show welcome page content for authenticated users
               return LayoutBuilder(
                 builder: (context, constraints) {
                   final screenWidth = MediaQuery.of(context).size.width;
@@ -71,6 +77,7 @@ class _WelcomeState extends State<Welcome> {
                               child: TransparentCtaButton(
                                 label: 'Get Started',
                                 onPressed: () {
+                                  print('=== GET STARTED BUTTON PRESSED ===');
                                   Navigator.of(context).pushReplacement(
                                     Home.routeFromWelcome(),
                                   );

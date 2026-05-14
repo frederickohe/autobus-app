@@ -46,22 +46,16 @@ class Home extends StatefulWidget {
   State<Home> createState() => _HomeState();
 }
 
-class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
+class _HomeState extends State<Home> {
   Future<int>? _unreadCountFuture;
-  late final AnimationController _bgDriftController;
 
   @override
   void initState() {
     super.initState();
-    _bgDriftController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 26),
-    )..repeat();
   }
 
   @override
   void dispose() {
-    _bgDriftController.dispose();
     super.dispose();
   }
 
@@ -83,50 +77,51 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
+    print('=== HOME SCREEN BUILDING ===');
     final List<HomeMenuItem> menuItems = [
-      HomeMenuItem("Orders", Carbon.ibm_watson_orders, () {
+      HomeMenuItem("Intelligence", MaterialSymbols.data_usage, () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => const AutoBus(title: 'Orders')),
+          MaterialPageRoute(builder: (_) => const ManageIntelligence()),
         );
       }),
-      HomeMenuItem("Chatbot", Mdi.robot_outline, () {
+      HomeMenuItem("Interactions", Mdi.message_outline, () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => const AutoBus(title: 'Chatbot')),
+          MaterialPageRoute(builder: (_) => const ManageInteractions()),
         );
       }),
-      HomeMenuItem("Marketing", Icons8.advertising, () {
+      HomeMenuItem("Chats", Mdi.robot_outline, () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => const DigitalMarketingPage()),
-        );
-      }),
-      HomeMenuItem("Queries", Carbon.query, () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const AutoBus(title: 'Queries')),
-        );
-      }),
-      HomeMenuItem("Products", Icons.shopping_bag_outlined, () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const AutoBus(title: 'Products')),
-        );
-      }),
-      HomeMenuItem("Messages", Mdi.message_outline, () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const AutoBus(title: 'Messages')),
+          MaterialPageRoute(builder: (_) => const ManageChats()),
         );
       }),
       HomeMenuItem("Email", Mdi.email_outline, () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => const AutoBus(title: 'Email')),
+          MaterialPageRoute(builder: (_) => const ManageEmails()),
         );
       }),
-      HomeMenuItem("Reports", MaterialSymbols.data_usage, () {
+      HomeMenuItem("Marketing", Icons8.advertising, () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const ManageMarketing()),
+        );
+      }),
+      HomeMenuItem("Orders", Carbon.ibm_watson_orders, () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const ManageOrders()),
+        );
+      }),
+      HomeMenuItem("Products", Icons.shopping_bag_outlined, () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const ManageProducts()),
+        );
+      }),
+      HomeMenuItem("Reports", MaterialSymbols.account_balance, () {
         Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => const AnalyticsPage()),
@@ -135,48 +130,30 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
     ];
 
     return Scaffold(
-      backgroundColor: const Color(0xFF130522),
+      backgroundColor: const Color(0xFF0A0814),
       body: Stack(
         fit: StackFit.expand,
         children: [
-          Positioned.fill(
-            child: IgnorePointer(
-              child: Opacity(
-                opacity: 0.95,
-                child: _CosmosDriftingBackground(controller: _bgDriftController),
+          // Gradient Background
+          Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Color(0xFF1A1333),
+                  Color(0xFF120D26),
+                  Color(0xFF0A0814),
+                ],
               ),
             ),
           ),
-          Positioned.fill(
-            child: IgnorePointer(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      const Color(0xFF000000).withValues(alpha: 0.88),
-                      const Color(0xFF0A0610).withValues(alpha: 0.82),
-                      const Color(0xFF000000).withValues(alpha: 0.92),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-          Positioned.fill(
-            child: IgnorePointer(
-              child: BackdropFilter(
-                filter: ui.ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-                child: const SizedBox.expand(),
-              ),
-            ),
-          ),
+          // Content
           SafeArea(
             child: SingleChildScrollView(
               padding: EdgeInsets.fromLTRB(
                 20,
-                28,
+                16,
                 20,
                 32 +
                     MediaQuery.viewPaddingOf(context).bottom +
@@ -207,17 +184,7 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
                           );
                         },
                       ),
-                      GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const SettingsPage(),
-                            ),
-                          );
-                        },
-                        child: _avatarCircle(),
-                      ),
+                      UserAvatar(),
                     ],
                   ),
                   const SizedBox(height: 32),
@@ -235,20 +202,23 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
                       final firstName = displayName.trim().split(' ').first;
 
                       return Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           Text(
                             'Hello $firstName',
                             style: GoogleFonts.montserrat(
-                              color: Colors.white,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w300,
+                              color: Colors.white.withValues(alpha: 0.8),
+                              fontSize: 20,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
-                          const SizedBox(height: 28),
-                          Iconify(
-                            Ion.sparkles_sharp,
-                            color: const Color(0xFF6A53E7),
-                            size: 18,
+                          const SizedBox(height: 8),
+                          Center(
+                            child: Iconify(
+                              Ion.sparkles_sharp,
+                              color: const Color(0xFFA855F7),
+                              size: 20,
+                            ),
                           ),
                         ],
                       );
@@ -264,7 +234,7 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
                       );
                     },
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 12),
                   _AlertBox(
                     text: 'Enable 2FA to ensure added security',
                     onTap: () {
@@ -282,9 +252,9 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
                     gridDelegate:
                         const SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: 2,
-                          crossAxisSpacing: 36,
-                          mainAxisSpacing: 36,
-                          childAspectRatio: 1.5,
+                          crossAxisSpacing: 16,
+                          mainAxisSpacing: 16,
+                          childAspectRatio: 1.0,
                         ),
                     itemBuilder: (context, index) {
                       return _DashboardCard(item: menuItems[index]);
@@ -319,17 +289,28 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
         }
 
         return Container(
-          width: 54,
-          height: 54,
+          width: 48,
+          height: 48,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: const Color(0xFF2A1447),
-            border: Border.all(color: const Color(0xFFA92FEB), width: 0.5),
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFF7C3AED),
+                Color(0xFFF43F5E),
+              ],
+            ),
           ),
-          child: Padding(
-            padding: const EdgeInsets.all(4),
+          padding: const EdgeInsets.all(2),
+          child: Container(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: const Color(0xFF0A051D),
+              border: Border.all(color: const Color(0xFF0A051D), width: 2),
+            ),
             child: CircleAvatar(
-              backgroundColor: Color(0xFF2A1447),
+              backgroundColor: const Color(0xFF0A051D),
               backgroundImage: avatarUrl != null
                   ? NetworkImage(avatarUrl)
                   : null,
@@ -338,7 +319,8 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
                       initials,
                       style: GoogleFonts.montserrat(
                         color: Colors.white,
-                        fontWeight: FontWeight.w500,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
                       ),
                     )
                   : null,
@@ -351,30 +333,31 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
 
   Widget _notificationBell({required int unreadCount}) {
     return Container(
-      width: 54,
-      height: 54,
+      width: 48,
+      height: 48,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        border: Border.all(color: const Color(0xFFA92FEB), width: 0.5),
+        border: Border.all(color: const Color(0xFF4A4A4A), width: 1),
+        color: Colors.white.withValues(alpha: 0.02),
       ),
       child: Stack(
         children: [
-          const Center(
+          Center(
             child: Icon(
               Icons.notifications_none,
-              color: Colors.white,
-              size: 22,
+              color: Colors.white.withValues(alpha: 0.7),
+              size: 20,
             ),
           ),
           if (unreadCount > 0)
             Positioned(
-              right: 14,
-              top: 14,
+              right: 12,
+              top: 12,
               child: Container(
-                width: 10,
-                height: 10,
+                width: 8,
+                height: 8,
                 decoration: const BoxDecoration(
-                  color: Color(0xFFE53935),
+                  color: Color(0xFFEF4444),
                   shape: BoxShape.circle,
                 ),
               ),
@@ -396,20 +379,26 @@ class _DashboardCard extends StatelessWidget {
       onTap: item.onTap,
       child: Container(
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(30),
+          border: Border.all(
+            color: const Color(0xFF3F1163),
+            width: 1.5,
+          ),
+          color: Colors.white.withValues(alpha: 0.02),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             _buildIcon(item.icon),
-            const SizedBox(height: 14),
+            const SizedBox(height: 12),
             Text(
               item.title,
               style: GoogleFonts.montserrat(
                 color: Colors.white,
-                fontSize: 14,
-                fontWeight: FontWeight.w200,
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
               ),
+              textAlign: TextAlign.center,
             ),
           ],
         ),
@@ -435,70 +424,6 @@ class HomeMenuItem {
   HomeMenuItem(this.title, this.icon, this.onTap);
 }
 
-/// Full-bleed nebula with a slow drift (no scroll parallax).
-class _CosmosDriftingBackground extends StatelessWidget {
-  const _CosmosDriftingBackground({required this.controller});
-
-  final AnimationController controller;
-
-  static const String _asset = 'assets/img/cosmos_background.png';
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: controller,
-      builder: (context, child) {
-        final t = controller.value * 2 * math.pi;
-        final dx = math.sin(t) * 16;
-        final dy = math.cos(t * 0.71) * 14;
-        return LayoutBuilder(
-          builder: (context, constraints) {
-            final w = constraints.maxWidth;
-            final h = constraints.maxHeight;
-            if (w <= 0 || h <= 0) {
-              return const ColoredBox(color: Color(0xFF130522));
-            }
-            return ClipRect(
-              child: Transform.translate(
-                offset: Offset(dx, dy),
-                child: Transform.scale(
-                  scale: 1.12,
-                  alignment: Alignment.center,
-                  child: SizedBox(
-                    width: w,
-                    height: h,
-                    child: child,
-                  ),
-                ),
-              ),
-            );
-          },
-        );
-      },
-      child: Image.asset(
-        _asset,
-        fit: BoxFit.cover,
-        alignment: Alignment.center,
-        filterQuality: FilterQuality.high,
-        errorBuilder: (_, __, ___) {
-          return Container(
-            color: const Color(0xFF130522),
-            alignment: Alignment.center,
-            child: Text(
-              'Add assets/img/cosmos_background.png',
-              textAlign: TextAlign.center,
-              style: GoogleFonts.montserrat(
-                color: Colors.white54,
-                fontSize: 12,
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-}
-
 class _AlertBox extends StatelessWidget {
   final String text;
   final VoidCallback onTap;
@@ -510,32 +435,35 @@ class _AlertBox extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: 48,
+        height: 56,
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 16),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFFA92FEB), width: 1),
-          color: Colors.black.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFF3F1163), width: 1.5),
+          color: const Color(0xFF1A0D2E).withValues(alpha: 0.6),
         ),
         child: Row(
           children: [
-            const Icon(Icons.error_outline, color: Color(0xFFD60000), size: 22),
-            const SizedBox(width: 10),
+            const Icon(Icons.warning_outlined, color: Color(0xFFEF4444), size: 20),
+            const SizedBox(width: 12),
             Expanded(
               child: Text(
                 text,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: GoogleFonts.montserrat(
-                  color: Colors.white,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w300,
+                  color: Colors.white.withValues(alpha: 0.8),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w400,
                 ),
               ),
             ),
-            const SizedBox(width: 10),
-            const Icon(Icons.arrow_outward, color: Color(0xFFD60000), size: 18),
+            const SizedBox(width: 12),
+            Transform.rotate(
+              angle: -0.785,
+              child: const Icon(Icons.arrow_outward, color: Color(0xFFEF4444), size: 16),
+            ),
           ],
         ),
       ),

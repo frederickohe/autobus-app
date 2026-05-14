@@ -92,10 +92,10 @@ class _RecoverAccountState extends State<RecoverAccount> {
               ),
               SizedBox(height: MediaQuery.of(context).size.height * 0.1),
               Center(
-                child: SizedBox(
-                  width: 100,
-                  height: 100,
-                  child: Image.asset('assets/img/bot.png'),
+                child: AutobusBranding(
+                  wordmarkFontSize: 26,
+                  markCircleSize: 34,
+                  spacing: 14,
                 ),
               ),
               SizedBox(height: MediaQuery.of(context).size.height * 0.1),

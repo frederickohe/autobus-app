@@ -9,6 +9,7 @@ class SplashPge extends StatefulWidget {
 
 class _SplashPgeState extends State<SplashPge> {
   void _goNext() {
+    print('=== SPLASH BUTTON PRESSED - NAVIGATING ===');
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (context) => const AuthWrapper()),

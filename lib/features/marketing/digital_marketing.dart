@@ -65,9 +65,8 @@ class DigitalMarketingCampaign {
 
 class _MarketingScaffold extends StatelessWidget {
   final Widget child;
-  final bool showStar;
 
-  const _MarketingScaffold({required this.child, this.showStar = false});
+  const _MarketingScaffold({required this.child});
 
   @override
   Widget build(BuildContext context) {
@@ -119,25 +118,7 @@ class _MarketingScaffold extends StatelessWidget {
                     ),
                     Align(
                       alignment: Alignment.centerRight,
-                      child: showStar
-                          ? Container(
-                              width: 54,
-                              height: 54,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: _kHeaderPurple,
-                                border: Border.all(
-                                  color: _kHeaderBorder,
-                                  width: 0.5,
-                                ),
-                              ),
-                              child: const Icon(
-                                Icons.star,
-                                color: _kRed,
-                                size: 24,
-                              ),
-                            )
-                          : const _MarketingAvatarButton(),
+                      child: UserAvatar(),
                     ),
                   ],
                 ),
@@ -154,62 +135,6 @@ class _MarketingScaffold extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _MarketingAvatarButton extends StatelessWidget {
-  const _MarketingAvatarButton();
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocBuilder<AuthBloc, AuthState>(
-      builder: (context, state) {
-        final dynamic user = state is Authenticated ? state.user : null;
-
-        String? avatarUrl;
-        String initials = 'U';
-
-        if (user is Map) {
-          final name = (user['fullname'] ?? user['email'] ?? 'User').toString();
-          initials = name.trim().isNotEmpty
-              ? name.trim()[0].toUpperCase()
-              : initials;
-          avatarUrl =
-              (user['avatar'] ??
-                      user['avatar_url'] ??
-                      user['photo'] ??
-                      user['photo_url'])
-                  ?.toString();
-          if (avatarUrl != null && avatarUrl.trim().isEmpty) avatarUrl = null;
-        }
-
-        return Container(
-          width: 54,
-          height: 54,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: _kHeaderPurple,
-            border: Border.all(color: _kHeaderBorder, width: 0.5),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(4),
-            child: CircleAvatar(
-              backgroundColor: _kHeaderPurple,
-              backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,
-              child: avatarUrl == null
-                  ? Text(
-                      initials,
-                      style: GoogleFonts.montserrat(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    )
-                  : null,
-            ),
-          ),
-        );
-      },
     );
   }
 }
@@ -349,97 +274,49 @@ class _PromptBar extends StatelessWidget {
 }
 
 class DigitalMarketingPage extends StatefulWidget {
-  const DigitalMarketingPage({super.key});
+  final Set<MarketingContentType> initialSelected;
+
+  const DigitalMarketingPage({
+    super.key,
+    Set<MarketingContentType>? initialSelected,
+  }) : initialSelected = initialSelected ?? const <MarketingContentType>{};
 
   @override
   State<DigitalMarketingPage> createState() => _DigitalMarketingPageState();
 }
 
 class _DigitalMarketingPageState extends State<DigitalMarketingPage> {
-  final Set<MarketingContentType> _selected = {};
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
 
-  void _onGetStarted() {
-    if (_selected.isEmpty) return;
-    final contents = MarketingContentType.values
-        .where(_selected.contains)
+      final selected = widget.initialSelected.isNotEmpty
+          ? widget.initialSelected
+          : <MarketingContentType>{MarketingContentType.pictures};
+
+      final contents = MarketingContentType.values
+        .where(selected.contains)
         .map((t) => MarketingContent(t))
         .toList();
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => _GenerateMediaPage(
-          campaign: DigitalMarketingCampaign(contents),
-          contentIndex: 0,
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => _GenerateMediaPage(
+            campaign: DigitalMarketingCampaign(contents),
+            contentIndex: 0,
+          ),
         ),
-      ),
-    );
+      );
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return _MarketingScaffold(
-      showStar: false,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Center(
-            child: Text(
-              'Select Marketing Content',
-              style: GoogleFonts.montserrat(
-                fontSize: 16,
-                color: Colors.black87,
-              ),
-            ),
-          ),
-          const SizedBox(height: 32),
-
-          _TypeCard(
-            type: MarketingContentType.pictures,
-            label: 'Pictures',
-            icon: Icons.image_rounded,
-            iconColor: const Color(0xFF9B59B6),
-            selected: _selected.contains(MarketingContentType.pictures),
-            onTap: () => setState(
-              () => _selected.contains(MarketingContentType.pictures)
-                  ? _selected.remove(MarketingContentType.pictures)
-                  : _selected.add(MarketingContentType.pictures),
-            ),
-          ),
-          const SizedBox(height: 20),
-          _TypeCard(
-            type: MarketingContentType.videos,
-            label: 'Videos',
-            icon: Icons.videocam_rounded,
-            iconColor: const Color(0xFFE74C3C),
-            selected: _selected.contains(MarketingContentType.videos),
-            onTap: () => setState(
-              () => _selected.contains(MarketingContentType.videos)
-                  ? _selected.remove(MarketingContentType.videos)
-                  : _selected.add(MarketingContentType.videos),
-            ),
-          ),
-          const SizedBox(height: 20),
-          _TypeCard(
-            type: MarketingContentType.text,
-            label: 'Text',
-            icon: Icons.article_rounded,
-            iconColor: const Color(0xFFE67E22),
-            selected: _selected.contains(MarketingContentType.text),
-            onTap: () => setState(
-              () => _selected.contains(MarketingContentType.text)
-                  ? _selected.remove(MarketingContentType.text)
-                  : _selected.add(MarketingContentType.text),
-            ),
-          ),
-
-          const Spacer(),
-
-          _DarkButton(
-            label: 'Next',
-            onTap: _selected.isNotEmpty ? _onGetStarted : null,
-          ),
-          const SizedBox(height: 20),
-        ],
+      child: const Center(
+        child: CircularProgressIndicator(),
       ),
     );
   }
@@ -616,7 +493,6 @@ class _GenerateMediaPageState extends State<_GenerateMediaPage> {
         _content.genState != MediaGenState.generating;
 
     return _MarketingScaffold(
-      showStar: false,
       child: Column(
         children: [
           Text(
@@ -1158,7 +1034,6 @@ class _SelectOutletPageState extends State<_SelectOutletPage> {
         : _outlets.length;
 
     return _MarketingScaffold(
-      showStar: false,
       child: Column(
         children: [
           Text(
