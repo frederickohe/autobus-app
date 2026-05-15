@@ -34,6 +34,58 @@ class ManageScreenStyle {
   );
 }
 
+class ManageScreenHeader extends StatelessWidget {
+  final String title;
+  final Widget? trailing;
+  final VoidCallback? onBackPressed;
+  final EdgeInsetsGeometry padding;
+
+  const ManageScreenHeader({
+    super.key,
+    required this.title,
+    this.trailing,
+    this.onBackPressed,
+    this.padding = const EdgeInsets.fromLTRB(24, 24, 24, 0),
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: padding,
+      child: SizedBox(
+        height: 54,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Align(
+              alignment: Alignment.centerLeft,
+              child: ManageScreenBackButton(onPressed: onBackPressed),
+            ),
+            Positioned.fill(
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 72),
+                  child: Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: ManageScreenStyle.headerTitleStyle(),
+                  ),
+                ),
+              ),
+            ),
+            Align(
+              alignment: Alignment.centerRight,
+              child: trailing ?? const SizedBox(width: 48, height: 48),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class ManageScreenBackButton extends StatelessWidget {
   final VoidCallback? onPressed;
 

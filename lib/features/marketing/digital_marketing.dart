@@ -118,7 +118,7 @@ class _MarketingScaffold extends StatelessWidget {
                     ),
                     Align(
                       alignment: Alignment.centerRight,
-                      child: UserAvatar(),
+                      child: UserAvatar(showRingDecoration: false),
                     ),
                   ],
                 ),
@@ -158,9 +158,7 @@ class _DarkButton extends StatelessWidget {
           color: enabled ? _kNextButtonPurple : Colors.grey.shade300,
           borderRadius: BorderRadius.circular(50),
           border: Border.all(
-            color: enabled
-                ? Colors.white
-                : Colors.white.withValues(alpha: 0.0),
+            color: enabled ? Colors.white : Colors.white.withValues(alpha: 0.0),
             width: 0.5,
           ),
         ),
@@ -297,9 +295,9 @@ class _DigitalMarketingPageState extends State<DigitalMarketingPage> {
           : <MarketingContentType>{MarketingContentType.pictures};
 
       final contents = MarketingContentType.values
-        .where(selected.contains)
-        .map((t) => MarketingContent(t))
-        .toList();
+          .where(selected.contains)
+          .map((t) => MarketingContent(t))
+          .toList();
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
@@ -315,9 +313,7 @@ class _DigitalMarketingPageState extends State<DigitalMarketingPage> {
   @override
   Widget build(BuildContext context) {
     return _MarketingScaffold(
-      child: const Center(
-        child: CircularProgressIndicator(),
-      ),
+      child: const Center(child: CircularProgressIndicator()),
     );
   }
 }

@@ -16,21 +16,7 @@ class ManageOrders extends StatelessWidget {
           SafeArea(
             child: Column(
               children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
-                  child: Row(
-                    children: [
-                      const ManageScreenBackButton(),
-                      const SizedBox(width: 18),
-                      Expanded(
-                        child: Text(
-                          'Manage Orders',
-                          style: ManageScreenStyle.headerTitleStyle(),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                const ManageScreenHeader(title: 'Manage Orders'),
                 Expanded(
                   child: SingleChildScrollView(
                     child: Padding(

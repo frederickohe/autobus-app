@@ -155,7 +155,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
             ),
           ),
 
-          const UserAvatar(size: 48),
+          const UserAvatar(size: 48, showRingDecoration: false),
         ],
       ),
     );
@@ -209,7 +209,6 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
       },
     );
   }
-
 }
 
 class _GrowthWidget extends StatelessWidget {

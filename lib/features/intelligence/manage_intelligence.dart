@@ -173,21 +173,7 @@ class _ManageIntelligenceState extends State<ManageIntelligence> {
           SafeArea(
             child: Column(
               children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
-                  child: Row(
-                    children: [
-                      const ManageScreenBackButton(),
-                      const SizedBox(width: 18),
-                      Expanded(
-                        child: Text(
-                          'Manage Intelligence',
-                          style: ManageScreenStyle.headerTitleStyle(),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                const ManageScreenHeader(title: 'Manage Intelligence'),
                 // Welcome Section
                 Expanded(
                   child: SingleChildScrollView(
@@ -225,7 +211,9 @@ class _ManageIntelligenceState extends State<ManageIntelligence> {
                               child: SizedBox(
                                 width: 28,
                                 height: 28,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
                               ),
                             ),
                             const SizedBox(height: 24),
@@ -486,12 +474,7 @@ class _IntelligenceHistoryPageState extends State<IntelligenceHistoryPage> {
         _expandedIndex = null;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Deleted "$name"',
-            style: GoogleFonts.outfit(),
-          ),
-        ),
+        SnackBar(content: Text('Deleted "$name"', style: GoogleFonts.outfit())),
       );
     } catch (e) {
       if (!mounted) return;
@@ -522,17 +505,9 @@ class _IntelligenceHistoryPageState extends State<IntelligenceHistoryPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      const ManageScreenBackButton(),
-                      const SizedBox(width: 18),
-                      Expanded(
-                        child: Text(
-                          'Manage Intelligence',
-                          style: ManageScreenStyle.headerTitleStyle(),
-                        ),
-                      ),
-                    ],
+                  const ManageScreenHeader(
+                    title: 'Manage Intelligence',
+                    padding: EdgeInsets.zero,
                   ),
                   const SizedBox(height: 32),
                   Expanded(
@@ -636,8 +611,7 @@ class _IntelligenceHistoryPageState extends State<IntelligenceHistoryPage> {
                                                   style: GoogleFonts.outfit(
                                                     color: Colors.white,
                                                     fontSize: 16,
-                                                    fontWeight:
-                                                        FontWeight.w400,
+                                                    fontWeight: FontWeight.w400,
                                                   ),
                                                 ),
                                                 if (key != null) ...[
@@ -662,17 +636,15 @@ class _IntelligenceHistoryPageState extends State<IntelligenceHistoryPage> {
                                                         _deleteAt(index),
                                                     child: Text(
                                                       'Delete file',
-                                                      style:
-                                                          GoogleFonts.outfit(
-                                                            color: Colors.white
-                                                                .withValues(
-                                                                  alpha: 0.75,
-                                                                ),
-                                                            fontSize: 13,
-                                                            fontWeight:
-                                                                FontWeight
-                                                                    .w300,
-                                                          ),
+                                                      style: GoogleFonts.outfit(
+                                                        color: Colors.white
+                                                            .withValues(
+                                                              alpha: 0.75,
+                                                            ),
+                                                        fontSize: 13,
+                                                        fontWeight:
+                                                            FontWeight.w300,
+                                                      ),
                                                     ),
                                                   ),
                                                 ),
@@ -687,8 +659,7 @@ class _IntelligenceHistoryPageState extends State<IntelligenceHistoryPage> {
                                                   style: GoogleFonts.outfit(
                                                     color: Colors.white,
                                                     fontSize: 18,
-                                                    fontWeight:
-                                                        FontWeight.w400,
+                                                    fontWeight: FontWeight.w400,
                                                   ),
                                                 ),
                                                 if (key != null) ...[

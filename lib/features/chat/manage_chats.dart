@@ -38,12 +38,9 @@ class _ManageChatsState extends State<ManageChats> {
       final status = await api.getChatwootStatus();
       if (!mounted) return;
 
-      final configured =
-          status['chatwoot_configured'] as bool? ?? false;
-      final provisioned =
-          status['chatwoot_provisioned'] as bool? ?? false;
-      final subActive =
-          status['subscription_active'] as bool? ?? false;
+      final configured = status['chatwoot_configured'] as bool? ?? false;
+      final provisioned = status['chatwoot_provisioned'] as bool? ?? false;
+      final subActive = status['subscription_active'] as bool? ?? false;
 
       int? inboxTotal;
       var inboxFailed = false;
@@ -97,21 +94,7 @@ class _ManageChatsState extends State<ManageChats> {
           SafeArea(
             child: Column(
               children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
-                  child: Row(
-                    children: [
-                      const ManageScreenBackButton(),
-                      const SizedBox(width: 18),
-                      Expanded(
-                        child: Text(
-                          'Manage Chats',
-                          style: ManageScreenStyle.headerTitleStyle(),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                const ManageScreenHeader(title: 'Manage Chats'),
                 Expanded(
                   child: SingleChildScrollView(
                     child: Padding(
@@ -147,13 +130,17 @@ class _ManageChatsState extends State<ManageChats> {
                               child: SizedBox(
                                 width: 28,
                                 height: 28,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
                               ),
                             ),
                             const SizedBox(height: 24),
                           ] else if (_statusError != null) ...[
                             _ChatwootMessagePanel(
-                              backgroundColor: Colors.amber.withValues(alpha: 0.12),
+                              backgroundColor: Colors.amber.withValues(
+                                alpha: 0.12,
+                              ),
                               borderColor: Colors.amber.withValues(alpha: 0.45),
                               icon: Icons.cloud_off_outlined,
                               iconColor: Colors.amber.shade300,
@@ -183,7 +170,9 @@ class _ManageChatsState extends State<ManageChats> {
                             const SizedBox(height: 32),
                           ] else if (!_chatwootConfigured) ...[
                             _ChatwootMessagePanel(
-                              backgroundColor: Colors.amber.withValues(alpha: 0.12),
+                              backgroundColor: Colors.amber.withValues(
+                                alpha: 0.12,
+                              ),
                               borderColor: Colors.amber.withValues(alpha: 0.45),
                               icon: Icons.settings_suggest_outlined,
                               iconColor: Colors.amber.shade300,
@@ -200,10 +189,12 @@ class _ManageChatsState extends State<ManageChats> {
                             const SizedBox(height: 32),
                           ] else if (!_chatwootProvisioned) ...[
                             _ChatwootMessagePanel(
-                              backgroundColor: const Color(0xFF581C87)
-                                  .withValues(alpha: 0.1),
-                              borderColor:
-                                  const Color(0xFF9333EA).withValues(alpha: 0.5),
+                              backgroundColor: const Color(
+                                0xFF581C87,
+                              ).withValues(alpha: 0.1),
+                              borderColor: const Color(
+                                0xFF9333EA,
+                              ).withValues(alpha: 0.5),
                               icon: Icons.warning_rounded,
                               iconColor: Colors.red.shade400,
                               child: Text(
@@ -219,7 +210,9 @@ class _ManageChatsState extends State<ManageChats> {
                             const SizedBox(height: 32),
                           ] else if (!_subscriptionActive) ...[
                             _ChatwootMessagePanel(
-                              backgroundColor: Colors.amber.withValues(alpha: 0.12),
+                              backgroundColor: Colors.amber.withValues(
+                                alpha: 0.12,
+                              ),
                               borderColor: Colors.amber.withValues(alpha: 0.45),
                               icon: Icons.lock_outline,
                               iconColor: Colors.amber.shade300,
@@ -236,7 +229,9 @@ class _ManageChatsState extends State<ManageChats> {
                             const SizedBox(height: 32),
                           ] else if (_inboxesFetchFailed) ...[
                             _ChatwootMessagePanel(
-                              backgroundColor: Colors.amber.withValues(alpha: 0.12),
+                              backgroundColor: Colors.amber.withValues(
+                                alpha: 0.12,
+                              ),
                               borderColor: Colors.amber.withValues(alpha: 0.45),
                               icon: Icons.cloud_off_outlined,
                               iconColor: Colors.amber.shade300,
@@ -266,10 +261,12 @@ class _ManageChatsState extends State<ManageChats> {
                             const SizedBox(height: 32),
                           ] else if ((_linkedInboxTotal ?? 0) == 0) ...[
                             _ChatwootMessagePanel(
-                              backgroundColor: const Color(0xFF581C87)
-                                  .withValues(alpha: 0.1),
-                              borderColor:
-                                  const Color(0xFF9333EA).withValues(alpha: 0.5),
+                              backgroundColor: const Color(
+                                0xFF581C87,
+                              ).withValues(alpha: 0.1),
+                              borderColor: const Color(
+                                0xFF9333EA,
+                              ).withValues(alpha: 0.5),
                               icon: Icons.warning_rounded,
                               iconColor: Colors.red.shade400,
                               child: Text(

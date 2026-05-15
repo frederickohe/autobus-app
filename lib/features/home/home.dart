@@ -85,12 +85,12 @@ class _HomeState extends State<Home> {
   @override
   Widget build(BuildContext context) {
     final List<HomeMenuItem> menuItems = [
-      HomeMenuItem("Your AI", Mdi.account_group_outline, () {
+      HomeMenuItem("My AI", Icons.smart_toy_outlined, () {
         Navigator.push(
           context,
           MaterialPageRoute(
             builder: (_) => const AutoBus(
-              title: 'Interactions',
+              title: 'My Ai',
               webhookContext: 'interactions_agent',
             ),
           ),
@@ -102,7 +102,7 @@ class _HomeState extends State<Home> {
           MaterialPageRoute(builder: (_) => const ManageIntelligence()),
         );
       }),
-      HomeMenuItem("Chats", Mdi.chat_outline, () {
+      HomeMenuItem("Chats", Icons.chat_bubble_outline, () {
         Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => const ManageChats()),
@@ -132,7 +132,7 @@ class _HomeState extends State<Home> {
           MaterialPageRoute(builder: (_) => const ManageProducts()),
         );
       }),
-      HomeMenuItem("Reports", MaterialSymbols.account_balance, () {
+      HomeMenuItem("Reports", Icons.bar_chart_outlined, () {
         Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => const ManageReports()),

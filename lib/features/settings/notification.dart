@@ -191,27 +191,19 @@ class _NotificationsPageState extends State<NotificationsPage> {
                         ),
 
                       /// Show Notifications Toggle
-                      SwitchListTile(
+                      _PreferenceSwitchTile(
+                        title: 'Show Notifications',
                         value: showNotifications,
-                        onChanged: (_loading || _saving)
-                            ? null
-                            : (val) {
-                                final prev = showNotifications;
-                                setState(() => showNotifications = val);
-                                _persist(
-                                  inAppNotifications: val,
-                                  rollback: () =>
-                                      setState(() => showNotifications = prev),
-                                );
-                              },
-                        title: const Text(
-                          "Show Notifications",
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        activeThumbColor: CustColors.mainCol,
+                        enabled: !(_loading || _saving),
+                        onChanged: (val) {
+                          final prev = showNotifications;
+                          setState(() => showNotifications = val);
+                          _persist(
+                            inAppNotifications: val,
+                            rollback: () =>
+                                setState(() => showNotifications = prev),
+                          );
+                        },
                       ),
 
                       /// Sound Tile
@@ -246,27 +238,19 @@ class _NotificationsPageState extends State<NotificationsPage> {
                       ),
 
                       /// SMS Notifications Toggle
-                      SwitchListTile(
+                      _PreferenceSwitchTile(
+                        title: 'SMS Notifications',
                         value: smsNotifications,
-                        onChanged: (_loading || _saving)
-                            ? null
-                            : (val) {
-                                final prev = smsNotifications;
-                                setState(() => smsNotifications = val);
-                                _persist(
-                                  smsNotifications: val,
-                                  rollback: () =>
-                                      setState(() => smsNotifications = prev),
-                                );
-                              },
-                        title: const Text(
-                          "SMS Notifications",
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        activeThumbColor: CustColors.mainCol,
+                        enabled: !(_loading || _saving),
+                        onChanged: (val) {
+                          final prev = smsNotifications;
+                          setState(() => smsNotifications = val);
+                          _persist(
+                            smsNotifications: val,
+                            rollback: () =>
+                                setState(() => smsNotifications = prev),
+                          );
+                        },
                       ),
                     ],
                   ),
@@ -313,6 +297,107 @@ class _NotificationBackground extends StatelessWidget {
         ),
       ),
       child: child,
+    );
+  }
+}
+
+class _PreferenceSwitchTile extends StatelessWidget {
+  final String title;
+  final bool value;
+  final bool enabled;
+  final ValueChanged<bool> onChanged;
+
+  const _PreferenceSwitchTile({
+    required this.title,
+    required this.value,
+    required this.enabled,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: enabled ? () => onChanged(!value) : null,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                title,
+                style: GoogleFonts.montserrat(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black87,
+                ),
+              ),
+            ),
+            _AnimatedToggleSwitch(value: value, enabled: enabled),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AnimatedToggleSwitch extends StatelessWidget {
+  final bool value;
+  final bool enabled;
+
+  const _AnimatedToggleSwitch({required this.value, required this.enabled});
+
+  @override
+  Widget build(BuildContext context) {
+    final trackColor = value
+        ? CustColors.mainCol
+        : Colors.black.withValues(alpha: 0.12);
+
+    return AnimatedOpacity(
+      duration: const Duration(milliseconds: 180),
+      opacity: enabled ? 1 : 0.55,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+        width: 58,
+        height: 34,
+        padding: const EdgeInsets.all(3),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(999),
+          color: trackColor,
+          boxShadow: [
+            BoxShadow(
+              color: trackColor.withValues(alpha: value ? 0.28 : 0.06),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: AnimatedAlign(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOutCubic,
+          alignment: value ? Alignment.centerRight : Alignment.centerLeft,
+          child: Container(
+            width: 28,
+            height: 28,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.14),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Icon(
+              value ? Icons.check_rounded : Icons.remove_rounded,
+              size: 16,
+              color: value ? CustColors.mainCol : Colors.grey.shade500,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

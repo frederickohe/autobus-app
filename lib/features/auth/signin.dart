@@ -181,7 +181,17 @@ class _SigninState extends State<Signin> {
                       ],
                     ),
 
-                    const SizedBox(height: 86),
+                    const SizedBox(height: 24),
+
+                    const Center(
+                      child: AutobusBranding(
+                        wordmarkFontSize: 26,
+                        markCircleSize: 34,
+                        spacing: 14,
+                      ),
+                    ),
+
+                    const SizedBox(height: 40),
 
                     Center(
                       child: ConstrainedBox(

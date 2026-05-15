@@ -43,16 +43,15 @@ class _DigitalMarketingSelectionState extends State<DigitalMarketingSelection> {
 
     Navigator.of(context).push<void>(
       MaterialPageRoute<void>(
-        builder: (_) => DigitalMarketingPage(
-          initialSelected: {_mapType(_selected!)},
-        ),
+        builder: (_) =>
+            DigitalMarketingPage(initialSelected: {_mapType(_selected!)}),
       ),
     );
   }
 
   Widget _buildCard({
     required String label,
-    required String imageUrl,
+    required IconData icon,
     required _MarketingType type,
   }) {
     final selected = _selected == type;
@@ -63,12 +62,14 @@ class _DigitalMarketingSelectionState extends State<DigitalMarketingSelection> {
         width: double.infinity,
         height: 144,
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: selected ? 0.92 : 0.82),
+          color: selected
+              ? const Color(0xFF7C3AED).withValues(alpha: 0.14)
+              : Colors.white.withValues(alpha: 0.03),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: selected
-                ? _accent
-                : const Color.fromRGBO(30, 20, 60, 0.15),
+                ? const Color(0xFFB794F6)
+                : Colors.white.withValues(alpha: 0.14),
             width: selected ? 2.2 : 1.0,
           ),
           boxShadow: selected
@@ -90,20 +91,51 @@ class _DigitalMarketingSelectionState extends State<DigitalMarketingSelection> {
         child: ClipRRect(
           borderRadius: BorderRadius.circular(20),
           child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
+            filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                SizedBox(
-                  width: 56,
-                  height: 56,
-                  child: Image.network(imageUrl, fit: BoxFit.contain),
+                Stack(
+                  clipBehavior: Clip.none,
+                  alignment: Alignment.center,
+                  children: [
+                    Container(
+                      width: 64,
+                      height: 64,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.06),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.12),
+                        ),
+                      ),
+                      child: Icon(icon, color: Colors.white, size: 30),
+                    ),
+                    if (selected)
+                      Positioned(
+                        right: -2,
+                        top: -2,
+                        child: Container(
+                          width: 22,
+                          height: 22,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFB794F6),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.check,
+                            color: Colors.white,
+                            size: 14,
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
                 const SizedBox(height: 12),
                 Text(
                   label,
                   style: GoogleFonts.montserrat(
-                    color: const Color(0xFF251446),
+                    color: Colors.white,
                     fontWeight: FontWeight.w700,
                     fontSize: 14,
                   ),
@@ -131,20 +163,7 @@ class _DigitalMarketingSelectionState extends State<DigitalMarketingSelection> {
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               child: Column(
                 children: [
-                  Row(
-                    children: [
-                      const ManageScreenBackButton(),
-                      const SizedBox(width: 18),
-                      Expanded(
-                        child: Text(
-                          'Digital Marketing',
-                          textAlign: TextAlign.center,
-                          style: ManageScreenStyle.headerTitleStyle(),
-                        ),
-                      ),
-                      const SizedBox(width: 48),
-                    ],
-                  ),
+                  const ManageScreenHeader(title: 'Digital Marketing'),
                   const SizedBox(height: 24),
                   Text(
                     'Select marketing content',
@@ -165,22 +184,19 @@ class _DigitalMarketingSelectionState extends State<DigitalMarketingSelection> {
                           children: [
                             _buildCard(
                               label: 'Pictures',
-                              imageUrl:
-                                  'https://lh3.googleusercontent.com/aida-public/AB6AXuCJuntLu18cAc3YTaBjYVzQtwseg2Pw5IvujZsRcYjyuuZhyhAn2cwCMRn4sFljwluyyYmis4-YY7R9IjnNdpiBLTs0ZZ3m3D7f6QSmOvJF4Q7nRc5lBNTFpOQlhZ8wHgSvh-R6Psl7IMmKzrPECdGdAtfZkI0YGhtdfiKXHrT4aooDwzxUfgvrdgQvsH8hflIq8pH2UWVGlF86XbfEaXH3ymK2EfG9v3uiICvThLmCnRlO4n_x5Cmi9vPyQyYRUrFRXEreDQ9fqIni',
+                              icon: Icons.photo_library_outlined,
                               type: _MarketingType.pictures,
                             ),
                             const SizedBox(height: 16),
                             _buildCard(
                               label: 'Videos',
-                              imageUrl:
-                                  'https://lh3.googleusercontent.com/aida-public/AB6AXuB1T3Jc4uswvVdP3dJ4Ty_F-CNw2xn13U-sEnV3yIctHlXPkENbBBV96EHbFn98vD9xFMnLN3o8EWRkn5Lnq_Y5TmRw0SWM4xc_8CjzxY_hEqACGr_qeOfV1JfclAUyv3RWQu6_L4GyjFzrcE_cOnMeX38LqxkQ_cGJyK-B9bcnHnL2J-h6luhlENnrH0yI-8HLST586-k09J63xb96dW_YG775zT0CliEVkRm2V1ToXd7klSt2PNzzCrxPMZXwYL18sSKVCK1y6fUD',
+                              icon: Icons.videocam_outlined,
                               type: _MarketingType.videos,
                             ),
                             const SizedBox(height: 16),
                             _buildCard(
                               label: 'Text',
-                              imageUrl:
-                                  'https://lh3.googleusercontent.com/aida-public/AB6AXuD-IxBa4Oxi9LsiL9UTMwJ2SFE2yCdvWBBS7oyPRu1qlhpRZFAMKYtRjOU2XWRFhUT1j4GtnI9hw0KGwF5TctA9MGSaRx5i5zW-nNL6zNXEbzXdLVDDHogzQzfSVjGi4KynFy-CdjconJyyBiZ9UhU0KlH8u0IxTETYe3HgGK5BRM5BSRe1Zk97QjaM4GI0E2670AqcJS7sw_MzkkVXHserypZoJsph53tVMzfXuRwLWkTuO9XIexZlXNeZzB68F7aCOSkVLHH9N_cq',
+                              icon: Icons.text_snippet_outlined,
                               type: _MarketingType.text,
                             ),
                           ],
