@@ -213,41 +213,51 @@ class _DigitalMarketingSelectionState extends State<DigitalMarketingSelection> {
                   ),
                   Padding(
                     padding: const EdgeInsets.only(top: 12, bottom: 8),
-                    child: SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: _accent,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(50),
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 16,
-                            horizontal: 20,
-                          ),
-                          elevation: 6,
-                          shadowColor: _accent.withValues(alpha: 0.25),
+                    child: ElevatedButton(
+                      onPressed: _onGetStarted,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: CustColors.mainCol,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(40),
                         ),
-                        onPressed: _onGetStarted,
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              'Get started',
-                              style: GoogleFonts.montserrat(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 12,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Get Started',
+                            style: GoogleFonts.montserrat(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.arrow_forward_ios,
                                 color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
+                                size: 12,
                               ),
-                            ),
-                            const SizedBox(width: 12),
-                            Icon(
-                              Icons.arrow_forward,
-                              color: Colors.white.withValues(alpha: 0.9),
-                              size: 20,
-                            ),
-                          ],
-                        ),
+                              Icon(
+                                Icons.arrow_forward_ios,
+                                color: Colors.white54,
+                                size: 12,
+                              ),
+                              Icon(
+                                Icons.arrow_forward_ios,
+                                color: Colors.white30,
+                                size: 12,
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
                   ),

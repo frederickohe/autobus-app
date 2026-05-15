@@ -123,7 +123,7 @@ class _MarketingScaffold extends StatelessWidget {
                     ),
                     Align(
                       alignment: Alignment.centerRight,
-                      child: UserAvatar(showRingDecoration: false),
+                      child: UserAvatar(showRingDecoration: true),
                     ),
                   ],
                 ),

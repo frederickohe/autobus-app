@@ -1012,14 +1012,14 @@ class _AutoBusChatUIState extends State<_AutoBusChatUI> {
       constraints: const BoxConstraints(maxWidth: 260),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: isUser ? _purple : _lightGrey,
+        color: isUser ? _lightGrey : _purple,
         borderRadius: BorderRadius.only(
           topLeft: Radius.circular(isUser ? 14 : 4),
           topRight: Radius.circular(isUser ? 4 : 14),
           bottomLeft: const Radius.circular(14),
           bottomRight: const Radius.circular(14),
         ),
-        boxShadow: isUser
+        boxShadow: !isUser
             ? [
                 BoxShadow(
                   color: _purple.withValues(alpha: 0.08),
@@ -1034,7 +1034,7 @@ class _AutoBusChatUIState extends State<_AutoBusChatUI> {
         style: GoogleFonts.montserrat(
           fontSize: 14,
           height: 1.35,
-          color: isUser ? Colors.white : _purple,
+          color: isUser ? _purple : Colors.white,
           fontWeight: FontWeight.w400,
         ),
       ),
