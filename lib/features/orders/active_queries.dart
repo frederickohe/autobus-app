@@ -1,5 +1,27 @@
 import 'package:autobus/barrel.dart';
 
+String _orderListTitle(Map<String, dynamic> o) {
+  final name = (o['item_name'] ?? '').toString().trim();
+  if (name.isNotEmpty) return name;
+  return (o['order_number'] ?? o['order_id'] ?? 'Order').toString();
+}
+
+String _orderListSubtitleId(Map<String, dynamic> o) {
+  final num = (o['order_number'] ?? '').toString().trim();
+  if (num.isNotEmpty) return num;
+  return (o['order_id'] ?? '').toString();
+}
+
+String _formatOrderListDate(Map<String, dynamic> o) {
+  final raw = o['order_date']?.toString() ?? o['created_at']?.toString();
+  final dt = DateTime.tryParse(raw ?? '');
+  if (dt == null) return '—';
+  final d = dt.toLocal();
+  final mm = d.month.toString().padLeft(2, '0');
+  final dd = d.day.toString().padLeft(2, '0');
+  return '$dd / $mm / ${d.year}';
+}
+
 class ActiveQueries extends StatefulWidget {
   const ActiveQueries({super.key});
 
@@ -8,144 +30,219 @@ class ActiveQueries extends StatefulWidget {
 }
 
 class _ActiveQueriesState extends State<ActiveQueries> {
-  // Mock data - replace with actual API call
-  final List<QueryItem> queries = [
-    QueryItem(
-      title: 'Bag of rice ..',
-      id: 'ID TRF 26342348264',
-      date: '08 / 01 / 2026',
-    ),
-    QueryItem(
-      title: 'Fruit Jar',
-      id: 'ID TRF 26342348264',
-      date: '08 / 01 / 2026',
-    ),
-  ];
+  List<Map<String, dynamic>> _orders = const [];
+  bool _loading = true;
+  String? _loadError;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadOrders());
+  }
+
+  Future<void> _loadOrders() async {
+    setState(() {
+      _loading = true;
+      _loadError = null;
+    });
+    try {
+      final api = context.read<ApiService>();
+      final list = await api.listOrders(
+        skip: 0,
+        limit: 100,
+        orderStatus: 'pending',
+      );
+      if (!mounted) return;
+      setState(() {
+        _orders = list;
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loadError = e.toString().replaceFirst('Exception: ', '');
+        _loading = false;
+        _orders = const [];
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: Container(
-          margin: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: Colors.white.withOpacity(0.5),
-              width: 1.5,
-            ),
+      backgroundColor: Colors.black,
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          const DecoratedBox(
+            decoration: ManageScreenStyle.homeDashboardBodyDecoration,
           ),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: () => Navigator.of(context).pop(),
-              borderRadius: BorderRadius.circular(100),
-              child: const Icon(
-                Icons.arrow_back_ios_new,
-                color: Colors.white,
-                size: 18,
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 18, 24, 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const ManageScreenBackButton(),
+                      const SizedBox(width: 18),
+                      Expanded(
+                        child: Text(
+                          'Pending Orders',
+                          style: ManageScreenStyle.headerTitleStyle(),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 32),
+                  Expanded(
+                    child: _loading
+                        ? const Center(
+                            child: SizedBox(
+                              width: 32,
+                              height: 32,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          )
+                        : _loadError != null
+                        ? Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                  ),
+                                  child: Text(
+                                    _loadError!,
+                                    textAlign: TextAlign.center,
+                                    style: GoogleFonts.outfit(
+                                      color: Colors.white.withValues(
+                                        alpha: 0.75,
+                                      ),
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                TextButton(
+                                  onPressed: _loadOrders,
+                                  child: Text(
+                                    'Retry',
+                                    style: GoogleFonts.outfit(
+                                      color: const Color(0xFFA855F7),
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        : RefreshIndicator(
+                            color: const Color(0xFFA855F7),
+                            onRefresh: _loadOrders,
+                            child: _orders.isEmpty
+                                ? ListView(
+                                    physics:
+                                        const AlwaysScrollableScrollPhysics(),
+                                    children: [
+                                      SizedBox(
+                                        height:
+                                            MediaQuery.sizeOf(context).height *
+                                            0.25,
+                                      ),
+                                      Center(
+                                        child: Text(
+                                          'No pending orders',
+                                          style: GoogleFonts.outfit(
+                                            color: Colors.white.withValues(
+                                              alpha: 0.6,
+                                            ),
+                                            fontSize: 16,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  )
+                                : ListView.separated(
+                                    physics:
+                                        const AlwaysScrollableScrollPhysics(),
+                                    itemCount: _orders.length,
+                                    separatorBuilder: (_, __) =>
+                                        const SizedBox(height: 16),
+                                    itemBuilder: (context, index) {
+                                      final o = _orders[index];
+                                      return _PendingOrderTile(
+                                        title: _orderListTitle(o),
+                                        id: _orderListSubtitleId(o),
+                                        date: _formatOrderListDate(o),
+                                      );
+                                    },
+                                  ),
+                          ),
+                  ),
+                ],
               ),
             ),
           ),
-        ),
-        title: Text(
-          'Active Queries',
-          style: GoogleFonts.inter(
-            color: Colors.white,
-            fontSize: 28,
-            fontWeight: FontWeight.w400,
-            letterSpacing: 0.5,
-          ),
-        ),
-        centerTitle: true,
-      ),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFF180d31), // Top
-              Color(0xFF11091f), // Middle
-              Color(0xFF0d0718), // Bottom
-            ],
-            stops: [0.0, 0.4, 1.0],
-          ),
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              const SizedBox(height: 20),
-              Expanded(
-                child: ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  itemCount: queries.length,
-                  itemBuilder: (context, index) {
-                    final query = queries[index];
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 24),
-                      child: _buildQueryCard(query),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(height: 20),
-            ],
-          ),
-        ),
+        ],
       ),
     );
   }
+}
 
-  Widget _buildQueryCard(QueryItem query) {
+class _PendingOrderTile extends StatelessWidget {
+  final String title;
+  final String id;
+  final String date;
+
+  const _PendingOrderTile({
+    required this.title,
+    required this.id,
+    required this.date,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(45),
-        color: Colors.white.withOpacity(0.05),
-        border: Border.all(
-          color: Colors.white.withOpacity(0.4),
-          width: 1,
-        ),
+        border: Border.all(color: const Color(0xFF3F1163), width: 1),
+        borderRadius: BorderRadius.circular(30),
       ),
-      padding: const EdgeInsets.all(32),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                query.title,
-                style: GoogleFonts.inter(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
+          Text(
+            title,
+            style: GoogleFonts.outfit(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.w400,
+            ),
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 12),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text(
-                query.id,
-                style: GoogleFonts.inter(
-                  color: Colors.grey[400],
-                  fontSize: 12,
-                  fontWeight: FontWeight.w400,
-                  letterSpacing: 0.8,
+              Expanded(
+                child: Text(
+                  id,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.outfit(
+                    color: Colors.white.withValues(alpha: 0.45),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w300,
+                  ),
                 ),
               ),
+              const SizedBox(width: 12),
               Text(
-                query.date,
-                style: GoogleFonts.inter(
-                  color: Colors.grey[400],
-                  fontSize: 12,
+                date,
+                style: GoogleFonts.outfit(
+                  color: Colors.white.withValues(alpha: 0.45),
+                  fontSize: 11,
                   fontWeight: FontWeight.w300,
                 ),
               ),
@@ -155,16 +252,4 @@ class _ActiveQueriesState extends State<ActiveQueries> {
       ),
     );
   }
-}
-
-class QueryItem {
-  final String title;
-  final String id;
-  final String date;
-
-  QueryItem({
-    required this.title,
-    required this.id,
-    required this.date,
-  });
 }

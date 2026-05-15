@@ -1,14 +1,10 @@
 import 'package:autobus/barrel.dart';
 
 class AppButton extends StatelessWidget {
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
   final String buttonText;
 
-  const AppButton({
-    required this.onPressed,
-    required this.buttonText,
-    super.key,
-  });
+  const AppButton({required this.buttonText, super.key, this.onPressed});
 
   @override
   Widget build(BuildContext context) {

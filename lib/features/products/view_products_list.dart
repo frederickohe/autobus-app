@@ -8,215 +8,465 @@ class ViewProductsPage extends StatefulWidget {
 }
 
 class _ViewProductsPageState extends State<ViewProductsPage> {
-  // Mock product data
-  final List<Map<String, String>> products = [
-    {
-      'name': 'GreenLeafs.pdf',
-      'date': '08 / 01 / 2026',
-      'id': 'ID TRF 26342348264',
-    },
-    {
-      'name': 'Organogram.txt',
-      'date': '08 / 01 / 2026',
-      'id': 'ID TRF 26342348265',
-    },
-    {
-      'name': 'Inventory.pdf',
-      'date': '07 / 20 / 2026',
-      'id': 'ID TRF 26342348266',
-    },
-  ];
+  List<Map<String, dynamic>> _documents = const [];
+  List<Map<String, dynamic>> _products = const [];
+  bool _loading = true;
+  String? _loadError;
+  String? _productsError;
+  int? _expandedIndex;
 
-  String? expandedProdIndex;
+  String _fileName(Map<String, dynamic> doc) =>
+      (doc['file_name'] ?? '').toString();
+
+  String? _objectKey(Map<String, dynamic> doc) {
+    final k = doc['object_key'];
+    if (k == null) return null;
+    final s = k.toString();
+    return s.isEmpty ? null : s;
+  }
+
+  String _productName(Map<String, dynamic> p) =>
+      (p['name'] ?? 'Product').toString();
+
+  String? _productCategory(Map<String, dynamic> p) {
+    final c = p['category']?.toString().trim();
+    return (c == null || c.isEmpty) ? null : c;
+  }
+
+  String _productPriceLabel(Map<String, dynamic> p) {
+    final raw = p['price'];
+    double? v;
+    if (raw is num) {
+      v = raw.toDouble();
+    } else {
+      v = double.tryParse(raw?.toString() ?? '');
+    }
+    if (v == null) return '—';
+    if (v == v.roundToDouble()) return v.toStringAsFixed(0);
+    return v.toStringAsFixed(2);
+  }
+
+  String? _stockLabel(Map<String, dynamic> p) {
+    final n = p['number_in_stock'];
+    if (n == null) return null;
+    if (n is int) return 'In stock: $n';
+    if (n is num) return 'In stock: ${n.toInt()}';
+    return 'In stock: $n';
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadAll());
+  }
+
+  Future<void> _loadAll() async {
+    setState(() {
+      _loading = true;
+      _loadError = null;
+      _productsError = null;
+    });
+    final api = context.read<ApiService>();
+
+    List<Map<String, dynamic>> products = const [];
+    Object? productsErr;
+    try {
+      products = await api.listProducts(skip: 0, limit: 200);
+    } catch (e) {
+      productsErr = e;
+    }
+
+    List<Map<String, dynamic>> docs = const [];
+    Object? docsErr;
+    try {
+      docs = await api.listMyStorageFiles(
+        folder: ApiService.productCatalogStorageFolder,
+      );
+    } catch (e) {
+      docsErr = e;
+    }
+
+    if (!mounted) return;
+    setState(() {
+      _products = products;
+      _documents = docs;
+      _productsError = productsErr?.toString().replaceFirst('Exception: ', '');
+      _loadError = docsErr?.toString().replaceFirst('Exception: ', '');
+      _loading = false;
+      _expandedIndex = null;
+    });
+  }
+
+  Future<void> _deleteAt(int index) async {
+    final doc = _documents[index];
+    final name = _fileName(doc);
+    if (name.isEmpty) return;
+    try {
+      final api = context.read<ApiService>();
+      await api.deleteMyStorageFile(
+        folder: ApiService.productCatalogStorageFolder,
+        fileName: name,
+      );
+      if (!mounted) return;
+      setState(() {
+        _documents = List<Map<String, dynamic>>.from(_documents)
+          ..removeAt(index);
+        _expandedIndex = null;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Deleted "$name"',
+            style: GoogleFonts.outfit(),
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            e.toString().replaceFirst('Exception: ', ''),
+            style: GoogleFonts.outfit(),
+          ),
+        ),
+      );
+    }
+  }
+
+  Widget _sectionTitle(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Text(
+        text,
+        style: GoogleFonts.montserrat(
+          color: Colors.white.withValues(alpha: 0.9),
+          fontSize: 13,
+          fontWeight: FontWeight.w500,
+          letterSpacing: 0.2,
+        ),
+      ),
+    );
+  }
+
+  Widget _productCard(Map<String, dynamic> p) {
+    final category = _productCategory(p);
+    final stock = _stockLabel(p);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        border: Border.all(color: const Color(0xFF3F1163), width: 1),
+        borderRadius: BorderRadius.circular(26),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            _productName(p),
+            style: GoogleFonts.outfit(
+              color: Colors.white,
+              fontSize: 17,
+              fontWeight: FontWeight.w400,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Text(
+                _productPriceLabel(p),
+                style: GoogleFonts.outfit(
+                  color: const Color(0xFFA855F7),
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              if (stock != null) ...[
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Text(
+                    stock,
+                    textAlign: TextAlign.end,
+                    style: GoogleFonts.outfit(
+                      color: Colors.white.withValues(alpha: 0.5),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w300,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+          if (category != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              category,
+              style: GoogleFonts.outfit(
+                color: Colors.white.withValues(alpha: 0.45),
+                fontSize: 11,
+                fontWeight: FontWeight.w300,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0718),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFF1D123D),
-              Color(0xFF120B29),
-              Color(0xFF0A0718),
-            ],
+      backgroundColor: Colors.black,
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          const DecoratedBox(
+            decoration: ManageScreenStyle.homeDashboardBodyDecoration,
           ),
-        ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header
-                Row(
-                  children: [
-                    Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(32),
-                        onTap: () => Navigator.pop(context),
-                        child: Container(
-                          height: 48,
-                          width: 48,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.4),
-                            ),
-                          ),
-                          child: Icon(
-                            Icons.arrow_back_ios_new,
-                            color: Colors.white.withValues(alpha: 0.8),
-                            size: 18,
-                          ),
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const ManageScreenBackButton(),
+                      const SizedBox(width: 18),
+                      Expanded(
+                        child: Text(
+                          'Product catalogue',
+                          style: ManageScreenStyle.headerTitleStyle(),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 18),
-                    Text(
-                      'Manage Products',
-                      style: GoogleFonts.inter(
-                        color: Colors.white,
-                        fontSize: 26,
-                        fontWeight: FontWeight.w500,
-                        letterSpacing: -0.2,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 32),
-                // Product List
-                Expanded(
-                  child: products.isEmpty
-                      ? Center(
-                          child: Text(
-                            'No products added yet',
-                            style: GoogleFonts.inter(
-                              color: Colors.white.withValues(alpha: 0.6),
-                              fontSize: 16,
+                    ],
+                  ),
+                  const SizedBox(height: 32),
+                  Expanded(
+                    child: _loading
+                        ? const Center(
+                            child: SizedBox(
+                              width: 32,
+                              height: 32,
+                              child: CircularProgressIndicator(strokeWidth: 2),
                             ),
-                          ),
-                        )
-                      : ListView.builder(
-                          itemCount: products.length,
-                          itemBuilder: (context, index) {
-                            final prod = products[index];
-                            final isExpanded = expandedProdIndex == index.toString();
-
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 16),
-                              child: GestureDetector(
-                                onTap: () {
-                                  setState(() {
-                                    expandedProdIndex = isExpanded ? null : index.toString();
-                                  });
-                                },
-                                child: AnimatedContainer(
-                                  duration: const Duration(milliseconds: 300),
-                                  padding: EdgeInsets.all(isExpanded ? 32 : 24),
-                                  decoration: BoxDecoration(
-                                    color: Colors.transparent,
-                                    border: Border.all(
-                                      color: Colors.white.withValues(alpha: 0.4),
-                                    ),
-                                    borderRadius: BorderRadius.circular(40),
-                                  ),
-                                  child: isExpanded
-                                      ? Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              prod['name']!,
-                                              style: GoogleFonts.inter(
-                                                color: Colors.white,
-                                                fontSize: 20,
-                                                fontWeight: FontWeight.w500,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 32),
-                                            Column(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
-                                              children: [
-                                                Text(
-                                                  prod['id']!,
-                                                  style: GoogleFonts.inter(
-                                                    color: Colors.white.withValues(alpha: 0.9),
-                                                    fontSize: 12,
-                                                    fontWeight: FontWeight.w500,
-                                                    letterSpacing: 0.5,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                            const SizedBox(height: 32),
-                                            Text(
-                                              prod['date']!,
-                                              style: GoogleFonts.inter(
-                                                color: Colors.white.withValues(alpha: 0.85),
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.w300,
-                                                letterSpacing: 0.5,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 32),
-                                            Center(
-                                              child: GestureDetector(
-                                                onTap: () {
-                                                  // Handle delete
-                                                  setState(() {
-                                                    products.removeAt(index);
-                                                    expandedProdIndex = null;
-                                                  });
-                                                },
-                                                child: Text(
-                                                  'Delete File',
-                                                  style: GoogleFonts.inter(
-                                                    color: Colors.white.withValues(alpha: 0.8),
-                                                    fontSize: 16,
-                                                    fontWeight: FontWeight.w500,
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        )
-                                      : Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              prod['name']!,
-                                              style: GoogleFonts.inter(
-                                                color: Colors.white,
-                                                fontSize: 20,
-                                                fontWeight: FontWeight.w500,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 8),
-                                            Text(
-                                              prod['date']!,
-                                              style: GoogleFonts.inter(
-                                                color: Colors.white.withValues(alpha: 0.85),
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.w300,
-                                                letterSpacing: 0.5,
-                                              ),
-                                            ),
-                                          ],
+                          )
+                        : RefreshIndicator(
+                            color: const Color(0xFFA855F7),
+                            onRefresh: _loadAll,
+                            child: ListView(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              children: [
+                                _sectionTitle('Products'),
+                                if (_productsError != null)
+                                  Padding(
+                                    padding: const EdgeInsets.only(bottom: 16),
+                                    child: Text(
+                                      _productsError!,
+                                      style: GoogleFonts.outfit(
+                                        color: Colors.white.withValues(
+                                          alpha: 0.65,
                                         ),
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                ),
-              ],
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  )
+                                else if (_products.isEmpty)
+                                  Padding(
+                                    padding: const EdgeInsets.only(bottom: 20),
+                                    child: Text(
+                                      'No products from the server yet',
+                                      style: GoogleFonts.outfit(
+                                        color: Colors.white.withValues(
+                                          alpha: 0.55,
+                                        ),
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  )
+                                else
+                                  ..._products.map(_productCard),
+                                const SizedBox(height: 8),
+                                _sectionTitle('Catalogue files'),
+                                if (_loadError != null)
+                                  Padding(
+                                    padding: const EdgeInsets.only(bottom: 12),
+                                    child: Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            _loadError!,
+                                            style: GoogleFonts.outfit(
+                                              color: Colors.white.withValues(
+                                                alpha: 0.65,
+                                              ),
+                                              fontSize: 13,
+                                            ),
+                                          ),
+                                        ),
+                                        TextButton(
+                                          onPressed: _loadAll,
+                                          child: Text(
+                                            'Retry',
+                                            style: GoogleFonts.outfit(
+                                              color: const Color(0xFFA855F7),
+                                              fontSize: 14,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  )
+                                else if (_documents.isEmpty)
+                                  Padding(
+                                    padding: const EdgeInsets.only(bottom: 12),
+                                    child: Text(
+                                      'No catalogue files yet',
+                                      style: GoogleFonts.outfit(
+                                        color: Colors.white.withValues(
+                                          alpha: 0.55,
+                                        ),
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  )
+                                else
+                                  ...List.generate(_documents.length, (
+                                    index,
+                                  ) {
+                                    final doc = _documents[index];
+                                    final name = _fileName(doc);
+                                    final key = _objectKey(doc);
+                                    final isExpanded = _expandedIndex == index;
+
+                                    return Padding(
+                                      padding: const EdgeInsets.only(bottom: 16),
+                                      child: GestureDetector(
+                                        onTap: () {
+                                          setState(() {
+                                            _expandedIndex = isExpanded
+                                                ? null
+                                                : index;
+                                          });
+                                        },
+                                        child: AnimatedContainer(
+                                          duration: const Duration(
+                                            milliseconds: 300,
+                                          ),
+                                          padding: EdgeInsets.all(
+                                            isExpanded ? 32 : 24,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            border: Border.all(
+                                              color: const Color(0xFF3F1163),
+                                              width: 1,
+                                            ),
+                                            borderRadius: BorderRadius.circular(
+                                              isExpanded ? 38 : 30,
+                                            ),
+                                          ),
+                                          child: isExpanded
+                                              ? Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      name,
+                                                      style: GoogleFonts.outfit(
+                                                        color: Colors.white,
+                                                        fontSize: 16,
+                                                        fontWeight:
+                                                            FontWeight.w400,
+                                                      ),
+                                                    ),
+                                                    if (key != null) ...[
+                                                      const SizedBox(height: 12),
+                                                      Text(
+                                                        key,
+                                                        style:
+                                                            GoogleFonts.outfit(
+                                                          color: Colors.white
+                                                              .withValues(
+                                                                alpha: 0.65,
+                                                              ),
+                                                          fontSize: 11,
+                                                          fontWeight:
+                                                              FontWeight.w300,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                    const SizedBox(height: 16),
+                                                    Center(
+                                                      child: TextButton(
+                                                        onPressed: () =>
+                                                            _deleteAt(index),
+                                                        child: Text(
+                                                          'Delete file',
+                                                          style:
+                                                              GoogleFonts.outfit(
+                                                            color: Colors.white
+                                                                .withValues(
+                                                                  alpha: 0.75,
+                                                                ),
+                                                            fontSize: 13,
+                                                            fontWeight:
+                                                                FontWeight.w300,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                )
+                                              : Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      name,
+                                                      style: GoogleFonts.outfit(
+                                                        color: Colors.white,
+                                                        fontSize: 18,
+                                                        fontWeight:
+                                                            FontWeight.w400,
+                                                      ),
+                                                    ),
+                                                    if (key != null) ...[
+                                                      const SizedBox(height: 6),
+                                                      Text(
+                                                        key,
+                                                        maxLines: 1,
+                                                        overflow: TextOverflow
+                                                            .ellipsis,
+                                                        style:
+                                                            GoogleFonts.outfit(
+                                                          color: Colors.white
+                                                              .withValues(
+                                                                alpha: 0.45,
+                                                              ),
+                                                          fontSize: 11,
+                                                          fontWeight:
+                                                              FontWeight.w300,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ],
+                                                ),
+                                        ),
+                                      ),
+                                    );
+                                  }),
+                              ],
+                            ),
+                          ),
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }

@@ -3,103 +3,64 @@ import 'package:autobus/barrel.dart';
 class LiveChatsPage extends StatelessWidget {
   const LiveChatsPage({super.key});
 
-  static const Color _backgroundStart = Color(0xFF2A1447);
-  static const Color _backgroundEnd = Color(0xFF120721);
-  static const Color _stroke = Color.fromRGBO(255, 255, 255, 0.95);
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _backgroundEnd,
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [_backgroundStart, _backgroundEnd],
+      backgroundColor: Colors.black,
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          const DecoratedBox(
+            decoration: ManageScreenStyle.homeDashboardBodyDecoration,
           ),
-        ),
-        child: SafeArea(
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 428),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(24, 18, 24, 24),
-                child: Column(
-                  children: [
-                    SizedBox(
-                      height: 64,
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          Align(
-                            alignment: Alignment.centerLeft,
-                            child: GestureDetector(
-                              onTap: () => Navigator.of(context).pop(),
-                              child: Container(
-                                width: 64,
-                                height: 64,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: const Color(0xFF2A1447),
-                                  border: Border.all(color: Colors.white, width: 0.5),
-                                ),
-                                child: const Icon(
-                                  Icons.arrow_back_ios_new,
-                                  color: Colors.white,
-                                  size: 18,
-                                ),
-                              ),
-                            ),
-                          ),
-                          Text(
-                            'Live Chats',
-                            style: GoogleFonts.inter(
-                              color: Colors.white,
-                              fontSize: 22,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 40),
-                    Expanded(
-                      child: SingleChildScrollView(
-                        child: Center(
-                          child: ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 317),
-                            child: Column(
-                              children: const [
-                                _LiveChatTile(
-                                  title: 'Bag of rice ..',
-                                  id: 'ID TRF 26342348264',
-                                  date: '08 / 01 /2026',
-                                ),
-                                SizedBox(height: 19),
-                                _LiveChatTile(
-                                  title: 'Fruit Jar',
-                                  id: 'ID TRF 26342348264',
-                                  date: '08 / 01 /2026',
-                                ),
-                                SizedBox(height: 19),
-                                _LiveChatFileTile(
-                                  title: 'Organogram.txt',
-                                  id: 'ID TRF 26342348264',
-                                  date: '08 / 01 /2026',
-                                ),
-                              ],
-                            ),
-                          ),
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 18, 24, 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const ManageScreenBackButton(),
+                      const SizedBox(width: 18),
+                      Expanded(
+                        child: Text(
+                          'Live Chats',
+                          style: ManageScreenStyle.headerTitleStyle(),
                         ),
                       ),
+                    ],
+                  ),
+                  const SizedBox(height: 32),
+                  Expanded(
+                    child: ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: const [
+                        _LiveChatTile(
+                          title: 'Bag of rice ..',
+                          id: 'ID TRF 26342348264',
+                          date: '08 / 01 /2026',
+                        ),
+                        SizedBox(height: 16),
+                        _LiveChatTile(
+                          title: 'Fruit Jar',
+                          id: 'ID TRF 26342348264',
+                          date: '08 / 01 /2026',
+                        ),
+                        SizedBox(height: 16),
+                        _LiveChatFileTile(
+                          title: 'Organogram.txt',
+                          id: 'ID TRF 26342348264',
+                          date: '08 / 01 /2026',
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -123,7 +84,7 @@ class _LiveChatTile extends StatelessWidget {
       constraints: const BoxConstraints(minHeight: 83),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(30),
-        border: Border.all(color: LiveChatsPage._stroke, width: 0.5),
+        border: Border.all(color: const Color(0xFF3F1163), width: 1),
       ),
       padding: const EdgeInsets.fromLTRB(22, 16, 22, 16),
       child: Column(
@@ -133,13 +94,13 @@ class _LiveChatTile extends StatelessWidget {
         children: [
           Text(
             title,
-            style: GoogleFonts.inter(
+            style: GoogleFonts.outfit(
               color: Colors.white,
               fontSize: 18,
               fontWeight: FontWeight.w400,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 6),
           Row(
             children: [
               Expanded(
@@ -147,10 +108,10 @@ class _LiveChatTile extends StatelessWidget {
                   id,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.inter(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w400,
+                  style: GoogleFonts.outfit(
+                    color: Colors.white.withValues(alpha: 0.45),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w300,
                   ),
                 ),
               ),
@@ -159,10 +120,10 @@ class _LiveChatTile extends StatelessWidget {
                 date,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.inter(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w400,
+                style: GoogleFonts.outfit(
+                  color: Colors.white.withValues(alpha: 0.45),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w300,
                 ),
               ),
             ],
@@ -191,15 +152,15 @@ class _LiveChatFileTile extends StatelessWidget {
       height: 202,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(30),
-        border: Border.all(color: LiveChatsPage._stroke, width: 0.5),
+        border: Border.all(color: const Color(0xFF3F1163), width: 1),
       ),
-      padding: const EdgeInsets.fromLTRB(22, 34, 22, 20),
+      padding: const EdgeInsets.fromLTRB(22, 24, 22, 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             title,
-            style: GoogleFonts.inter(
+            style: GoogleFonts.outfit(
               color: Colors.white,
               fontSize: 18,
               fontWeight: FontWeight.w400,
@@ -208,29 +169,29 @@ class _LiveChatFileTile extends StatelessWidget {
           const SizedBox(height: 10),
           Text(
             id,
-            style: GoogleFonts.inter(
-              color: Colors.white,
-              fontSize: 12,
-              fontWeight: FontWeight.w400,
+            style: GoogleFonts.outfit(
+              color: Colors.white.withValues(alpha: 0.45),
+              fontSize: 11,
+              fontWeight: FontWeight.w300,
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           Text(
             date,
-            style: GoogleFonts.inter(
-              color: Colors.white,
-              fontSize: 12,
-              fontWeight: FontWeight.w400,
+            style: GoogleFonts.outfit(
+              color: Colors.white.withValues(alpha: 0.45),
+              fontSize: 11,
+              fontWeight: FontWeight.w300,
             ),
           ),
           const Spacer(),
           Center(
             child: Text(
               'Delete File',
-              style: GoogleFonts.inter(
-                color: Colors.white,
-                fontSize: 12,
-                fontWeight: FontWeight.w400,
+              style: GoogleFonts.outfit(
+                color: Colors.white.withValues(alpha: 0.75),
+                fontSize: 13,
+                fontWeight: FontWeight.w300,
               ),
             ),
           ),

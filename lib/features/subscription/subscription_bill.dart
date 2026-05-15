@@ -101,12 +101,10 @@ class _SubscriptionBillPageState extends State<SubscriptionBillPage> {
     }
 
     if (!mounted) return;
-    successBloc.add(
-      ShowSuccessEvent(
-        message: 'Your ${widget.plan.name} subscription is active!',
-        nextScreen: 'welcome',
-      ),
-    );
+    // Avoid ShowSuccessEvent here: Signup (and other screens) listen to
+    // SuccessBloc and would push the generic Success page on top after Paystack
+    // closes. Subscription completion goes straight to Welcome.
+    successBloc.add(ClearSuccessEvent());
 
     navigator.pushReplacement(
       PageTransition(

@@ -1,41 +1,6 @@
 import 'package:autobus/barrel.dart';
 import 'package:flutter/services.dart';
 
-// Ghana Card Formatter: User enters 467835625-4 → displays as GHA-467835625-4
-class GhanaCardFormatter extends TextInputFormatter {
-  @override
-  TextEditingValue formatEditUpdate(
-    TextEditingValue oldValue,
-    TextEditingValue newValue,
-  ) {
-    String text = newValue.text.replaceAll('-', '');
-    
-    // Only allow digits and max 10 characters (9 digits + 1 digit)
-    if (text.isEmpty) {
-      return newValue.copyWith(text: '');
-    }
-
-    // Limit to 10 digits total
-    if (text.length > 10) {
-      text = text.substring(0, 10);
-    }
-
-    // Format: XXXXXXXXX-X (9 digits + dash + 1 digit)
-    String formatted = '';
-    
-    if (text.length <= 9) {
-      formatted = text;
-    } else {
-      formatted = text.substring(0, 9) + '-' + text.substring(9, 10);
-    }
-
-    return newValue.copyWith(
-      text: formatted,
-      selection: TextSelection.collapsed(offset: formatted.length),
-    );
-  }
-}
-
 class Signup extends StatefulWidget {
   const Signup({super.key});
 
@@ -48,21 +13,71 @@ class _SignupState extends State<Signup> {
   final TextEditingController usernameController = TextEditingController();
   final TextEditingController phoneController = TextEditingController();
   final TextEditingController companyController = TextEditingController();
-  final TextEditingController ghanaCardController = TextEditingController();
+  final TextEditingController ghanaCardTenController = TextEditingController();
+  final TextEditingController ghanaCardCheckController =
+      TextEditingController();
+  final TextEditingController _ghaPrefixController = TextEditingController(
+    text: 'GHA',
+  );
+  final FocusNode _ghanaCardCheckFocusNode = FocusNode();
 
-  final List<TextEditingController> _pinControllers =
-      List.generate(4, (_) => TextEditingController());
+  final List<TextEditingController> _pinControllers = List.generate(
+    4,
+    (_) => TextEditingController(),
+  );
   final List<FocusNode> _pinFocusNodes = List.generate(4, (_) => FocusNode());
 
   String get _pin => _pinControllers.map((c) => c.text).join();
 
+  String get _ghanaCardValue {
+    final ten = ghanaCardTenController.text.trim();
+    final one = ghanaCardCheckController.text.trim();
+    if (ten.isEmpty && one.isEmpty) return '';
+    return 'GHA-$ten-$one';
+  }
+
+  static TextStyle _ghanaTenStyle() {
+    return GoogleFonts.montserrat(fontSize: 14, fontWeight: FontWeight.w400);
+  }
+
+  /// Width for the middle Ghana Card segment: grows with typed digits, capped at 10-wide sample.
+  double _ghanaTenFieldWidth(BuildContext context) {
+    final scaler = MediaQuery.textScalerOf(context);
+    final style = _ghanaTenStyle();
+    final digits = ghanaCardTenController.text;
+    final probe = digits.isEmpty ? '000' : digits;
+    final painter = TextPainter(
+      text: TextSpan(text: probe, style: style),
+      textDirection: TextDirection.ltr,
+      textScaler: scaler,
+    )..layout();
+    final maxPainter = TextPainter(
+      text: TextSpan(text: '8888888888', style: style),
+      textDirection: TextDirection.ltr,
+      textScaler: scaler,
+    )..layout();
+    return (painter.width + 28).clamp(52.0, maxPainter.width + 36);
+  }
+
+  void _onGhanaTenChanged() => setState(() {});
+
+  @override
+  void initState() {
+    super.initState();
+    ghanaCardTenController.addListener(_onGhanaTenChanged);
+  }
+
   @override
   void dispose() {
+    ghanaCardTenController.removeListener(_onGhanaTenChanged);
     emailController.dispose();
     usernameController.dispose();
     phoneController.dispose();
     companyController.dispose();
-    ghanaCardController.dispose();
+    ghanaCardTenController.dispose();
+    ghanaCardCheckController.dispose();
+    _ghaPrefixController.dispose();
+    _ghanaCardCheckFocusNode.dispose();
     for (final c in _pinControllers) {
       c.dispose();
     }
@@ -72,15 +87,20 @@ class _SignupState extends State<Signup> {
     super.dispose();
   }
 
-  Widget _buildPinInput() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: List.generate(4, (index) {
-        return SizedBox(
+  Widget _buildPinInput({required bool enabled}) {
+    const gap = SizedBox(width: 16);
+    final children = <Widget>[];
+    for (var index = 0; index < 4; index++) {
+      if (index > 0) {
+        children.add(gap);
+      }
+      children.add(
+        SizedBox(
           width: 52,
           child: TextField(
             controller: _pinControllers[index],
             focusNode: _pinFocusNodes[index],
+            enabled: enabled,
             textAlign: TextAlign.center,
             keyboardType: TextInputType.number,
             obscureText: true,
@@ -89,7 +109,7 @@ class _SignupState extends State<Signup> {
               LengthLimitingTextInputFormatter(1),
             ],
             decoration: const InputDecoration(
-              border: OutlineInputBorder(),
+              border: UnderlineInputBorder(),
               counterText: '',
             ),
             onChanged: (val) {
@@ -106,6 +126,7 @@ class _SignupState extends State<Signup> {
               }
             },
             onTap: () {
+              // If user taps a later box, keep caret at end
               _pinControllers[index].selection = TextSelection.collapsed(
                 offset: _pinControllers[index].text.length,
               );
@@ -113,10 +134,15 @@ class _SignupState extends State<Signup> {
             onSubmitted: (_) {
               if (index < 3) _pinFocusNodes[index + 1].requestFocus();
             },
-            onEditingComplete: () {},
+            onEditingComplete: () {
+              // no-op; prevents default "done" behavior moving focus oddly
+            },
           ),
-        );
-      }),
+        ),
+      );
+    }
+    return Center(
+      child: Row(mainAxisSize: MainAxisSize.min, children: children),
     );
   }
 
@@ -126,20 +152,6 @@ class _SignupState extends State<Signup> {
       backgroundColor: Colors.white,
       body: MultiBlocListener(
         listeners: [
-          BlocListener<SuccessBloc, SuccessState>(
-            listener: (context, state) {
-              if (state is SuccessDisplaying) {
-                Navigator.of(context).pushReplacement(
-                  PageTransition(
-                    type: PageTransitionType.rightToLeftWithFade,
-                    duration: const Duration(milliseconds: 1000),
-                    reverseDuration: const Duration(milliseconds: 600),
-                    child: const Success(),
-                  ),
-                );
-              }
-            },
-          ),
           BlocListener<AuthBloc, AuthState>(
             listener: (context, state) {
               if (state is Registered) {
@@ -157,6 +169,7 @@ class _SignupState extends State<Signup> {
         ],
         child: BlocBuilder<AuthBloc, AuthState>(
           builder: (context, state) {
+            final bool isLoading = state is AuthLoading;
             return SafeArea(
               child: SingleChildScrollView(
                 child: Padding(
@@ -167,7 +180,6 @@ class _SignupState extends State<Signup> {
                       Stack(
                         alignment: Alignment.center,
                         children: [
-                          // Centered text
                           Center(
                             child: Text(
                               'Sign Up',
@@ -178,8 +190,6 @@ class _SignupState extends State<Signup> {
                               ),
                             ),
                           ),
-
-                          // Back button positioned on the left
                           Positioned(
                             left: 0,
                             child: GestureDetector(
@@ -209,228 +219,251 @@ class _SignupState extends State<Signup> {
                           ),
                         ],
                       ),
-                      SizedBox(
-                        height: MediaQuery.of(context).size.height * 0.1,
-                      ),
-                      Center(
-                        child: const AutobusBranding(
+                      const SizedBox(height: 28),
+                      const Center(
+                        child: AutobusBranding(
                           wordmarkFontSize: 26,
                           markCircleSize: 34,
                           spacing: 14,
                         ),
                       ),
-                      SizedBox(
-                        height: MediaQuery.of(context).size.height * 0.1,
-                      ),
-                      SizedBox(
-                        height: 400,
-                        child: SingleChildScrollView(
+                      const SizedBox(height: 48),
+                      Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 360),
                           child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              Padding(
-                                padding: EdgeInsets.only(
-                                  left: 20.0,
-                                  right: 20.0,
-                                ),
-                                child: Text(
-                                  'Username',
-                                  style: GoogleFonts.montserrat(
-                                    color: Colors.black,
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w400,
-                                  ),
+                              Text(
+                                'Username',
+                                style: GoogleFonts.montserrat(
+                                  color: Colors.black,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w400,
                                 ),
                               ),
-                              Padding(
-                                padding: const EdgeInsets.only(
-                                  left: 20.0,
-                                  right: 20.0,
-                                ),
-                                child: TextField(
-                                  controller: usernameController,
-                                  decoration: const InputDecoration(
-                                    border: UnderlineInputBorder(),
-                                  ),
+                              TextField(
+                                controller: usernameController,
+                                decoration: const InputDecoration(
+                                  border: UnderlineInputBorder(),
                                 ),
                               ),
                               const SizedBox(height: 20),
-                              Padding(
-                                padding: EdgeInsets.only(
-                                  left: 20.0,
-                                  right: 20.0,
-                                ),
-                                child: Text(
-                                  'Phone',
-                                  style: GoogleFonts.montserrat(
-                                    color: Colors.black,
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w400,
-                                  ),
+                              Text(
+                                'Phone',
+                                style: GoogleFonts.montserrat(
+                                  color: Colors.black,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w400,
                                 ),
                               ),
-                              Padding(
-                                padding: const EdgeInsets.only(
-                                  left: 20.0,
-                                  right: 20.0,
-                                ),
-                                child: TextField(
-                                  controller: phoneController,
-                                  decoration: const InputDecoration(
-                                    border: UnderlineInputBorder(),
-                                  ),
+                              TextField(
+                                controller: phoneController,
+                                decoration: const InputDecoration(
+                                  border: UnderlineInputBorder(),
                                 ),
                               ),
                               const SizedBox(height: 20),
-                              Padding(
-                                padding: EdgeInsets.only(
-                                  left: 20.0,
-                                  right: 20.0,
-                                ),
-                                child: Text(
-                                  'Company',
-                                  style: GoogleFonts.montserrat(
-                                    color: Colors.black,
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w400,
-                                  ),
+                              Text(
+                                'Company',
+                                style: GoogleFonts.montserrat(
+                                  color: Colors.black,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w400,
                                 ),
                               ),
-                              Padding(
-                                padding: const EdgeInsets.only(
-                                  left: 20.0,
-                                  right: 20.0,
-                                ),
-                                child: TextField(
-                                  controller: companyController,
-                                  decoration: const InputDecoration(
-                                    border: UnderlineInputBorder(),
-                                  ),
+                              TextField(
+                                controller: companyController,
+                                decoration: const InputDecoration(
+                                  border: UnderlineInputBorder(),
                                 ),
                               ),
                               const SizedBox(height: 20),
-                              Padding(
-                                padding: EdgeInsets.only(
-                                  left: 20.0,
-                                  right: 20.0,
-                                ),
-                                child: Text(
-                                  'Ghana Card',
-                                  style: GoogleFonts.montserrat(
-                                    color: Colors.black,
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w400,
-                                  ),
+                              Text(
+                                'Ghana Card',
+                                style: GoogleFonts.montserrat(
+                                  color: Colors.black,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w400,
                                 ),
                               ),
-                              Padding(
-                                padding: const EdgeInsets.only(
-                                  left: 20.0,
-                                  right: 20.0,
-                                ),
-                                child: TextField(
-                                  controller: ghanaCardController,
-                                  keyboardType: TextInputType.number,
-                                  inputFormatters: [
-                                    GhanaCardFormatter(),
-                                  ],
-                                  decoration: InputDecoration(
-                                    border: const UnderlineInputBorder(),
-                                    hintText: 'XXXXXXXXX-X',
-                                    prefix: Text(
-                                      'GHA-',
-                                      style: GoogleFonts.montserrat(
-                                        color: Colors.black,
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w400,
+                              Center(
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    SizedBox(
+                                      width: 56,
+                                      child: TextField(
+                                        controller: _ghaPrefixController,
+                                        readOnly: true,
+                                        enableInteractiveSelection: false,
+                                        textAlign: TextAlign.center,
+                                        style: GoogleFonts.montserrat(
+                                          color: Colors.black,
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w400,
+                                        ),
+                                        decoration: const InputDecoration(
+                                          border: UnderlineInputBorder(),
+                                          counterText: '',
+                                          isDense: true,
+                                          contentPadding: EdgeInsets.symmetric(
+                                            vertical: 12,
+                                          ),
+                                        ),
                                       ),
                                     ),
-                                  ),
+                                    Padding(
+                                      padding: const EdgeInsets.only(
+                                        left: 4,
+                                        right: 4,
+                                        bottom: 12,
+                                      ),
+                                      child: Text(
+                                        '-',
+                                        style: GoogleFonts.montserrat(
+                                          color: Colors.black54,
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w400,
+                                        ),
+                                      ),
+                                    ),
+                                    SizedBox(
+                                      width: _ghanaTenFieldWidth(context),
+                                      child: TextField(
+                                        controller: ghanaCardTenController,
+                                        keyboardType: TextInputType.number,
+                                        inputFormatters: [
+                                          FilteringTextInputFormatter
+                                              .digitsOnly,
+                                          LengthLimitingTextInputFormatter(10),
+                                        ],
+                                        style: GoogleFonts.montserrat(
+                                          color: Colors.black,
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w400,
+                                        ),
+                                        decoration: const InputDecoration(
+                                          border: UnderlineInputBorder(),
+                                          counterText: '',
+                                          isDense: true,
+                                          contentPadding: EdgeInsets.symmetric(
+                                            vertical: 12,
+                                          ),
+                                        ),
+                                        onChanged: (v) {
+                                          if (v.length == 10) {
+                                            FocusScope.of(context).requestFocus(
+                                              _ghanaCardCheckFocusNode,
+                                            );
+                                          }
+                                        },
+                                      ),
+                                    ),
+                                    Padding(
+                                      padding: const EdgeInsets.only(
+                                        left: 4,
+                                        right: 4,
+                                        bottom: 12,
+                                      ),
+                                      child: Text(
+                                        '-',
+                                        style: GoogleFonts.montserrat(
+                                          color: Colors.black54,
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w400,
+                                        ),
+                                      ),
+                                    ),
+                                    SizedBox(
+                                      width: 44,
+                                      child: TextField(
+                                        controller: ghanaCardCheckController,
+                                        focusNode: _ghanaCardCheckFocusNode,
+                                        keyboardType: TextInputType.number,
+                                        textAlign: TextAlign.center,
+                                        inputFormatters: [
+                                          FilteringTextInputFormatter
+                                              .digitsOnly,
+                                          LengthLimitingTextInputFormatter(1),
+                                        ],
+                                        style: GoogleFonts.montserrat(
+                                          color: Colors.black,
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w400,
+                                        ),
+                                        decoration: const InputDecoration(
+                                          border: UnderlineInputBorder(),
+                                          counterText: '',
+                                          isDense: true,
+                                          contentPadding: EdgeInsets.symmetric(
+                                            vertical: 12,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                               const SizedBox(height: 20),
-                              Padding(
-                                padding: EdgeInsets.only(
-                                  left: 20.0,
-                                  right: 20.0,
-                                ),
-                                child: Text(
-                                  'Email',
-                                  style: GoogleFonts.montserrat(
-                                    color: Colors.black,
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w400,
-                                  ),
+                              Text(
+                                'Email',
+                                style: GoogleFonts.montserrat(
+                                  color: Colors.black,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w400,
                                 ),
                               ),
-                              Padding(
-                                padding: const EdgeInsets.only(
-                                  left: 20.0,
-                                  right: 20.0,
-                                ),
-                                child: TextField(
-                                  controller: emailController,
-                                  decoration: const InputDecoration(
-                                    border: UnderlineInputBorder(),
-                                  ),
+                              TextField(
+                                controller: emailController,
+                                decoration: const InputDecoration(
+                                  border: UnderlineInputBorder(),
                                 ),
                               ),
                               const SizedBox(height: 20),
-                              Padding(
-                                padding: EdgeInsets.only(
-                                  left: 20.0,
-                                  right: 20.0,
-                                ),
-                                child: Text(
-                                  'PIN',
-                                  style: GoogleFonts.montserrat(
-                                    color: Colors.black,
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w400,
-                                  ),
+                              Text(
+                                'PIN',
+                                style: GoogleFonts.montserrat(
+                                  color: Colors.black,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w400,
                                 ),
                               ),
-                              Padding(
-                                padding: const EdgeInsets.only(
-                                  left: 20.0,
-                                  right: 20.0,
-                                ),
-                                child: _buildPinInput(),
-                              ),
-                              const SizedBox(height: 50),
+                              _buildPinInput(enabled: !isLoading),
                             ],
                           ),
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 52),
                       Center(
-                        child: BlocBuilder<AuthBloc, AuthState>(
-                          builder: (context, state) {
-                            return AppButton(
-                              onPressed: () async {
-                                if (_pin.length != 4) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Please enter a 4-digit PIN'),
-                                      backgroundColor: Colors.red,
+                        child: AppButton(
+                          onPressed: isLoading
+                              ? null
+                              : () async {
+                                  if (_pin.length != 4) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          'Please enter a 4-digit PIN',
+                                        ),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                    return;
+                                  }
+                                  context.read<AuthBloc>().add(
+                                    SignupEvent(
+                                      username: usernameController.text.trim(),
+                                      phone: phoneController.text.trim(),
+                                      email: emailController.text.trim(),
+                                      password: _pin,
+                                      company: companyController.text.trim(),
+                                      ghanaCard: _ghanaCardValue,
                                     ),
                                   );
-                                  return;
-                                }
-                                context.read<AuthBloc>().add(
-                                  SignupEvent(
-                                    username: usernameController.text.trim(),
-                                    phone: phoneController.text.trim(),
-                                    email: emailController.text.trim(),
-                                    password: _pin,
-                                    company: companyController.text.trim(),
-                                    ghanaCard: ghanaCardController.text.trim(),
-                                  ),
-                                );
-                              },
-                              buttonText: 'Sign Up',
-                            );
-                          },
+                                },
+                          buttonText: 'Sign Up',
                         ),
                       ),
                       const SizedBox(height: 20),
@@ -463,9 +496,9 @@ class _SignupState extends State<Signup> {
                           child: Text(
                             'Log In',
                             style: GoogleFonts.montserrat(
-                              color: Colors.black,
+                              color: CustColors.mainCol,
                               fontSize: 16,
-                              fontWeight: FontWeight.w400,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                         ),

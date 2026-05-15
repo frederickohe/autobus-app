@@ -4,108 +4,162 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 class ManageOutlets extends StatelessWidget {
   const ManageOutlets({super.key});
 
-  static const _accent = Color(0xFF1A0B40);
-
-  Widget _outletCard({required Widget icon, required String label}) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 6, offset: const Offset(0, 2))],
-      ),
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: Stack(
+        fit: StackFit.expand,
         children: [
-          icon,
-          const SizedBox(height: 8),
-          Text(label, textAlign: TextAlign.center, style: GoogleFonts.inter(color: const Color(0xFF003B6D), fontWeight: FontWeight.w700, fontSize: 12)),
+          const DecoratedBox(
+            decoration: ManageScreenStyle.homeDashboardBodyDecoration,
+          ),
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      const ManageScreenBackButton(),
+                      const SizedBox(width: 18),
+                      Expanded(
+                        child: Text(
+                          'Link Outlet',
+                          style: ManageScreenStyle.headerTitleStyle(),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 32),
+                  Text(
+                    'Linked Outlets',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.montserrat(
+                      color: Colors.white,
+                      fontSize: 19,
+                      fontWeight: FontWeight.w500,
+                      letterSpacing: -0.3,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  GridView.count(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 16,
+                    mainAxisSpacing: 16,
+                    childAspectRatio: 133 / 89,
+                    children: const [
+                      _OutletCard(
+                        label: 'LinkedIn',
+                        icon: FaIcon(FontAwesomeIcons.linkedinIn),
+                        iconColor: Color(0xFF0A66C2),
+                      ),
+                      _OutletCard(
+                        label: 'Facebook',
+                        icon: FaIcon(FontAwesomeIcons.facebookF),
+                        iconColor: Color(0xFF1877F2),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 28),
+                  Text(
+                    'Select to Link Outlet',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.montserrat(
+                      color: Colors.white.withValues(alpha: 0.9),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w400,
+                      height: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Expanded(
+                    child: GridView.count(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 16,
+                      mainAxisSpacing: 16,
+                      childAspectRatio: 133 / 89,
+                      children: const [
+                        _OutletCard(
+                          label: 'WhatsApp Status',
+                          icon: FaIcon(FontAwesomeIcons.whatsapp),
+                          iconColor: Color(0xFF25D366),
+                        ),
+                        _OutletCard(
+                          label: 'Instagram',
+                          icon: FaIcon(FontAwesomeIcons.instagram),
+                          iconColor: Color(0xFFDD2A7B),
+                        ),
+                        _OutletCard(
+                          label: 'X',
+                          icon: FaIcon(FontAwesomeIcons.xTwitter),
+                          iconColor: Colors.white,
+                        ),
+                        _OutletCard(
+                          label: 'Website',
+                          icon: FaIcon(FontAwesomeIcons.globe),
+                          iconColor: Color(0xFF94A3B8),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
+}
+
+class _OutletCard extends StatelessWidget {
+  final String label;
+  final Widget icon;
+  final Color iconColor;
+
+  const _OutletCard({
+    required this.label,
+    required this.icon,
+    required this.iconColor,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => Navigator.of(context).pop(),
-                    child: Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(color: _accent, borderRadius: BorderRadius.circular(24)),
-                      child: const Icon(Icons.arrow_back, color: Colors.white),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Text('Manage Outlets', style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.w600, color: _accent)),
-                ],
-              ),
-              const SizedBox(height: 18),
-              Center(child: Text('Linked Outlets', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600, color: _accent))),
-              const SizedBox(height: 12),
-              GridView.count(
-                crossAxisCount: 2,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                children: [
-                  _outletCard(
-                    icon: Row(mainAxisSize: MainAxisSize.min, children: [
-                      Text('Linked', style: GoogleFonts.inter(color: const Color(0xFF0077B5), fontWeight: FontWeight.w700)),
-                      const SizedBox(width: 6),
-                      FaIcon(FontAwesomeIcons.linkedin, color: const Color(0xFF0077B5), size: 20),
-                    ]),
-                    label: 'LinkedIn',
-                  ),
-                  _outletCard(
-                    icon: FaIcon(FontAwesomeIcons.facebook, color: const Color(0xFF1877F2), size: 36),
-                    label: 'Facebook',
-                  ),
-                ],
-              ),
-              const SizedBox(height: 18),
-              Center(child: Text('Select to Link Outlet', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600, color: _accent))),
-              const SizedBox(height: 12),
-              Expanded(
-                child: GridView.count(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                  children: [
-                    _outletCard(
-                      icon: FaIcon(FontAwesomeIcons.whatsapp, color: const Color(0xFF25D366), size: 36),
-                      label: 'WhatsApp Status',
-                    ),
-                    _outletCard(
-                      icon: FaIcon(FontAwesomeIcons.instagram, color: const Color(0xFFDD2A7B), size: 36),
-                      label: 'Instagram',
-                    ),
-                    _outletCard(
-                      icon: FaIcon(FontAwesomeIcons.xTwitter, color: Colors.black, size: 36),
-                      label: 'X',
-                    ),
-                    _outletCard(
-                      icon: FaIcon(FontAwesomeIcons.globe, color: Colors.black54, size: 36),
-                      label: 'Website',
-                    ),
-                  ],
-                ),
-              ),
-            ],
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1333).withValues(alpha: 0.35),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFF3F1163)),
+      ),
+      child: Stack(
+        children: [
+          Center(
+            child: IconTheme(
+              data: IconThemeData(color: iconColor, size: 40),
+              child: icon,
+            ),
           ),
-        ),
+          Positioned(
+            left: 8,
+            right: 8,
+            bottom: 8,
+            child: Text(
+              label,
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.montserrat(
+                color: Colors.white.withValues(alpha: 0.88),
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

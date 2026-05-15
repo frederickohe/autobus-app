@@ -95,6 +95,20 @@ class SubscriptionPlan extends Equatable {
 
   String get priceText => price == 0 ? 'Free' : 'from GHS $price/mo';
 
+  /// API agent ids are often snake_case (e.g. `email_agent`); show as title text.
+  static String formatAgentLabel(String raw) {
+    final normalized = raw.trim().replaceAll('_', ' ');
+    if (normalized.isEmpty) return raw;
+    return normalized
+        .split(RegExp(r'\s+'))
+        .where((w) => w.isNotEmpty)
+        .map(
+          (w) =>
+              '${w[0].toUpperCase()}${w.length > 1 ? w.substring(1).toLowerCase() : ''}',
+        )
+        .join(' ');
+  }
+
   @override
   List<Object?> get props => [id, name, price, features, agents, description, isActive];
 }

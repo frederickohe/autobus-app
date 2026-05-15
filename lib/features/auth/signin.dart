@@ -9,8 +9,10 @@ class Signin extends StatefulWidget {
 
 class _SigninState extends State<Signin> {
   final TextEditingController emailController = TextEditingController();
-  final List<TextEditingController> _pinControllers =
-      List.generate(4, (_) => TextEditingController());
+  final List<TextEditingController> _pinControllers = List.generate(
+    4,
+    (_) => TextEditingController(),
+  );
   final List<FocusNode> _pinFocusNodes = List.generate(4, (_) => FocusNode());
 
   String get _pin => _pinControllers.map((c) => c.text).join();
@@ -28,10 +30,14 @@ class _SigninState extends State<Signin> {
   }
 
   Widget _buildPinInput({required bool enabled}) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: List.generate(4, (index) {
-        return SizedBox(
+    const gap = SizedBox(width: 16);
+    final children = <Widget>[];
+    for (var index = 0; index < 4; index++) {
+      if (index > 0) {
+        children.add(gap);
+      }
+      children.add(
+        SizedBox(
           width: 52,
           child: TextField(
             controller: _pinControllers[index],
@@ -78,8 +84,11 @@ class _SigninState extends State<Signin> {
               // no-op; prevents default "done" behavior moving focus oddly
             },
           ),
-        );
-      }),
+        ),
+      );
+    }
+    return Center(
+      child: Row(mainAxisSize: MainAxisSize.min, children: children),
     );
   }
 
@@ -89,10 +98,7 @@ class _SigninState extends State<Signin> {
     }
 
     context.read<AuthBloc>().add(
-      LoginEvent(
-        email: emailController.text,
-        password: _pin,
-      ),
+      LoginEvent(email: emailController.text, password: _pin),
     );
   }
 
@@ -127,7 +133,10 @@ class _SigninState extends State<Signin> {
           return SafeArea(
             child: SingleChildScrollView(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 24.0),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24.0,
+                  vertical: 24.0,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -139,17 +148,21 @@ class _SigninState extends State<Signin> {
                           child: GestureDetector(
                             onTap: () => Navigator.of(context).pop(),
                             child: Container(
-                              width: 48,
-                              height: 48,
+                              height: 35,
+                              width: 35,
                               decoration: BoxDecoration(
-                                shape: BoxShape.circle,
                                 color: CustColors.mainCol,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: CustColors.mainCol,
+                                  width: 1.5,
+                                ),
                               ),
-                              child: const Center(
+                              child: Center(
                                 child: Icon(
                                   Icons.arrow_back_ios_new,
                                   color: Colors.white,
-                                  size: 18,
+                                  size: 50 * 0.35,
                                 ),
                               ),
                             ),
@@ -160,94 +173,82 @@ class _SigninState extends State<Signin> {
                             'Login',
                             style: GoogleFonts.montserrat(
                               color: Colors.black,
-                              fontSize: 22,
-                              fontWeight: FontWeight.w600,
+                              fontSize: 26,
+                              fontWeight: FontWeight.w300,
                             ),
                           ),
                         ),
                       ],
                     ),
 
-                    const SizedBox(height: 36),
+                    const SizedBox(height: 86),
 
-                    Text(
-                      'Email or Username',
-                      style: GoogleFonts.montserrat(
-                        color: Colors.black87,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w400,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: emailController,
-                      decoration: InputDecoration(
-                        hintText: 'Email or Username',
-                        border: const UnderlineInputBorder(),
-                        contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                      ),
-                    ),
-
-                    const SizedBox(height: 20),
-
-                    Text(
-                      'Password',
-                      style: GoogleFonts.montserrat(
-                        color: Colors.black87,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w300,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Padding(
-                      padding: const EdgeInsets.only(right: 80.0),
-                      child: _buildPinInput(enabled: !isLoading),
-                    ),
-
-                    const SizedBox(height: 12),
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: GestureDetector(
-                        onTap: () {
-                          Navigator.of(context).push(
-                            PageTransition(
-                              type: PageTransitionType.rightToLeftWithFade,
-                              child: const RecoverAccount(),
-                            ),
-                          );
-                        },
-                        child: Text(
-                          'Forgot Password ?',
-                          style: GoogleFonts.montserrat(
-                            color: Colors.black87,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w400,
-                          ),
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 28),
                     Center(
-                      child: SizedBox(
-                        width: 220,
-                        height: 48,
-                        child: ElevatedButton(
-                          onPressed: isLoading ? null : _submitLogin,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: CustColors.mainCol,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 360),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Text(
+                              'Email or Username',
+                              style: GoogleFonts.montserrat(
+                                color: Colors.black87,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w300,
+                              ),
                             ),
-                          ),
-                          child: Text(
-                            'Login',
-                            style: GoogleFonts.montserrat(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
+                            const SizedBox(height: 8),
+                            TextField(
+                              controller: emailController,
+                              decoration: InputDecoration(
+                                border: const UnderlineInputBorder(),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                ),
+                              ),
                             ),
-                          ),
+                            const SizedBox(height: 20),
+                            Text(
+                              'PIN',
+                              style: GoogleFonts.montserrat(
+                                color: Colors.black87,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w300,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            _buildPinInput(enabled: !isLoading),
+                            const SizedBox(height: 32),
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: GestureDetector(
+                                onTap: () {
+                                  Navigator.of(context).push(
+                                    PageTransition(
+                                      type: PageTransitionType
+                                          .rightToLeftWithFade,
+                                      child: const RecoverAccount(),
+                                    ),
+                                  );
+                                },
+                                child: Text(
+                                  'Forgot Password ?',
+                                  style: GoogleFonts.montserrat(
+                                    color: Colors.black87,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w400,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 28),
+                            Center(
+                              child: AppButton(
+                                onPressed: isLoading ? null : _submitLogin,
+                                buttonText: 'Login',
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),

@@ -1,56 +1,54 @@
 import 'package:autobus/barrel.dart';
 
-String _orderHistoryTitle(Map<String, dynamic> o) {
-  final name = (o['item_name'] ?? '').toString().trim();
-  if (name.isNotEmpty) return name;
-  return (o['order_number'] ?? o['order_id'] ?? 'Order').toString();
-}
-
-String _orderHistorySubtitleId(Map<String, dynamic> o) {
-  final num = (o['order_number'] ?? '').toString().trim();
-  if (num.isNotEmpty) return num;
-  return (o['order_id'] ?? '').toString();
-}
-
-String _formatOrderHistoryDate(Map<String, dynamic> o) {
-  final raw = o['order_date']?.toString() ?? o['created_at']?.toString();
-  final dt = DateTime.tryParse(raw ?? '');
-  if (dt == null) return '—';
-  final d = dt.toLocal();
-  final mm = d.month.toString().padLeft(2, '0');
-  final dd = d.day.toString().padLeft(2, '0');
-  return '$dd / $mm / ${d.year}';
-}
-
-class AllOrdersHistory extends StatefulWidget {
-  const AllOrdersHistory({super.key});
+class SentEmailsPage extends StatefulWidget {
+  const SentEmailsPage({super.key});
 
   @override
-  State<AllOrdersHistory> createState() => _AllOrdersHistoryState();
+  State<SentEmailsPage> createState() => _SentEmailsPageState();
 }
 
-class _AllOrdersHistoryState extends State<AllOrdersHistory> {
-  List<Map<String, dynamic>> _orders = const [];
+class _SentEmailsPageState extends State<SentEmailsPage> {
+  List<Map<String, dynamic>> _emails = const [];
   bool _loading = true;
   String? _loadError;
+
+  String _formatSentAt(String raw) {
+    final dt = DateTime.tryParse(raw);
+    if (dt == null) return raw.isEmpty ? '—' : raw;
+    final d = dt.toLocal();
+    final mm = d.month.toString().padLeft(2, '0');
+    final dd = d.day.toString().padLeft(2, '0');
+    return '$dd / $mm / ${d.year}';
+  }
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _loadOrders());
+    WidgetsBinding.instance.addPostFrameCallback((_) => _load());
   }
 
-  Future<void> _loadOrders() async {
+  Future<void> _load() async {
     setState(() {
       _loading = true;
       _loadError = null;
     });
     try {
       final api = context.read<ApiService>();
-      final list = await api.listOrders(skip: 0, limit: 200);
+      final body = await api.getMySentEmails(limit: 50);
       if (!mounted) return;
+      final raw = body['emails'];
+      final list = <Map<String, dynamic>>[];
+      if (raw is List) {
+        for (final e in raw) {
+          if (e is Map<String, dynamic>) {
+            list.add(e);
+          } else if (e is Map) {
+            list.add(Map<String, dynamic>.from(e));
+          }
+        }
+      }
       setState(() {
-        _orders = list;
+        _emails = list;
         _loading = false;
       });
     } catch (e) {
@@ -58,45 +56,44 @@ class _AllOrdersHistoryState extends State<AllOrdersHistory> {
       setState(() {
         _loadError = e.toString().replaceFirst('Exception: ', '');
         _loading = false;
-        _orders = const [];
+        _emails = const [];
       });
     }
   }
 
-  Widget _orderTile(Map<String, dynamic> o) {
+  Widget _sentTile({
+    required String subject,
+    required String to,
+    required String date,
+  }) {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        border: Border.all(color: const Color(0xFF3F1163), width: 1),
+        border: Border.all(
+          color: const Color(0xFF3F1163),
+          width: 1,
+        ),
         borderRadius: BorderRadius.circular(30),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            _orderHistoryTitle(o),
+            subject.isEmpty ? '(No subject)' : subject,
             style: GoogleFonts.outfit(
               color: Colors.white,
               fontSize: 18,
               fontWeight: FontWeight.w400,
             ),
           ),
-          const SizedBox(height: 8),
-          Text(
-            (o['order_status'] ?? '').toString(),
-            style: GoogleFonts.outfit(
-              color: Colors.white.withValues(alpha: 0.55),
-              fontSize: 12,
-              fontWeight: FontWeight.w300,
-            ),
-          ),
           const SizedBox(height: 12),
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
                 child: Text(
-                  _orderHistorySubtitleId(o),
-                  maxLines: 1,
+                  to.startsWith('To: ') ? to : 'To: $to',
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.outfit(
                     color: Colors.white.withValues(alpha: 0.45),
@@ -107,7 +104,7 @@ class _AllOrdersHistoryState extends State<AllOrdersHistory> {
               ),
               const SizedBox(width: 12),
               Text(
-                _formatOrderHistoryDate(o),
+                date,
                 style: GoogleFonts.outfit(
                   color: Colors.white.withValues(alpha: 0.45),
                   fontSize: 11,
@@ -143,7 +140,7 @@ class _AllOrdersHistoryState extends State<AllOrdersHistory> {
                       const SizedBox(width: 18),
                       Expanded(
                         child: Text(
-                          'All Orders',
+                          'Sent Emails',
                           style: ManageScreenStyle.headerTitleStyle(),
                         ),
                       ),
@@ -181,7 +178,7 @@ class _AllOrdersHistoryState extends State<AllOrdersHistory> {
                                 ),
                                 const SizedBox(height: 16),
                                 TextButton(
-                                  onPressed: _loadOrders,
+                                  onPressed: _load,
                                   child: Text(
                                     'Retry',
                                     style: GoogleFonts.outfit(
@@ -195,8 +192,8 @@ class _AllOrdersHistoryState extends State<AllOrdersHistory> {
                           )
                         : RefreshIndicator(
                             color: const Color(0xFFA855F7),
-                            onRefresh: _loadOrders,
-                            child: _orders.isEmpty
+                            onRefresh: _load,
+                            child: _emails.isEmpty
                                 ? ListView(
                                     physics:
                                         const AlwaysScrollableScrollPhysics(),
@@ -208,7 +205,7 @@ class _AllOrdersHistoryState extends State<AllOrdersHistory> {
                                       ),
                                       Center(
                                         child: Text(
-                                          'No orders yet',
+                                          'No sent emails yet',
                                           style: GoogleFonts.outfit(
                                             color: Colors.white.withValues(
                                               alpha: 0.6,
@@ -222,11 +219,19 @@ class _AllOrdersHistoryState extends State<AllOrdersHistory> {
                                 : ListView.separated(
                                     physics:
                                         const AlwaysScrollableScrollPhysics(),
-                                    itemCount: _orders.length,
+                                    itemCount: _emails.length,
                                     separatorBuilder: (_, __) =>
                                         const SizedBox(height: 16),
                                     itemBuilder: (context, index) {
-                                      return _orderTile(_orders[index]);
+                                      final m = _emails[index];
+                                      return _sentTile(
+                                        subject:
+                                            (m['subject'] ?? '').toString(),
+                                        to: (m['to'] ?? '').toString(),
+                                        date: _formatSentAt(
+                                          (m['sent_at'] ?? '').toString(),
+                                        ),
+                                      );
                                     },
                                   ),
                           ),

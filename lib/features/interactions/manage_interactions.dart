@@ -6,70 +6,31 @@ class ManageInteractions extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0814),
+      backgroundColor: Colors.black,
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // Gradient Background
-          Container(
-            decoration: const BoxDecoration(
-              gradient: RadialGradient(
-                center: Alignment.topCenter,
-                radius: 1.5,
-                colors: [
-                  Color(0xFF1A1333),
-                  Color(0xFF120D26),
-                  Color(0xFF0A0814),
-                ],
-              ),
-            ),
+          const DecoratedBox(
+            decoration: ManageScreenStyle.homeDashboardBodyDecoration,
           ),
-          // Content
           SafeArea(
             child: Column(
               children: [
-                // Header with Back Button
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
                   child: Row(
                     children: [
-                      GestureDetector(
-                        onTap: () => Navigator.pop(context),
-                        child: Container(
-                          width: 56,
-                          height: 56,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.2),
-                              width: 1,
-                            ),
-                            color: Colors.white.withValues(alpha: 0.03),
-                            backgroundBlendMode: BlendMode.overlay,
-                          ),
-                          child: Center(
-                            child: Icon(
-                              Icons.arrow_back,
-                              color: Colors.white.withValues(alpha: 0.8),
-                              size: 22,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Text(
-                        'Manage Interactions',
-                        style: GoogleFonts.montserrat(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.w400,
-                          letterSpacing: 0.5,
+                      const ManageScreenBackButton(),
+                      const SizedBox(width: 18),
+                      Expanded(
+                        child: Text(
+                          'Manage Interactions',
+                          style: ManageScreenStyle.headerTitleStyle(),
                         ),
                       ),
                     ],
                   ),
                 ),
-                // Welcome Section
                 Expanded(
                   child: SingleChildScrollView(
                     child: Padding(
@@ -80,9 +41,10 @@ class ManageInteractions extends StatelessWidget {
                           const SizedBox(height: 60),
                           Text(
                             'Welcome to Chats',
+                            textAlign: TextAlign.center,
                             style: GoogleFonts.montserrat(
                               color: Colors.white,
-                              fontSize: 22,
+                              fontSize: 19,
                               fontWeight: FontWeight.w500,
                               letterSpacing: -0.3,
                             ),
@@ -92,29 +54,30 @@ class ManageInteractions extends StatelessWidget {
                             'Interact with AI-driven analytics to gain insights, monitor performance, and support decision-making.',
                             textAlign: TextAlign.center,
                             style: GoogleFonts.montserrat(
-                              color: Colors.white.withValues(alpha: 0.6),
-                              fontSize: 16,
+                              color: Colors.white.withValues(alpha: 0.9),
+                              fontSize: 14,
                               fontWeight: FontWeight.w300,
                               height: 1.6,
                             ),
                           ),
-                          const SizedBox(height: 60),
-                          // Action Cards Grid
+                          const SizedBox(height: 32),
+                          const SizedBox(height: 8),
+                          const SizedBox(height: 40),
                           GridView.count(
                             crossAxisCount: 2,
-                            crossAxisSpacing: 16,
                             mainAxisSpacing: 16,
+                            crossAxisSpacing: 16,
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
                             childAspectRatio: 1.0,
                             children: [
                               _InteractionCard(
+                                icon: Icons.forum_outlined,
                                 title: 'Start Interaction',
-                                icon: Icons.search,
                                 onTap: () {
-                                  Navigator.push(
+                                  Navigator.push<void>(
                                     context,
-                                    MaterialPageRoute(
+                                    MaterialPageRoute<void>(
                                       builder: (_) => const AutoBus(
                                         title: 'Interactions',
                                         webhookContext: 'interactions_agent',
@@ -124,12 +87,12 @@ class ManageInteractions extends StatelessWidget {
                                 },
                               ),
                               _InteractionCard(
+                                icon: Icons.history_outlined,
                                 title: 'View Interactions',
-                                icon: Icons.history,
                                 onTap: () {
-                                  Navigator.push(
+                                  Navigator.push<void>(
                                     context,
-                                    MaterialPageRoute(
+                                    MaterialPageRoute<void>(
                                       builder: (_) =>
                                           const InteractionHistoryPage(),
                                     ),
@@ -138,7 +101,7 @@ class ManageInteractions extends StatelessWidget {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 60),
+                          const SizedBox(height: 40),
                         ],
                       ),
                     ),
@@ -154,13 +117,13 @@ class ManageInteractions extends StatelessWidget {
 }
 
 class _InteractionCard extends StatelessWidget {
-  final String title;
   final IconData icon;
+  final String title;
   final VoidCallback onTap;
 
   const _InteractionCard({
-    required this.title,
     required this.icon,
+    required this.title,
     required this.onTap,
   });
 
@@ -170,30 +133,20 @@ class _InteractionCard extends StatelessWidget {
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(40),
-          color: Colors.white.withValues(alpha: 0.03),
-          border: Border.all(
-            color: Colors.white.withValues(alpha: 0.1),
-            width: 1,
-          ),
+          border: Border.all(color: const Color(0xFF3F1163), width: 1),
+          borderRadius: BorderRadius.circular(32),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              icon,
-              color: Colors.white.withValues(alpha: 0.9),
-              size: 40,
-            ),
-            const SizedBox(height: 16),
+            Icon(icon, color: Colors.white, size: 28),
+            const SizedBox(height: 14),
             Text(
               title,
-              textAlign: TextAlign.center,
               style: GoogleFonts.montserrat(
                 color: Colors.white.withValues(alpha: 0.9),
-                fontSize: 16,
-                fontWeight: FontWeight.w300,
-                fontStyle: FontStyle.italic,
+                fontSize: 13,
+                fontWeight: FontWeight.w400,
               ),
             ),
           ],
@@ -206,52 +159,54 @@ class _InteractionCard extends StatelessWidget {
 class InteractionHistoryPage extends StatelessWidget {
   const InteractionHistoryPage({super.key});
 
-  static const _backgroundStart = Color(0xFF180B2A);
-  static const _backgroundEnd = Color(0xFF0D0617);
-  static const _cardBorder = Color.fromRGBO(255, 255, 255, 0.4);
-
-  Widget _interactionCard({
+  Widget _historyListTile({
     required String title,
     required String id,
     required String date,
   }) {
     return Container(
-      padding: const EdgeInsets.all(30),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.03),
-        borderRadius: BorderRadius.circular(45),
-        border: Border.all(color: _cardBorder),
+        border: Border.all(
+          color: const Color(0xFF3F1163),
+          width: 1,
+        ),
+        borderRadius: BorderRadius.circular(30),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
         children: [
           Text(
             title,
-            style: GoogleFonts.inter(
+            style: GoogleFonts.outfit(
               color: Colors.white,
-              fontSize: 20,
-              fontWeight: FontWeight.w500,
+              fontSize: 18,
+              fontWeight: FontWeight.w400,
             ),
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 12),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                id,
-                style: GoogleFonts.inter(
-                  color: Colors.white.withValues(alpha: 0.4),
-                  fontSize: 13,
-                  fontWeight: FontWeight.w400,
+              Expanded(
+                child: Text(
+                  id,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.outfit(
+                    color: Colors.white.withValues(alpha: 0.45),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w300,
+                  ),
                 ),
               ),
+              const SizedBox(width: 12),
               Text(
                 date,
-                style: GoogleFonts.inter(
-                  color: Colors.white.withValues(alpha: 0.4),
-                  fontSize: 13,
-                  fontWeight: FontWeight.w400,
+                style: GoogleFonts.outfit(
+                  color: Colors.white.withValues(alpha: 0.45),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w300,
                 ),
               ),
             ],
@@ -264,75 +219,55 @@ class InteractionHistoryPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _backgroundEnd,
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [_backgroundStart, _backgroundEnd],
+      backgroundColor: Colors.black,
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          const DecoratedBox(
+            decoration: ManageScreenStyle.homeDashboardBodyDecoration,
           ),
-        ),
-        child: SafeArea(
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 430),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        GestureDetector(
-                          onTap: () => Navigator.of(context).pop(),
-                          child: Container(
-                            width: 64,
-                            height: 64,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: Colors.white.withValues(alpha: 0.5),
-                              ),
-                              color: Colors.white.withValues(alpha: 0.03),
-                            ),
-                            child: Icon(
-                              Icons.arrow_back_ios_new,
-                              size: 20,
-                              color: Colors.white.withValues(alpha: 0.95),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 24),
-                        Text(
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const ManageScreenBackButton(),
+                      const SizedBox(width: 18),
+                      Expanded(
+                        child: Text(
                           'Manage Interactions',
-                          style: GoogleFonts.inter(
-                            fontSize: 24,
-                            fontWeight: FontWeight.w400,
-                            color: Colors.white,
-                            letterSpacing: -0.3,
-                          ),
+                          style: ManageScreenStyle.headerTitleStyle(),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 32),
+                  Expanded(
+                    child: ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: [
+                        _historyListTile(
+                          title: 'Bag of rice ..',
+                          id: 'ID TRF 26342348264',
+                          date: '08 / 01 /2026',
+                        ),
+                        const SizedBox(height: 16),
+                        _historyListTile(
+                          title: 'Fruit Jar',
+                          id: 'ID TRF 26342348264',
+                          date: '08 / 01 /2026',
                         ),
                       ],
                     ),
-                    const SizedBox(height: 48),
-                    _interactionCard(
-                      title: 'Bag of rice ..',
-                      id: 'ID TRF 26342348264',
-                      date: '08 / 01 /2026',
-                    ),
-                    const SizedBox(height: 20),
-                    _interactionCard(
-                      title: 'Fruit Jar',
-                      id: 'ID TRF 26342348264',
-                      date: '08 / 01 /2026',
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }

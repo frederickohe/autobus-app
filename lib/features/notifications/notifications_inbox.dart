@@ -26,6 +26,7 @@ class _NotificationsInboxPageState extends State<NotificationsInboxPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: ManageScreenStyle.backgroundEnd,
       body: _GradientBackground(
         child: SafeArea(
           child: Padding(
@@ -36,29 +37,10 @@ class _NotificationsInboxPageState extends State<NotificationsInboxPage> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    GestureDetector(
-                      onTap: () => Navigator.pop(context),
-                      child: Container(
-                        width: 48,
-                        height: 48,
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: CustColors.mainCol,
-                        ),
-                        child: const Icon(
-                          Icons.arrow_back_ios_new,
-                          color: Colors.white,
-                          size: 18,
-                        ),
-                      ),
-                    ),
+                    const ManageScreenBackButton(),
                     Text(
                       'Notifications',
-                      style: GoogleFonts.montserrat(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w300,
-                      ),
+                      style: ManageScreenStyle.headerTitleStyle(),
                     ),
                     const SizedBox(width: 48, height: 48),
                   ],
@@ -192,13 +174,7 @@ class _GradientBackground extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFF130522), Color(0xFF2D0C51), Color(0xFF130522)],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-        ),
-      ),
+      decoration: ManageScreenStyle.bodyGradientDecoration(),
       child: child,
     );
   }

@@ -294,7 +294,7 @@ class _ExpandedPlanContent extends StatelessWidget {
           for (final a in plan.agents)
             _itemRow(
               icon: Icons.smart_toy_outlined,
-              label: a,
+              label: SubscriptionPlan.formatAgentLabel(a),
               baseColor: col,
             ),
         ],

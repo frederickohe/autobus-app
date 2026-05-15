@@ -1,235 +1,307 @@
 import 'package:autobus/barrel.dart';
 
-class ManageProducts extends StatelessWidget {
+class ManageProducts extends StatefulWidget {
   const ManageProducts({super.key});
 
-  static const Color _backgroundStart = Color(0xFF1E0F3D);
-  static const Color _backgroundEnd = Color(0xFF140B2B);
-  static const Color _cardBorder = Color.fromRGBO(255, 255, 255, 0.15);
-  static const Color _alertBorder = Color.fromRGBO(168, 85, 247, 0.4);
+  @override
+  State<ManageProducts> createState() => _ManageProductsState();
+}
+
+class _ManageProductsState extends State<ManageProducts> {
+  bool _loadRequested = false;
+  bool _loading = true;
+  String? _loadError;
+  bool _hasCatalogueFiles = false;
+
+  String _shortError(String raw, {int max = 160}) {
+    final t = raw.trim();
+    if (t.length <= max) return t;
+    return '${t.substring(0, max)}…';
+  }
+
+  Future<void> _loadCataloguePresence() async {
+    if (!mounted) return;
+    setState(() {
+      _loading = true;
+      _loadError = null;
+    });
+    try {
+      final api = context.read<ApiService>();
+      final files = await api.listMyStorageFiles(
+        folder: ApiService.productCatalogStorageFolder,
+      );
+      if (!mounted) return;
+      setState(() {
+        _hasCatalogueFiles = files.isNotEmpty;
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loadError = e.toString();
+        _loading = false;
+        _hasCatalogueFiles = false;
+      });
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_loadRequested) return;
+    _loadRequested = true;
+    _loadCataloguePresence();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _backgroundEnd,
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [_backgroundStart, _backgroundEnd],
+      backgroundColor: Colors.black,
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          const DecoratedBox(
+            decoration: ManageScreenStyle.homeDashboardBodyDecoration,
           ),
-        ),
-        child: SafeArea(
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 430),
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Row(
-                      children: [
-                        Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            borderRadius: BorderRadius.circular(32),
-                            onTap: () => Navigator.of(context).pop(),
-                            child: Container(
-                              height: 48,
-                              width: 48,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                border: Border.all(color: _cardBorder),
-                              ),
-                              child: const Icon(
-                                Icons.arrow_back_ios_new,
-                                color: Colors.white,
-                                size: 20,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 18),
-                        Text(
+          SafeArea(
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+                  child: Row(
+                    children: [
+                      const ManageScreenBackButton(),
+                      const SizedBox(width: 18),
+                      Expanded(
+                        child: Text(
                           'Manage Products',
-                          style: GoogleFonts.inter(
-                            color: Colors.white,
-                            fontSize: 26,
-                            fontWeight: FontWeight.w500,
-                            letterSpacing: -0.2,
-                          ),
+                          style: ManageScreenStyle.headerTitleStyle(),
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 56),
-                    Center(
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
                       child: Column(
                         children: [
+                          const SizedBox(height: 60),
                           Text(
                             'Welcome to Products',
-                            style: GoogleFonts.inter(
-                              color: Colors.white70,
-                              fontSize: 18,
-                              fontWeight: FontWeight.w400,
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.montserrat(
+                              color: Colors.white,
+                              fontSize: 19,
+                              fontWeight: FontWeight.w500,
+                              letterSpacing: -0.3,
                             ),
                           ),
                           const SizedBox(height: 24),
-                          ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 300),
-                            child: Text(
-                              'Manage and organize products intelligently with automated recommendations, updates, and insights.',
-                              textAlign: TextAlign.center,
-                              style: GoogleFonts.inter(
-                                color: Colors.white54,
-                                fontSize: 14,
-                                height: 1.55,
-                                fontWeight: FontWeight.w400,
-                              ),
+                          Text(
+                            'Manage and organize product documents with automated recommendations, updates, and insights from your AI assistant.',
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.montserrat(
+                              color: Colors.white.withValues(alpha: 0.9),
+                              fontSize: 14,
+                              fontWeight: FontWeight.w300,
+                              height: 1.6,
                             ),
                           ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 36),
-                    _AlertBanner(
-                      borderColor: _alertBorder,
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.warning_amber_rounded,
-                            color: Colors.redAccent,
-                            size: 28,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              'You have no products in your catalogue',
-                              style: GoogleFonts.inter(
-                                color: Colors.white70,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
+                          const SizedBox(height: 32),
+                          if (_loading) ...[
+                            const SizedBox(height: 8),
+                            const Center(
+                              child: SizedBox(
+                                width: 28,
+                                height: 28,
+                                child: CircularProgressIndicator(strokeWidth: 2),
                               ),
                             ),
+                            const SizedBox(height: 24),
+                          ] else if (_loadError != null) ...[
+                            _ProductNoticePanel(
+                              backgroundColor: Colors.amber.withValues(alpha: 0.12),
+                              borderColor: Colors.amber.withValues(alpha: 0.45),
+                              icon: Icons.cloud_off_outlined,
+                              iconColor: Colors.amber.shade300,
+                              trailing: IconButton(
+                                onPressed: _loadCataloguePresence,
+                                icon: Icon(
+                                  Icons.refresh,
+                                  color: Colors.white.withValues(alpha: 0.85),
+                                  size: 22,
+                                ),
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(
+                                  minWidth: 32,
+                                  minHeight: 32,
+                                ),
+                              ),
+                              child: Text(
+                                'Could not verify your product catalogue.\n${_shortError(_loadError!)}',
+                                style: GoogleFonts.montserrat(
+                                  color: Colors.white.withValues(alpha: 0.88),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w400,
+                                  height: 1.45,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 32),
+                          ] else if (!_hasCatalogueFiles) ...[
+                            _ProductNoticePanel(
+                              backgroundColor: const Color(0xFF581C87)
+                                  .withValues(alpha: 0.1),
+                              borderColor:
+                                  const Color(0xFF9333EA).withValues(alpha: 0.5),
+                              icon: Icons.warning_rounded,
+                              iconColor: Colors.red.shade400,
+                              child: Text(
+                                'You have no files in your product catalogue yet. Add documents in View Products or use the assistant to build your library.',
+                                style: GoogleFonts.montserrat(
+                                  color: Colors.white.withValues(alpha: 0.85),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w400,
+                                  height: 1.45,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 32),
+                          ] else
+                            const SizedBox(height: 8),
+                          const SizedBox(height: 40),
+                          GridView.count(
+                            crossAxisCount: 2,
+                            mainAxisSpacing: 16,
+                            crossAxisSpacing: 16,
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            childAspectRatio: 1.0,
+                            children: [
+                              _ProductHubCard(
+                                icon: Icons.add_box_outlined,
+                                title: 'Add Product',
+                                onTap: () {
+                                  Navigator.push<void>(
+                                    context,
+                                    MaterialPageRoute<void>(
+                                      builder: (context) => const AutoBus(
+                                        title: 'Products',
+                                        webhookContext: 'products_agent',
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                              _ProductHubCard(
+                                icon: Icons.inventory_2_outlined,
+                                title: 'View Products',
+                                onTap: () {
+                                  Navigator.push<void>(
+                                    context,
+                                    MaterialPageRoute<void>(
+                                      builder: (context) =>
+                                          const ViewProductsPage(),
+                                    ),
+                                  ).then((_) {
+                                    if (mounted) _loadCataloguePresence();
+                                  });
+                                },
+                              ),
+                            ],
                           ),
+                          const SizedBox(height: 40),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 40),
-                    Expanded(
-                      child: GridView.count(
-                        crossAxisCount: 2,
-                        crossAxisSpacing: 16,
-                        mainAxisSpacing: 16,
-                        childAspectRatio: 1,
-                        children: [
-                          _ActionCard(
-                            borderColor: _cardBorder,
-                            icon: Icons.add_box_outlined,
-                            label: 'Add Product',
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const AutoBus(
-                                    title: 'Product Autobus',
-                                    webhookContext: 'chatbot_agent',
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                          _ActionCard(
-                            borderColor: _cardBorder,
-                            icon: Icons.inventory_2_outlined,
-                            label: 'View Products',
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const ViewProductsPage(),
-                                ),
-                              );
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                  ],
+                  ),
                 ),
-              ),
+              ],
             ),
           ),
-        ),
+        ],
       ),
     );
   }
 }
 
-class _AlertBanner extends StatelessWidget {
-  final Widget child;
+class _ProductNoticePanel extends StatelessWidget {
+  final Color backgroundColor;
   final Color borderColor;
+  final IconData icon;
+  final Color iconColor;
+  final Widget? trailing;
+  final Widget child;
 
-  const _AlertBanner({required this.child, required this.borderColor});
+  const _ProductNoticePanel({
+    required this.backgroundColor,
+    required this.borderColor,
+    required this.icon,
+    required this.iconColor,
+    this.trailing,
+    required this.child,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: const Color.fromRGBO(88, 28, 135, 0.2),
+        color: backgroundColor,
+        border: Border.all(color: borderColor, width: 1.2),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: borderColor),
       ),
-      child: child,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: iconColor, size: 22),
+          const SizedBox(width: 12),
+          Expanded(child: child),
+          if (trailing != null) trailing!,
+        ],
+      ),
     );
   }
 }
 
-class _ActionCard extends StatelessWidget {
-  final Color borderColor;
+class _ProductHubCard extends StatelessWidget {
   final IconData icon;
-  final String label;
+  final String title;
   final VoidCallback onTap;
 
-  const _ActionCard({
-    required this.borderColor,
+  const _ProductHubCard({
     required this.icon,
-    required this.label,
+    required this.title,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(40),
-        onTap: onTap,
-        child: Container(
-          decoration: BoxDecoration(
-            color: const Color.fromRGBO(255, 255, 255, 0.03),
-            borderRadius: BorderRadius.circular(40),
-            border: Border.all(color: borderColor),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, color: Colors.white, size: 32),
-              const SizedBox(height: 16),
-              Text(
-                label,
-                style: GoogleFonts.inter(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  fontStyle: FontStyle.italic,
-                ),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          border: Border.all(color: const Color(0xFF3F1163), width: 1),
+          borderRadius: BorderRadius.circular(32),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: Colors.white, size: 28),
+            const SizedBox(height: 14),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.montserrat(
+                color: Colors.white.withValues(alpha: 0.9),
+                fontSize: 13,
+                fontWeight: FontWeight.w400,
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

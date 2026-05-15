@@ -8,6 +8,12 @@ class ApiService {
   final SessionAwareHttpClient httpClient;
   final String baseUrl;
 
+  /// Same folder the backend uses for RAG uploads (`chatbot-files`).
+  static const String chatbotStorageFolder = 'chatbot-files';
+
+  /// Catalogue files for product management (`StorageFolder.records_files`).
+  static const String productCatalogStorageFolder = 'records-files';
+
   ApiService({required this.httpClient, String? baseUrl})
     : baseUrl = baseUrl?.isNotEmpty == true
           ? baseUrl!
@@ -566,6 +572,63 @@ class ApiService {
     );
   }
 
+  /// Upload one document for RAG indexing (storage + optional Qdrant).
+  ///
+  /// Backend: `POST /api/v1/storage/me/upload-rag-document?folder=<folder>`
+  /// Multipart field name: `file` (single). Requires active subscription on server.
+  Future<Map<String, dynamic>> uploadRagDocument({
+    String folder = chatbotStorageFolder,
+    required String filename,
+    String? filePath,
+    List<int>? fileBytes,
+  }) async {
+    final trimmedPath = filePath?.trim();
+    final hasPath = trimmedPath != null && trimmedPath.isNotEmpty;
+    final hasBytes = fileBytes != null && fileBytes.isNotEmpty;
+    if (!hasPath && !hasBytes) {
+      throw ArgumentError('Provide filePath or non-empty fileBytes');
+    }
+    if (hasPath && hasBytes) {
+      throw ArgumentError('Provide only one of filePath or fileBytes');
+    }
+
+    final normalizedFolder = folder.trim().replaceAll('\\', '/');
+    final uri = Uri.parse(
+      '$baseUrl/storage/me/upload-rag-document',
+    ).replace(queryParameters: {'folder': normalizedFolder});
+
+    final request = http.MultipartRequest('POST', uri);
+    final http.MultipartFile multipartFile =
+        trimmedPath != null && trimmedPath.isNotEmpty
+        ? await http.MultipartFile.fromPath(
+            'file',
+            trimmedPath,
+            filename: filename,
+          )
+        : http.MultipartFile.fromBytes(
+            'file',
+            fileBytes!,
+            filename: filename,
+          );
+    request.files.add(multipartFile);
+
+    final streamed = await httpClient.send(request);
+    final response = await http.Response.fromStream(streamed);
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final decoded = jsonDecode(response.body);
+      if (decoded is Map<String, dynamic>) return decoded;
+      if (decoded is Map) return Map<String, dynamic>.from(decoded);
+      throw Exception('Upload succeeded but response shape was unexpected');
+    }
+    if (response.statusCode == 401) {
+      throw Exception('Session expired');
+    }
+    throw Exception(
+      'Failed to upload RAG document: ${response.statusCode} ${response.body}',
+    );
+  }
+
   /// Get available rides with filters
   Future<List<dynamic>> searchRides({
     required String departure,
@@ -832,6 +895,180 @@ class ApiService {
     } catch (_) {
       return 0;
     }
+  }
+
+  /// GET /api/v1/chatwoot/status — env + workspace mapping (no subscription required).
+  Future<Map<String, dynamic>> getChatwootStatus() async {
+    final response = await httpClient.get(
+      Uri.parse('$baseUrl/chatwoot/status'),
+    );
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data is Map<String, dynamic>) return data;
+      if (data is Map) return Map<String, dynamic>.from(data);
+      throw Exception('Invalid Chatwoot status response');
+    }
+    if (response.statusCode == 401) {
+      throw Exception('Session expired');
+    }
+    final msg = _httpDetailMessage(response.body);
+    throw Exception(msg ?? 'Chatwoot status failed (${response.statusCode})');
+  }
+
+  /// GET /api/v1/orders/ — paged list; optional [orderStatus] filter (e.g. `pending`).
+  Future<List<Map<String, dynamic>>> listOrders({
+    int skip = 0,
+    int limit = 100,
+    String? orderStatus,
+  }) async {
+    final qp = <String, String>{
+      'skip': '$skip',
+      'limit': '$limit',
+    };
+    final trimmedStatus = orderStatus?.trim();
+    if (trimmedStatus != null && trimmedStatus.isNotEmpty) {
+      qp['order_status'] = trimmedStatus;
+    }
+    final uri = Uri.parse('$baseUrl/orders/').replace(queryParameters: qp);
+    final response = await httpClient.get(uri);
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data is! List) return [];
+      return data
+          .map((e) {
+            if (e is Map<String, dynamic>) return e;
+            if (e is Map) return Map<String, dynamic>.from(e);
+            return <String, dynamic>{};
+          })
+          .where((m) => m.isNotEmpty)
+          .toList();
+    }
+    if (response.statusCode == 401) {
+      throw Exception('Session expired');
+    }
+    throw Exception(
+      _httpDetailMessage(response.body) ??
+          'Failed to load orders (${response.statusCode})',
+    );
+  }
+
+  /// GET /api/v1/products/ — paged list; optional [category] filter.
+  Future<List<Map<String, dynamic>>> listProducts({
+    int skip = 0,
+    int limit = 100,
+    String? category,
+  }) async {
+    final qp = <String, String>{
+      'skip': '$skip',
+      'limit': '$limit',
+    };
+    final trimmedCategory = category?.trim();
+    if (trimmedCategory != null && trimmedCategory.isNotEmpty) {
+      qp['category'] = trimmedCategory;
+    }
+    final uri = Uri.parse('$baseUrl/products/').replace(queryParameters: qp);
+    final response = await httpClient.get(uri);
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data is! List) return [];
+      return data
+          .map((e) {
+            if (e is Map<String, dynamic>) return e;
+            if (e is Map) return Map<String, dynamic>.from(e);
+            return <String, dynamic>{};
+          })
+          .where((m) => m.isNotEmpty)
+          .toList();
+    }
+    if (response.statusCode == 401) {
+      throw Exception('Session expired');
+    }
+    throw Exception(
+      _httpDetailMessage(response.body) ??
+          'Failed to load products (${response.statusCode})',
+    );
+  }
+
+  /// GET /api/v1/user/me/emails/sent — body `{ emails: [...], total_returned }`.
+  /// Server validates `limit` ≤ 50.
+  Future<Map<String, dynamic>> getMySentEmails({int limit = 50}) async {
+    final safeLimit = limit.clamp(1, 50);
+    final uri = Uri.parse('$baseUrl/user/me/emails/sent').replace(
+      queryParameters: {'limit': '$safeLimit'},
+    );
+    final response = await httpClient.get(uri);
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data is Map<String, dynamic>) return data;
+      if (data is Map) return Map<String, dynamic>.from(data);
+      return {'emails': <dynamic>[], 'total_returned': 0};
+    }
+    if (response.statusCode == 401) {
+      throw Exception('Session expired');
+    }
+    throw Exception(
+      _httpDetailMessage(response.body) ??
+          'Failed to load sent emails (${response.statusCode})',
+    );
+  }
+
+  /// GET /api/v1/social/digital-marketing/assets — body `{ items: [...], total }`.
+  Future<Map<String, dynamic>> listDigitalMarketingAssets({
+    int limit = 30,
+    int offset = 0,
+  }) async {
+    final uri = Uri.parse('$baseUrl/social/digital-marketing/assets').replace(
+      queryParameters: {
+        'limit': '$limit',
+        'offset': '$offset',
+      },
+    );
+    final response = await httpClient.get(uri);
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data is Map<String, dynamic>) return data;
+      if (data is Map) return Map<String, dynamic>.from(data);
+      return {'items': <dynamic>[], 'total': 0};
+    }
+    if (response.statusCode == 401) {
+      throw Exception('Session expired');
+    }
+    throw Exception(
+      _httpDetailMessage(response.body) ??
+          'Failed to load campaigns (${response.statusCode})',
+    );
+  }
+
+  /// GET /api/v1/chatwoot/inboxes — Chatwoot channel integrations (subscription required).
+  Future<int> getChatwootInboxTotal() async {
+    final response = await httpClient.get(
+      Uri.parse('$baseUrl/chatwoot/inboxes'),
+    );
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data is! Map) return 0;
+      final total = data['total'];
+      if (total is int) return total;
+      if (total is num) return total.toInt();
+      final inboxes = data['inboxes'];
+      if (inboxes is List) return inboxes.length;
+      return 0;
+    }
+    if (response.statusCode == 401) {
+      throw Exception('Session expired');
+    }
+    final msg = _httpDetailMessage(response.body);
+    throw Exception(msg ?? 'Could not load inboxes (${response.statusCode})');
+  }
+
+  static String? _httpDetailMessage(String body) {
+    try {
+      final decoded = jsonDecode(body);
+      if (decoded is Map && decoded['detail'] != null) {
+        return decoded['detail'].toString();
+      }
+    } catch (_) {}
+    return null;
   }
 }
 

@@ -1,6 +1,3 @@
-import 'dart:math' as math;
-import 'dart:ui' as ui;
-
 import 'package:autobus/barrel.dart';
 
 class Home extends StatefulWidget {
@@ -79,19 +76,19 @@ class _HomeState extends State<Home> {
   Widget build(BuildContext context) {
     print('=== HOME SCREEN BUILDING ===');
     final List<HomeMenuItem> menuItems = [
-      HomeMenuItem("Intelligence", MaterialSymbols.data_usage, () {
+      HomeMenuItem("Intelligence", MaterialSymbols.psychology_outline, () {
         Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => const ManageIntelligence()),
         );
       }),
-      HomeMenuItem("Interactions", Mdi.message_outline, () {
+      HomeMenuItem("Interact", Mdi.account_group_outline, () {
         Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => const ManageInteractions()),
         );
       }),
-      HomeMenuItem("Chats", Mdi.robot_outline, () {
+      HomeMenuItem("Chats", Mdi.chat_outline, () {
         Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => const ManageChats()),
@@ -129,22 +126,18 @@ class _HomeState extends State<Home> {
       }),
     ];
 
+    // Two-stop gradient: Figma dashboard top #1E0C37 → black.
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0814),
+      backgroundColor: Colors.black,
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // Gradient Background
-          Container(
-            decoration: const BoxDecoration(
+          const DecoratedBox(
+            decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [
-                  Color(0xFF1A1333),
-                  Color(0xFF120D26),
-                  Color(0xFF0A0814),
-                ],
+                colors: [Color(0xFF130522), Color(0xFF000000)],
               ),
             ),
           ),
@@ -155,9 +148,7 @@ class _HomeState extends State<Home> {
                 20,
                 16,
                 20,
-                32 +
-                    MediaQuery.viewPaddingOf(context).bottom +
-                    56,
+                32 + MediaQuery.viewPaddingOf(context).bottom + 56,
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -184,7 +175,7 @@ class _HomeState extends State<Home> {
                           );
                         },
                       ),
-                      UserAvatar(),
+                      const UserAvatar(showRingDecoration: false),
                     ],
                   ),
                   const SizedBox(height: 32),
@@ -209,7 +200,7 @@ class _HomeState extends State<Home> {
                             style: GoogleFonts.montserrat(
                               color: Colors.white.withValues(alpha: 0.8),
                               fontSize: 20,
-                              fontWeight: FontWeight.w500,
+                              fontWeight: FontWeight.w300,
                             ),
                           ),
                           const SizedBox(height: 8),
@@ -252,9 +243,10 @@ class _HomeState extends State<Home> {
                     gridDelegate:
                         const SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: 2,
-                          crossAxisSpacing: 16,
-                          mainAxisSpacing: 16,
-                          childAspectRatio: 1.0,
+                          crossAxisSpacing: 10,
+                          mainAxisSpacing: 10,
+                          // Figma tiles: 149 × 115 → width / height
+                          childAspectRatio: 149 / 115,
                         ),
                     itemBuilder: (context, index) {
                       return _DashboardCard(item: menuItems[index]);
@@ -296,10 +288,7 @@ class _HomeState extends State<Home> {
             gradient: const LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [
-                Color(0xFF7C3AED),
-                Color(0xFFF43F5E),
-              ],
+              colors: [Color(0xFF7C3AED), Color(0xFFF43F5E)],
             ),
           ),
           padding: const EdgeInsets.all(2),
@@ -337,15 +326,15 @@ class _HomeState extends State<Home> {
       height: 48,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        border: Border.all(color: const Color(0xFF4A4A4A), width: 1),
-        color: Colors.white.withValues(alpha: 0.02),
+        border: Border.all(color: CustColors.mainCol, width: 1),
       ),
       child: Stack(
+        clipBehavior: Clip.none,
         children: [
-          Center(
+          const Center(
             child: Icon(
               Icons.notifications_none,
-              color: Colors.white.withValues(alpha: 0.7),
+              color: Colors.white,
               size: 20,
             ),
           ),
@@ -379,12 +368,8 @@ class _DashboardCard extends StatelessWidget {
       onTap: item.onTap,
       child: Container(
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(30),
-          border: Border.all(
-            color: const Color(0xFF3F1163),
-            width: 1.5,
-          ),
-          color: Colors.white.withValues(alpha: 0.02),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFF3F1163), width: 1),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -396,7 +381,7 @@ class _DashboardCard extends StatelessWidget {
               style: GoogleFonts.montserrat(
                 color: Colors.white,
                 fontSize: 13,
-                fontWeight: FontWeight.w500,
+                fontWeight: FontWeight.w300,
               ),
               textAlign: TextAlign.center,
             ),
@@ -435,17 +420,20 @@ class _AlertBox extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: 56,
+        height: 46,
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 16),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: const Color(0xFF3F1163), width: 1.5),
-          color: const Color(0xFF1A0D2E).withValues(alpha: 0.6),
         ),
         child: Row(
           children: [
-            const Icon(Icons.warning_outlined, color: Color(0xFFEF4444), size: 20),
+            const Icon(
+              Icons.warning_outlined,
+              color: Color(0xFFEF4444),
+              size: 20,
+            ),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
@@ -462,7 +450,11 @@ class _AlertBox extends StatelessWidget {
             const SizedBox(width: 12),
             Transform.rotate(
               angle: -0.785,
-              child: const Icon(Icons.arrow_outward, color: Color(0xFFEF4444), size: 16),
+              child: const Icon(
+                Icons.arrow_outward,
+                color: Color(0xFFEF4444),
+                size: 16,
+              ),
             ),
           ],
         ),
