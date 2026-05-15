@@ -69,14 +69,15 @@ class UserAvatar extends StatelessWidget {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: const Color(0xFF0A051D),
-                    border: Border.all(color: const Color(0xFF0A051D), width: 2),
+                    border: Border.all(
+                      color: const Color(0xFF0A051D),
+                      width: 2,
+                    ),
                   ),
                   child: CircleAvatar(
                     backgroundColor: const Color(0xFF0A051D),
                     backgroundImage: url != null ? NetworkImage(url) : null,
-                    child: url == null
-                        ? Text(chars, style: textStyle)
-                        : null,
+                    child: url == null ? Text(chars, style: textStyle) : null,
                   ),
                 ),
               )
@@ -85,10 +86,7 @@ class UserAvatar extends StatelessWidget {
                 height: size,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(
-                    color: CustColors.mainCol,
-                    width: 1,
-                  ),
+                  border: Border.all(color: CustColors.mainCol, width: 1),
                 ),
                 alignment: Alignment.center,
                 child: CircleAvatar(

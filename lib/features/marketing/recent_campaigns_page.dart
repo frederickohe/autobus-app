@@ -211,8 +211,9 @@ class _RecentCampaignsPageState extends State<RecentCampaignsPage> {
                                             color: const Color(0xFF3F1163),
                                             width: 1,
                                           ),
-                                          borderRadius:
-                                              BorderRadius.circular(28),
+                                          borderRadius: BorderRadius.circular(
+                                            28,
+                                          ),
                                         ),
                                         child: Column(
                                           crossAxisAlignment:
@@ -256,8 +257,7 @@ class _RecentCampaignsPageState extends State<RecentCampaignsPage> {
                                                           alpha: 0.45,
                                                         ),
                                                     fontSize: 11,
-                                                    fontWeight:
-                                                        FontWeight.w300,
+                                                    fontWeight: FontWeight.w300,
                                                   ),
                                                 ),
                                               ],

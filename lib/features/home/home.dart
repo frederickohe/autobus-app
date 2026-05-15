@@ -132,7 +132,7 @@ class _HomeState extends State<Home> {
           MaterialPageRoute(builder: (_) => const ManageProducts()),
         );
       }),
-      HomeMenuItem("Reports", Icons.bar_chart_outlined, () {
+      HomeMenuItem("Analytics", Icons.bar_chart_outlined, () {
         Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => const ManageReports()),

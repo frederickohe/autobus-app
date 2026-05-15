@@ -4,6 +4,7 @@ class AppNotification {
   final String body;
   final DateTime? createdAt;
   final bool read;
+
   /// Target screen from backend `data.flutterpage` (e.g. Profile, Security).
   final String? flutterPage;
 
@@ -56,31 +57,34 @@ class AppNotification {
             .toString();
 
     final typeStr = (json['type'] ?? data['type'] ?? '').toString();
-    final title = (data['title'] ??
-            data['subject'] ??
-            json['title'] ??
-            json['subject'] ??
-            (typeStr.isNotEmpty ? typeStr : null) ??
-            'Notification')
-        .toString();
+    final title =
+        (data['title'] ??
+                data['subject'] ??
+                json['title'] ??
+                json['subject'] ??
+                (typeStr.isNotEmpty ? typeStr : null) ??
+                'Notification')
+            .toString();
 
-    final body = (data['description'] ??
-            data['body'] ??
-            data['message'] ??
-            data['content'] ??
-            json['body'] ??
-            json['message'] ??
-            json['content'] ??
-            json['detail'] ??
-            '')
-        .toString();
+    final body =
+        (data['description'] ??
+                data['body'] ??
+                data['message'] ??
+                data['content'] ??
+                json['body'] ??
+                json['message'] ??
+                json['content'] ??
+                json['detail'] ??
+                '')
+            .toString();
 
-    final flutterPage = (data['flutterpage'] ??
-            data['flutter_page'] ??
-            data['flutterPage'] ??
-            '')
-        .toString()
-        .trim();
+    final flutterPage =
+        (data['flutterpage'] ??
+                data['flutter_page'] ??
+                data['flutterPage'] ??
+                '')
+            .toString()
+            .trim();
 
     final createdAt = _parseDate(
       json['created_at'] ??
@@ -90,9 +94,12 @@ class AppNotification {
           data['created_at'],
     );
 
-    final status = (json['status'] ?? data['status'] ?? '').toString().toUpperCase();
+    final status = (json['status'] ?? data['status'] ?? '')
+        .toString()
+        .toUpperCase();
     final readAt = _parseDate(json['read_at'] ?? json['readAt']);
-    final read = status == 'READ' ||
+    final read =
+        status == 'READ' ||
         readAt != null ||
         _truthy(json['read'] ?? json['is_read'] ?? json['isRead']);
 
@@ -106,4 +113,3 @@ class AppNotification {
     );
   }
 }
-

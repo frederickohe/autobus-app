@@ -1,6 +1,5 @@
 import 'package:autobus/barrel.dart';
 
-
 class SubscriptionStorage {
   static const _kPlanId = 'subscription.planId';
   static const _kBillingId = 'subscription.billingId';

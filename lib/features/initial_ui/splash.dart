@@ -45,9 +45,7 @@ class _SplashPgeState extends State<SplashPge> {
                           top: titleTop,
                           left: 0,
                           right: 0,
-                          child: Center(
-                            child: const AutobusWordmark(),
-                          ),
+                          child: Center(child: const AutobusWordmark()),
                         ),
                         Positioned(
                           top: markTop,

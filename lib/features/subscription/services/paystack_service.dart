@@ -23,7 +23,6 @@ class PaystackService {
     required Future<void> Function() onSuccess,
     required Future<void> Function() onCancelled,
   }) async {
-
     try {
       await FlutterPaystackPlus.openPaystackPopup(
         context: context,

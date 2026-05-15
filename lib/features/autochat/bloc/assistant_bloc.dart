@@ -36,7 +36,11 @@ class AssistantBloc extends Bloc<AssistantEvent, AssistantState> {
         final reply = (data['response'] ?? data['message'] ?? '').toString();
         emit(AssistantSuccess(response: reply));
       } else {
-        emit(AssistantError(message: 'Error ${response.statusCode}: ${response.body}'));
+        emit(
+          AssistantError(
+            message: 'Error ${response.statusCode}: ${response.body}',
+          ),
+        );
       }
     } catch (e) {
       emit(AssistantError(message: e.toString()));

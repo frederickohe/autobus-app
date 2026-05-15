@@ -69,10 +69,7 @@ class _SentEmailsPageState extends State<SentEmailsPage> {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        border: Border.all(
-          color: const Color(0xFF3F1163),
-          width: 1,
-        ),
+        border: Border.all(color: const Color(0xFF3F1163), width: 1),
         borderRadius: BorderRadius.circular(30),
       ),
       child: Column(
@@ -225,8 +222,8 @@ class _SentEmailsPageState extends State<SentEmailsPage> {
                                     itemBuilder: (context, index) {
                                       final m = _emails[index];
                                       return _sentTile(
-                                        subject:
-                                            (m['subject'] ?? '').toString(),
+                                        subject: (m['subject'] ?? '')
+                                            .toString(),
                                         to: (m['to'] ?? '').toString(),
                                         date: _formatSentAt(
                                           (m['sent_at'] ?? '').toString(),

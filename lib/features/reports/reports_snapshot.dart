@@ -34,30 +34,33 @@ class ReportsSnapshot {
       .toList();
 
   List<Map<String, dynamic>> get filteredOrders => orders
-      .where((o) => period.includes(
-            ReportPeriod.parseDate(o['order_date'] ?? o['created_at']),
-          ))
+      .where(
+        (o) => period.includes(
+          ReportPeriod.parseDate(o['order_date'] ?? o['created_at']),
+        ),
+      )
       .toList();
 
   int countOrdersByStatus(String status) => filteredOrders
-      .where((o) =>
-          (o['order_status'] ?? '').toString().toLowerCase() ==
-          status.toLowerCase())
+      .where(
+        (o) =>
+            (o['order_status'] ?? '').toString().toLowerCase() ==
+            status.toLowerCase(),
+      )
       .length;
 
   double get ordersValue => filteredOrders.fold<double>(
-        0,
-        (sum, o) => sum + asReportDouble(o['total_amount']),
-      );
+    0,
+    (sum, o) => sum + asReportDouble(o['total_amount']),
+  );
 
   double get financialVolume => filteredFinancials.fold<double>(
-        0,
-        (sum, t) => sum + asReportDouble(t['amount']),
-      );
+    0,
+    (sum, t) => sum + asReportDouble(t['amount']),
+  );
 
   int get completedTransactions => filteredFinancials
-      .where((t) =>
-          (t['status'] ?? '').toString().toLowerCase() == 'completed')
+      .where((t) => (t['status'] ?? '').toString().toLowerCase() == 'completed')
       .length;
 
   int get pendingTransactions => filteredFinancials
@@ -67,7 +70,6 @@ class ReportsSnapshot {
   int get failedTransactions => filteredFinancials
       .where((t) => (t['status'] ?? '').toString().toLowerCase() == 'failed')
       .length;
-
 }
 
 double asReportDouble(dynamic v) {

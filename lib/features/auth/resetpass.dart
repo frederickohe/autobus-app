@@ -11,14 +11,23 @@ class ResetPassword extends StatefulWidget {
 }
 
 class _ResetPasswordState extends State<ResetPassword> {
-  final List<TextEditingController> _newPinControllers =
-      List.generate(4, (_) => TextEditingController());
-  final List<FocusNode> _newPinFocusNodes = List.generate(4, (_) => FocusNode());
+  final List<TextEditingController> _newPinControllers = List.generate(
+    4,
+    (_) => TextEditingController(),
+  );
+  final List<FocusNode> _newPinFocusNodes = List.generate(
+    4,
+    (_) => FocusNode(),
+  );
 
-  final List<TextEditingController> _confirmPinControllers =
-      List.generate(4, (_) => TextEditingController());
-  final List<FocusNode> _confirmPinFocusNodes =
-      List.generate(4, (_) => FocusNode());
+  final List<TextEditingController> _confirmPinControllers = List.generate(
+    4,
+    (_) => TextEditingController(),
+  );
+  final List<FocusNode> _confirmPinFocusNodes = List.generate(
+    4,
+    (_) => FocusNode(),
+  );
 
   String get _newPin => _newPinControllers.map((c) => c.text).join();
   String get _confirmPin => _confirmPinControllers.map((c) => c.text).join();
@@ -213,7 +222,9 @@ class _ResetPasswordState extends State<ResetPassword> {
                       if (_newPin.length != 4 || _confirmPin.length != 4) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text('Please enter and confirm your 4-digit PIN'),
+                            content: Text(
+                              'Please enter and confirm your 4-digit PIN',
+                            ),
                             backgroundColor: Colors.red,
                           ),
                         );

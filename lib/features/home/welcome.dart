@@ -30,7 +30,9 @@ class _WelcomeState extends State<Welcome> {
                   return SingleChildScrollView(
                     padding: const EdgeInsets.symmetric(horizontal: 24),
                     child: ConstrainedBox(
-                      constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                      constraints: BoxConstraints(
+                        minHeight: constraints.maxHeight,
+                      ),
                       child: IntrinsicHeight(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -78,9 +80,9 @@ class _WelcomeState extends State<Welcome> {
                                 label: 'Get Started',
                                 onPressed: () {
                                   print('=== GET STARTED BUTTON PRESSED ===');
-                                  Navigator.of(context).pushReplacement(
-                                    Home.routeFromWelcome(),
-                                  );
+                                  Navigator.of(
+                                    context,
+                                  ).pushReplacement(Home.routeFromWelcome());
                                 },
                               ),
                             ),

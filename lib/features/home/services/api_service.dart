@@ -37,7 +37,9 @@ class ApiService {
   }
 
   /// GET /api/v1/subscription/status/{phone} — server truth for active subscription.
-  Future<Map<String, dynamic>?> getSubscriptionStatusByPhone(String phone) async {
+  Future<Map<String, dynamic>?> getSubscriptionStatusByPhone(
+    String phone,
+  ) async {
     final trimmed = phone.trim();
     if (trimmed.isEmpty) return null;
     try {
@@ -605,11 +607,7 @@ class ApiService {
             trimmedPath,
             filename: filename,
           )
-        : http.MultipartFile.fromBytes(
-            'file',
-            fileBytes!,
-            filename: filename,
-          );
+        : http.MultipartFile.fromBytes('file', fileBytes!, filename: filename);
     request.files.add(multipartFile);
 
     final streamed = await httpClient.send(request);
@@ -787,9 +785,9 @@ class ApiService {
   Future<List<Map<String, dynamic>>> getLowStockInventory({
     double threshold = 0.5,
   }) async {
-    final uri = Uri.parse('$baseUrl/products/inventory/low-stock').replace(
-      queryParameters: {'threshold': '$threshold'},
-    );
+    final uri = Uri.parse(
+      '$baseUrl/products/inventory/low-stock',
+    ).replace(queryParameters: {'threshold': '$threshold'});
     final response = await httpClient.get(uri);
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
@@ -819,9 +817,9 @@ class ApiService {
     if (trimmedStatus != null && trimmedStatus.isNotEmpty) {
       qp['status'] = trimmedStatus;
     }
-    final uri = Uri.parse('$baseUrl/interventions/list').replace(
-      queryParameters: qp,
-    );
+    final uri = Uri.parse(
+      '$baseUrl/interventions/list',
+    ).replace(queryParameters: qp);
     final response = await httpClient.get(uri);
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
@@ -926,16 +924,13 @@ class ApiService {
     int size = 100,
     String? status,
   }) async {
-    final queryParameters = <String, String>{
-      'page': '$page',
-      'size': '$size',
-    };
+    final queryParameters = <String, String>{'page': '$page', 'size': '$size'};
     if (status != null && status.trim().isNotEmpty) {
       queryParameters['status'] = status.trim();
     }
-    final uri = Uri.parse('$baseUrl/user/me/notifications').replace(
-      queryParameters: queryParameters,
-    );
+    final uri = Uri.parse(
+      '$baseUrl/user/me/notifications',
+    ).replace(queryParameters: queryParameters);
     final response = await httpClient.get(uri);
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
@@ -1030,10 +1025,7 @@ class ApiService {
     int limit = 100,
     String? orderStatus,
   }) async {
-    final qp = <String, String>{
-      'skip': '$skip',
-      'limit': '$limit',
-    };
+    final qp = <String, String>{'skip': '$skip', 'limit': '$limit'};
     final trimmedStatus = orderStatus?.trim();
     if (trimmedStatus != null && trimmedStatus.isNotEmpty) {
       qp['order_status'] = trimmedStatus;
@@ -1067,10 +1059,7 @@ class ApiService {
     int limit = 100,
     String? category,
   }) async {
-    final qp = <String, String>{
-      'skip': '$skip',
-      'limit': '$limit',
-    };
+    final qp = <String, String>{'skip': '$skip', 'limit': '$limit'};
     final trimmedCategory = category?.trim();
     if (trimmedCategory != null && trimmedCategory.isNotEmpty) {
       qp['category'] = trimmedCategory;
@@ -1103,9 +1092,9 @@ class ApiService {
     int skip = 0,
     int limit = 100,
   }) async {
-    final uri = Uri.parse('$baseUrl/conversations/me').replace(
-      queryParameters: {'skip': '$skip', 'limit': '$limit'},
-    );
+    final uri = Uri.parse(
+      '$baseUrl/conversations/me',
+    ).replace(queryParameters: {'skip': '$skip', 'limit': '$limit'});
     final response = await httpClient.get(uri);
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
@@ -1142,9 +1131,9 @@ class ApiService {
   /// Server validates `limit` ≤ 50.
   Future<Map<String, dynamic>> getMySentEmails({int limit = 50}) async {
     final safeLimit = limit.clamp(1, 50);
-    final uri = Uri.parse('$baseUrl/user/me/emails/sent').replace(
-      queryParameters: {'limit': '$safeLimit'},
-    );
+    final uri = Uri.parse(
+      '$baseUrl/user/me/emails/sent',
+    ).replace(queryParameters: {'limit': '$safeLimit'});
     final response = await httpClient.get(uri);
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
@@ -1166,12 +1155,9 @@ class ApiService {
     int limit = 30,
     int offset = 0,
   }) async {
-    final uri = Uri.parse('$baseUrl/social/digital-marketing/assets').replace(
-      queryParameters: {
-        'limit': '$limit',
-        'offset': '$offset',
-      },
-    );
+    final uri = Uri.parse(
+      '$baseUrl/social/digital-marketing/assets',
+    ).replace(queryParameters: {'limit': '$limit', 'offset': '$offset'});
     final response = await httpClient.get(uri);
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);

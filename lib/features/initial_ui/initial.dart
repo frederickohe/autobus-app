@@ -12,7 +12,7 @@ class _SplashWrapperState extends State<SplashWrapper> {
   void initState() {
     super.initState();
     print('=== SPLASH SCREEN SHOWING ===');
-    
+
     Future.delayed(const Duration(seconds: 3), () {
       print('=== SPLASH TIMEOUT - NAVIGATING TO AUTH ===');
       if (mounted) {

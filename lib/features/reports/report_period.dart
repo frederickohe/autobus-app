@@ -17,8 +17,11 @@ enum ReportPeriod {
         return DateTime(now.year, now.month, now.day);
       case ReportPeriod.thisWeek:
         final weekday = now.weekday;
-        return DateTime(now.year, now.month, now.day)
-            .subtract(Duration(days: weekday - 1));
+        return DateTime(
+          now.year,
+          now.month,
+          now.day,
+        ).subtract(Duration(days: weekday - 1));
       case ReportPeriod.thisMonth:
         return DateTime(now.year, now.month, 1);
       case ReportPeriod.thisYear:

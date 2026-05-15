@@ -114,12 +114,7 @@ class _ViewProductsPageState extends State<ViewProductsPage> {
         _expandedIndex = null;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Deleted "$name"',
-            style: GoogleFonts.outfit(),
-          ),
-        ),
+        SnackBar(content: Text('Deleted "$name"', style: GoogleFonts.outfit())),
       );
     } catch (e) {
       if (!mounted) return;
@@ -214,8 +209,7 @@ class _ViewProductsPageState extends State<ViewProductsPage> {
     );
   }
 
-  bool get _hasNothingToShow =>
-      _products.isEmpty && _documents.isEmpty;
+  bool get _hasNothingToShow => _products.isEmpty && _documents.isEmpty;
 
   bool get _showEmptyState =>
       _hasNothingToShow && _productsError == null && _loadError == null;
@@ -283,126 +277,94 @@ class _ViewProductsPageState extends State<ViewProductsPage> {
         )
       else
         ...List.generate(_documents.length, (index) {
-                                    final doc = _documents[index];
-                                    final name = _fileName(doc);
-                                    final key = _objectKey(doc);
-                                    final isExpanded = _expandedIndex == index;
+          final doc = _documents[index];
+          final name = _fileName(doc);
+          final key = _objectKey(doc);
+          final isExpanded = _expandedIndex == index;
 
-                                    return Padding(
-                                      padding: const EdgeInsets.only(bottom: 16),
-                                      child: GestureDetector(
-                                        onTap: () {
-                                          setState(() {
-                                            _expandedIndex = isExpanded
-                                                ? null
-                                                : index;
-                                          });
-                                        },
-                                        child: AnimatedContainer(
-                                          duration: const Duration(
-                                            milliseconds: 300,
-                                          ),
-                                          padding: EdgeInsets.all(
-                                            isExpanded ? 32 : 24,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            border: Border.all(
-                                              color: const Color(0xFF3F1163),
-                                              width: 1,
-                                            ),
-                                            borderRadius: BorderRadius.circular(
-                                              isExpanded ? 38 : 30,
-                                            ),
-                                          ),
-                                          child: isExpanded
-                                              ? Column(
-                                                  crossAxisAlignment:
-                                                      CrossAxisAlignment.start,
-                                                  children: [
-                                                    Text(
-                                                      name,
-                                                      style: GoogleFonts.outfit(
-                                                        color: Colors.white,
-                                                        fontSize: 16,
-                                                        fontWeight:
-                                                            FontWeight.w400,
-                                                      ),
-                                                    ),
-                                                    if (key != null) ...[
-                                                      const SizedBox(height: 12),
-                                                      Text(
-                                                        key,
-                                                        style:
-                                                            GoogleFonts.outfit(
-                                                          color: Colors.white
-                                                              .withValues(
-                                                                alpha: 0.65,
-                                                              ),
-                                                          fontSize: 11,
-                                                          fontWeight:
-                                                              FontWeight.w300,
-                                                        ),
-                                                      ),
-                                                    ],
-                                                    const SizedBox(height: 16),
-                                                    Center(
-                                                      child: TextButton(
-                                                        onPressed: () =>
-                                                            _deleteAt(index),
-                                                        child: Text(
-                                                          'Delete file',
-                                                          style:
-                                                              GoogleFonts.outfit(
-                                                            color: Colors.white
-                                                                .withValues(
-                                                                  alpha: 0.75,
-                                                                ),
-                                                            fontSize: 13,
-                                                            fontWeight:
-                                                                FontWeight.w300,
-                                                          ),
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ],
-                                                )
-                                              : Column(
-                                                  crossAxisAlignment:
-                                                      CrossAxisAlignment.start,
-                                                  children: [
-                                                    Text(
-                                                      name,
-                                                      style: GoogleFonts.outfit(
-                                                        color: Colors.white,
-                                                        fontSize: 18,
-                                                        fontWeight:
-                                                            FontWeight.w400,
-                                                      ),
-                                                    ),
-                                                    if (key != null) ...[
-                                                      const SizedBox(height: 6),
-                                                      Text(
-                                                        key,
-                                                        maxLines: 1,
-                                                        overflow: TextOverflow
-                                                            .ellipsis,
-                                                        style:
-                                                            GoogleFonts.outfit(
-                                                          color: Colors.white
-                                                              .withValues(
-                                                                alpha: 0.45,
-                                                              ),
-                                                          fontSize: 11,
-                                                          fontWeight:
-                                                              FontWeight.w300,
-                                                        ),
-                                                      ),
-                                                    ],
-                                                  ],
-                                                ),
-                                        ),
-                                      ),
-                                    );
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: GestureDetector(
+              onTap: () {
+                setState(() {
+                  _expandedIndex = isExpanded ? null : index;
+                });
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                padding: EdgeInsets.all(isExpanded ? 32 : 24),
+                decoration: BoxDecoration(
+                  border: Border.all(color: const Color(0xFF3F1163), width: 1),
+                  borderRadius: BorderRadius.circular(isExpanded ? 38 : 30),
+                ),
+                child: isExpanded
+                    ? Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            name,
+                            style: GoogleFonts.outfit(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w400,
+                            ),
+                          ),
+                          if (key != null) ...[
+                            const SizedBox(height: 12),
+                            Text(
+                              key,
+                              style: GoogleFonts.outfit(
+                                color: Colors.white.withValues(alpha: 0.65),
+                                fontSize: 11,
+                                fontWeight: FontWeight.w300,
+                              ),
+                            ),
+                          ],
+                          const SizedBox(height: 16),
+                          Center(
+                            child: TextButton(
+                              onPressed: () => _deleteAt(index),
+                              child: Text(
+                                'Delete file',
+                                style: GoogleFonts.outfit(
+                                  color: Colors.white.withValues(alpha: 0.75),
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w300,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      )
+                    : Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            name,
+                            style: GoogleFonts.outfit(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w400,
+                            ),
+                          ),
+                          if (key != null) ...[
+                            const SizedBox(height: 6),
+                            Text(
+                              key,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.outfit(
+                                color: Colors.white.withValues(alpha: 0.45),
+                                fontSize: 11,
+                                fontWeight: FontWeight.w300,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+              ),
+            ),
+          );
         }),
     ];
   }

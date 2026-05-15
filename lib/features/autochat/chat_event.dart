@@ -9,8 +9,10 @@ abstract class ChatEvent extends Equatable {
 class SendMessage extends ChatEvent {
   final String phone;
   final String message;
+
   /// Backend webhook `context` (e.g. `order_agent`, `products_agent`).
   final String context;
+
   /// When true, the message is sent to the webhook but not shown in the UI.
   final bool hidden;
 

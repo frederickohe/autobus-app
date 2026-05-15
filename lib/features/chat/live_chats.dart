@@ -19,8 +19,7 @@ String _liveChatSubtitleId(Map<String, dynamic> c) {
 }
 
 String _formatLiveChatDate(Map<String, dynamic> c) {
-  final raw =
-      c['updated_at']?.toString() ?? c['conversation_date']?.toString();
+  final raw = c['updated_at']?.toString() ?? c['conversation_date']?.toString();
   final dt = DateTime.tryParse(raw ?? '');
   if (dt == null) return '—';
   final d = dt.toLocal();

@@ -6,10 +6,7 @@ class _ReportDetailScaffold extends StatelessWidget {
   final String title;
   final Widget child;
 
-  const _ReportDetailScaffold({
-    required this.title,
-    required this.child,
-  });
+  const _ReportDetailScaffold({required this.title, required this.child});
 
   @override
   Widget build(BuildContext context) {
@@ -74,10 +71,7 @@ class _StatRow extends StatelessWidget {
         children: [
           Text(
             label,
-            style: GoogleFonts.montserrat(
-              color: Colors.white70,
-              fontSize: 13,
-            ),
+            style: GoogleFonts.montserrat(color: Colors.white70, fontSize: 13),
           ),
           Text(
             value,
@@ -190,14 +184,8 @@ class FinancialReportDetail extends StatelessWidget {
             label: 'Completed',
             value: '${snapshot.completedTransactions}',
           ),
-          _StatRow(
-            label: 'Pending',
-            value: '${snapshot.pendingTransactions}',
-          ),
-          _StatRow(
-            label: 'Failed',
-            value: '${snapshot.failedTransactions}',
-          ),
+          _StatRow(label: 'Pending', value: '${snapshot.pendingTransactions}'),
+          _StatRow(label: 'Failed', value: '${snapshot.failedTransactions}'),
           if (byCategory.isNotEmpty) ...[
             const SizedBox(height: 20),
             Text(
@@ -210,10 +198,8 @@ class FinancialReportDetail extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             ...byCategory.entries.map(
-              (e) => _StatRow(
-                label: e.key,
-                value: formatReportCurrency(e.value),
-              ),
+              (e) =>
+                  _StatRow(label: e.key, value: formatReportCurrency(e.value)),
             ),
           ],
           if (items.isNotEmpty) ...[
@@ -228,11 +214,12 @@ class FinancialReportDetail extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             ...items.take(15).map((t) {
-              final desc = (t['description'] ??
-                      t['intent'] ??
-                      t['transaction_type'] ??
-                      'Transaction')
-                  .toString();
+              final desc =
+                  (t['description'] ??
+                          t['intent'] ??
+                          t['transaction_type'] ??
+                          'Transaction')
+                      .toString();
               final status = (t['status'] ?? '').toString();
               return _ListTile(
                 title: desc,
@@ -277,10 +264,7 @@ class OrdersReportDetail extends StatelessWidget {
             value: formatReportCurrency(snapshot.ordersValue),
           ),
           ...statuses.entries.map(
-            (e) => _StatRow(
-              label: e.key,
-              value: '${e.value}',
-            ),
+            (e) => _StatRow(label: e.key, value: '${e.value}'),
           ),
           if (orders.isNotEmpty) ...[
             const SizedBox(height: 20),
@@ -346,11 +330,12 @@ class OperationsReportDetail extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             ...lowStock.map((inv) {
-              final name = (inv['product_name'] ??
-                      inv['name'] ??
-                      inv['inventory_id'] ??
-                      'Item')
-                  .toString();
+              final name =
+                  (inv['product_name'] ??
+                          inv['name'] ??
+                          inv['inventory_id'] ??
+                          'Item')
+                      .toString();
               final qty = inv['quantity'] ?? inv['stock_quantity'] ?? '—';
               return _ListTile(
                 title: name,
@@ -430,10 +415,7 @@ class EngagementReportDetail extends StatelessWidget {
           const SizedBox(height: 24),
           Text(
             'Data sources',
-            style: GoogleFonts.montserrat(
-              color: Colors.white54,
-              fontSize: 12,
-            ),
+            style: GoogleFonts.montserrat(color: Colors.white54, fontSize: 12),
           ),
           const SizedBox(height: 8),
           Text(

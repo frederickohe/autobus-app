@@ -60,10 +60,12 @@ class _ManageReportsState extends State<ManageReports> {
           conversationsActive:
               conversations['intervention_active']?.length ?? 0,
           interventions: interventions.length,
-          marketingAssets: (marketing['total'] as num?)?.toInt() ??
+          marketingAssets:
+              (marketing['total'] as num?)?.toInt() ??
               (marketing['items'] as List?)?.length ??
               0,
-          sentEmails: (emails['total_returned'] as num?)?.toInt() ??
+          sentEmails:
+              (emails['total_returned'] as num?)?.toInt() ??
               (emails['emails'] as List?)?.length ??
               0,
         );
@@ -102,23 +104,43 @@ class _ManageReportsState extends State<ManageReports> {
               children: [
                 Padding(
                   padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
-                  child: Row(
-                    children: [
-                      const ManageScreenBackButton(),
-                      const SizedBox(width: 18),
-                      Expanded(
-                        child: Text(
-                          'Reports',
-                          style: ManageScreenStyle.headerTitleStyle(),
+                  child: SizedBox(
+                    height: 52,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        Align(
+                          alignment: Alignment.center,
+                          child: Text(
+                            'Analytics',
+                            textAlign: TextAlign.center,
+                            style: ManageScreenStyle.headerTitleStyle(),
+                          ),
                         ),
-                      ),
-                      if (!_loading)
-                        IconButton(
-                          onPressed: _load,
-                          icon: const Icon(Icons.refresh, color: Colors.white70),
-                          tooltip: 'Refresh',
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: const [
+                              ManageScreenBackButton(),
+                              SizedBox(width: 18),
+                            ],
+                          ),
                         ),
-                    ],
+                        if (!_loading)
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: IconButton(
+                              onPressed: _load,
+                              icon: const Icon(
+                                Icons.refresh,
+                                color: Colors.white70,
+                              ),
+                              tooltip: 'Refresh',
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -153,7 +175,9 @@ class _ManageReportsState extends State<ManageReports> {
                                   Text(
                                     'Detailed reports',
                                     style: GoogleFonts.montserrat(
-                                      color: Colors.white.withValues(alpha: 0.85),
+                                      color: Colors.white.withValues(
+                                        alpha: 0.85,
+                                      ),
                                       fontSize: 16,
                                       fontWeight: FontWeight.w500,
                                     ),
@@ -179,8 +203,8 @@ class _ManageReportsState extends State<ManageReports> {
                                           MaterialPageRoute<void>(
                                             builder: (_) =>
                                                 FinancialReportDetail(
-                                              snapshot: snap,
-                                            ),
+                                                  snapshot: snap,
+                                                ),
                                           ),
                                         ),
                                       ),
@@ -208,8 +232,8 @@ class _ManageReportsState extends State<ManageReports> {
                                           MaterialPageRoute<void>(
                                             builder: (_) =>
                                                 OperationsReportDetail(
-                                              snapshot: snap,
-                                            ),
+                                                  snapshot: snap,
+                                                ),
                                           ),
                                         ),
                                       ),
@@ -223,8 +247,8 @@ class _ManageReportsState extends State<ManageReports> {
                                           MaterialPageRoute<void>(
                                             builder: (_) =>
                                                 EngagementReportDetail(
-                                              snapshot: snap,
-                                            ),
+                                                  snapshot: snap,
+                                                ),
                                           ),
                                         ),
                                       ),
@@ -249,10 +273,7 @@ class _PeriodSelector extends StatelessWidget {
   final ReportPeriod selected;
   final ValueChanged<ReportPeriod> onSelected;
 
-  const _PeriodSelector({
-    required this.selected,
-    required this.onSelected,
-  });
+  const _PeriodSelector({required this.selected, required this.onSelected});
 
   @override
   Widget build(BuildContext context) {
@@ -441,11 +462,7 @@ class _MetricTile extends StatelessWidget {
   final String value;
   final String? sub;
 
-  const _MetricTile({
-    required this.label,
-    required this.value,
-    this.sub,
-  });
+  const _MetricTile({required this.label, required this.value, this.sub});
 
   @override
   Widget build(BuildContext context) {
@@ -556,16 +573,25 @@ class _ErrorBanner extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF3D1A1A),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE63946).withValues(alpha: 0.5)),
+        border: Border.all(
+          color: const Color(0xFFE63946).withValues(alpha: 0.5),
+        ),
       ),
       child: Row(
         children: [
-          const Icon(Icons.warning_amber_rounded, color: Color(0xFFE63946), size: 20),
+          const Icon(
+            Icons.warning_amber_rounded,
+            color: Color(0xFFE63946),
+            size: 20,
+          ),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
               message,
-              style: GoogleFonts.montserrat(color: Colors.white70, fontSize: 12),
+              style: GoogleFonts.montserrat(
+                color: Colors.white70,
+                fontSize: 12,
+              ),
             ),
           ),
         ],

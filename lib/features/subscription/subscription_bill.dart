@@ -166,7 +166,9 @@ class _SubscriptionBillPageState extends State<SubscriptionBillPage> {
       if (userEmail.isEmpty) {
         try {
           final user = await api.getUserProfile();
-          userEmail = (user['email'] ?? user['user_email'] ?? '').toString().trim();
+          userEmail = (user['email'] ?? user['user_email'] ?? '')
+              .toString()
+              .trim();
         } catch (_) {}
       }
 
@@ -261,9 +263,9 @@ class _SubscriptionBillPageState extends State<SubscriptionBillPage> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('An error occurred: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('An error occurred: $e')));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
