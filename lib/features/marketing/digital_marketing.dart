@@ -1,4 +1,8 @@
+import 'dart:typed_data';
+
 import 'package:autobus/barrel.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 const _kPrimary = Color(0xFF1A1A2E);
 const _kHeaderPurple = Color(0xFF2A1447);
@@ -16,6 +20,7 @@ class MarketingContent {
   String? prompt;
   String? manualText;
   String? generatedResult;
+  Uint8List? generatedBytes;
   MediaGenState genState = MediaGenState.idle;
 
   MarketingContent(this.type);
@@ -207,14 +212,14 @@ class _DarkButton extends StatelessWidget {
 class _PromptBar extends StatelessWidget {
   final TextEditingController controller;
   final String hint;
-  final VoidCallback? onSend;
-  final VoidCallback? onMic;
+  final VoidCallback? onAttach;
+  final VoidCallback? onGenerate;
 
   const _PromptBar({
     required this.controller,
     required this.hint,
-    this.onSend,
-    this.onMic,
+    this.onAttach,
+    this.onGenerate,
   });
 
   @override
@@ -236,10 +241,10 @@ class _PromptBar extends StatelessWidget {
       child: Row(
         children: [
           GestureDetector(
-            onTap: onSend,
+            onTap: onAttach,
             child: Icon(
               Icons.add,
-              color: onSend != null ? Colors.black87 : Colors.black38,
+              color: onAttach != null ? Colors.black87 : Colors.black38,
               size: 22,
             ),
           ),
@@ -247,6 +252,7 @@ class _PromptBar extends StatelessWidget {
           Expanded(
             child: TextField(
               controller: controller,
+              onSubmitted: (_) => onGenerate?.call(),
               style: GoogleFonts.montserrat(fontSize: 14),
               decoration: InputDecoration(
                 hintText: hint,
@@ -262,8 +268,12 @@ class _PromptBar extends StatelessWidget {
           ),
           const SizedBox(width: 10),
           GestureDetector(
-            onTap: onMic,
-            child: const Icon(Icons.mic_outlined, color: _kPrimary, size: 22),
+            onTap: onGenerate,
+            child: Icon(
+              Icons.send_rounded,
+              color: onGenerate != null ? _kPrimary : Colors.black38,
+              size: 20,
+            ),
           ),
         ],
       ),
@@ -426,6 +436,8 @@ class _GenerateMediaPageState extends State<_GenerateMediaPage> {
     setState(() {
       _content.prompt = prompt;
       _content.genState = MediaGenState.generating;
+      _content.generatedBytes = null;
+      if (!_isText) _content.generatedResult = null;
     });
     _promptCtrl.clear();
 
@@ -438,24 +450,113 @@ class _GenerateMediaPageState extends State<_GenerateMediaPage> {
         userId = (user['id'] ?? user['phone'] ?? '').toString();
       }
 
-      final result = await _apiService.generateAgentContent(
-        userId: userId,
-        prompt: prompt,
-        agentName: 'marketing',
-      );
+      String result = '';
+
+      if (_content.type == MarketingContentType.pictures) {
+        final response = await _apiService.generateImageMedia(
+          userId: userId,
+          prompt: prompt,
+        );
+        final rawBase64 = (response['image_base64'] ?? '').toString();
+        final cleanedBase64 = rawBase64.contains(',')
+            ? rawBase64.substring(rawBase64.indexOf(',') + 1)
+            : rawBase64;
+        _content.generatedBytes = base64Decode(cleanedBase64);
+        _content.generatedResult = response['mime_type']?.toString();
+      } else if (_content.type == MarketingContentType.videos) {
+        final response = await _apiService.generateVideoMedia(
+          userId: userId,
+          prompt: prompt,
+        );
+        result = (response['stored_url'] ?? response['video_url'] ?? '')
+            .toString();
+        _content.generatedResult = result;
+      } else {
+        result = await _apiService.generateAgentContent(
+          userId: userId,
+          prompt: prompt,
+          agentName: 'marketing',
+        );
+        _content.generatedResult = result;
+        _textBodyCtrl.text = result;
+      }
 
       if (!mounted) return;
       setState(() {
         _content.genState = MediaGenState.ready;
-        _content.generatedResult = _isText
-            ? result
-            : 'https://your-cdn.com/generated-asset';
         if (_isText) _textBodyCtrl.text = result;
       });
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
       setState(() => _content.genState = MediaGenState.idle);
+
+      final message = e is Exception ? e.toString() : 'Media generation failed';
+
+      // Show a friendly snackbar explaining the backend limitation.
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            message.contains('GOOGLE_API_KEY')
+                ? 'Image/Video generation is unavailable: server missing configuration.'
+                : 'Media generation failed: $message',
+          ),
+          duration: const Duration(seconds: 5),
+        ),
+      );
     }
+  }
+
+  Future<void> _pickAndAttachMedia() async {
+    if (_isText) return;
+
+    final allowedExtensions = _content.type == MarketingContentType.pictures
+        ? <String>['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp']
+        : <String>['mp4', 'mov', 'avi', 'mkv', 'webm', 'm4v'];
+
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: allowedExtensions,
+      allowMultiple: false,
+      withData: _content.type == MarketingContentType.pictures,
+    );
+
+    if (!mounted || result == null || result.files.isEmpty) return;
+
+    final file = result.files.single;
+    if (_content.type == MarketingContentType.pictures) {
+      final bytes = file.bytes;
+      if (bytes == null || bytes.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Unable to load selected image. Please try again.'),
+          ),
+        );
+        return;
+      }
+
+      setState(() {
+        _content.generatedBytes = bytes;
+        _content.generatedResult = file.name;
+        _content.genState = MediaGenState.ready;
+      });
+      return;
+    }
+
+    final path = file.path;
+    if (path == null || path.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Unable to open selected video. Please try again.'),
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _content.generatedBytes = null;
+      _content.generatedResult = path;
+      _content.genState = MediaGenState.ready;
+    });
   }
 
   void _goNext() {
@@ -523,10 +624,8 @@ class _GenerateMediaPageState extends State<_GenerateMediaPage> {
           _PromptBar(
             controller: _promptCtrl,
             hint: _content.promptHint,
-            onSend: canGenerate ? _generate : null,
-            onMic: () {
-              /* TODO: voice input */
-            },
+            onAttach: _isText ? null : _pickAndAttachMedia,
+            onGenerate: canGenerate ? _generate : null,
           ),
 
           const SizedBox(height: 16),
@@ -687,6 +786,95 @@ class _ReadyPreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (content.type == MarketingContentType.pictures &&
+        content.generatedBytes != null) {
+      return Column(
+        children: [
+          Expanded(
+            child: Container(
+              width: double.infinity,
+              color: Colors.black,
+              child: Image.memory(
+                content.generatedBytes!,
+                fit: BoxFit.cover,
+                gaplessPlayback: true,
+              ),
+            ),
+          ),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            color: Colors.white,
+            child: Text(
+              content.prompt ?? '',
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.montserrat(
+                fontSize: 12,
+                color: Colors.black45,
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    if (content.type == MarketingContentType.videos &&
+        (content.generatedResult?.isNotEmpty ?? false)) {
+      final videoRef = content.generatedResult!;
+      final isRemoteUrl =
+          videoRef.startsWith('http://') || videoRef.startsWith('https://');
+      final openUri = isRemoteUrl ? Uri.parse(videoRef) : Uri.file(videoRef);
+      return Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 76,
+              height: 76,
+              decoration: BoxDecoration(
+                color: _kPurple.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.play_circle_fill_rounded,
+                size: 48,
+                color: _kPurple,
+              ),
+            ),
+            const SizedBox(height: 14),
+            Text(
+              'Video Ready',
+              style: GoogleFonts.montserrat(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: _kPrimary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              content.prompt ?? '',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.montserrat(
+                fontSize: 12,
+                color: Colors.black45,
+              ),
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: () =>
+                  launchUrl(openUri, mode: LaunchMode.externalApplication),
+              icon: const Icon(Icons.open_in_new_rounded),
+              label: const Text('Open video'),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [

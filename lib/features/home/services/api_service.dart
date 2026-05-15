@@ -917,6 +917,60 @@ class ApiService {
     throw Exception('Agent error: ${response.statusCode}');
   }
 
+  Future<Map<String, dynamic>> generateImageMedia({
+    required String prompt,
+    String? userId,
+  }) async {
+    final response = await httpClient.post(
+      Uri.parse('$baseUrl/media/generate-image'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'prompt': prompt,
+        if (userId != null && userId.trim().isNotEmpty) 'user_id': userId,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data is Map<String, dynamic>) return data;
+      if (data is Map) return Map<String, dynamic>.from(data);
+      throw Exception('Image generation returned an unexpected response');
+    }
+
+    throw Exception(
+      'Image generation failed: ${response.statusCode} ${response.body}',
+    );
+  }
+
+  Future<Map<String, dynamic>> generateVideoMedia({
+    required String prompt,
+    String? userId,
+    bool store = false,
+  }) async {
+    final uri = Uri.parse('$baseUrl/media/generate-video').replace(
+      queryParameters: {'store': store.toString()},
+    );
+    final response = await httpClient.post(
+      uri,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'prompt': prompt,
+        if (userId != null && userId.trim().isNotEmpty) 'user_id': userId,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data is Map<String, dynamic>) return data;
+      if (data is Map) return Map<String, dynamic>.from(data);
+      throw Exception('Video generation returned an unexpected response');
+    }
+
+    throw Exception(
+      'Video generation failed: ${response.statusCode} ${response.body}',
+    );
+  }
+
   /// GET /api/v1/user/me/notifications — paged list for the current user.
   /// Also accepts the legacy shape from GET /api/v1/notification/.
   Future<List<AppNotification>> getNotifications({

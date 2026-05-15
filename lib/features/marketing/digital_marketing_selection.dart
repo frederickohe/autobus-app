@@ -13,7 +13,7 @@ class DigitalMarketingSelection extends StatefulWidget {
 }
 
 class _DigitalMarketingSelectionState extends State<DigitalMarketingSelection> {
-  _MarketingType? _selected;
+  final Set<_MarketingType> _selected = <_MarketingType>{};
 
   static const _accent = Color(0xFF251446);
 
@@ -29,7 +29,7 @@ class _DigitalMarketingSelectionState extends State<DigitalMarketingSelection> {
   }
 
   void _onGetStarted() {
-    if (_selected == null) {
+    if (_selected.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -43,8 +43,9 @@ class _DigitalMarketingSelectionState extends State<DigitalMarketingSelection> {
 
     Navigator.of(context).push<void>(
       MaterialPageRoute<void>(
-        builder: (_) =>
-            DigitalMarketingPage(initialSelected: {_mapType(_selected!)}),
+        builder: (_) => DigitalMarketingPage(
+          initialSelected: _selected.map(_mapType).toSet(),
+        ),
       ),
     );
   }
@@ -54,9 +55,15 @@ class _DigitalMarketingSelectionState extends State<DigitalMarketingSelection> {
     required IconData icon,
     required _MarketingType type,
   }) {
-    final selected = _selected == type;
+    final selected = _selected.contains(type);
     return GestureDetector(
-      onTap: () => setState(() => _selected = type),
+      onTap: () => setState(() {
+        if (selected) {
+          _selected.remove(type);
+        } else {
+          _selected.add(type);
+        }
+      }),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 220),
         width: double.infinity,
