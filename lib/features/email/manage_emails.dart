@@ -116,13 +116,17 @@ class _ManageEmailsState extends State<ManageEmails> {
                               child: SizedBox(
                                 width: 28,
                                 height: 28,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
                               ),
                             ),
                             const SizedBox(height: 24),
                           ] else if (_loadError != null) ...[
                             _EmailNoticePanel(
-                              backgroundColor: Colors.amber.withValues(alpha: 0.12),
+                              backgroundColor: Colors.amber.withValues(
+                                alpha: 0.12,
+                              ),
                               borderColor: Colors.amber.withValues(alpha: 0.45),
                               icon: Icons.cloud_off_outlined,
                               iconColor: Colors.amber.shade300,
@@ -152,10 +156,12 @@ class _ManageEmailsState extends State<ManageEmails> {
                             const SizedBox(height: 32),
                           ] else if (!_hasSenderEmail) ...[
                             _EmailNoticePanel(
-                              backgroundColor: const Color(0xFF581C87)
-                                  .withValues(alpha: 0.1),
-                              borderColor:
-                                  const Color(0xFF9333EA).withValues(alpha: 0.5),
+                              backgroundColor: const Color(
+                                0xFF581C87,
+                              ).withValues(alpha: 0.1),
+                              borderColor: const Color(
+                                0xFF9333EA,
+                              ).withValues(alpha: 0.5),
                               icon: Icons.warning_rounded,
                               iconColor: Colors.red.shade400,
                               trailing: TextButton(
@@ -174,7 +180,8 @@ class _ManageEmailsState extends State<ManageEmails> {
                                     horizontal: 8,
                                   ),
                                   minimumSize: Size.zero,
-                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                  tapTargetSize:
+                                      MaterialTapTargetSize.shrinkWrap,
                                 ),
                                 child: Text(
                                   'Profile',
@@ -209,7 +216,7 @@ class _ManageEmailsState extends State<ManageEmails> {
                             children: [
                               _EmailHubCard(
                                 icon: Icons.auto_awesome_outlined,
-                                title: 'Email Assistant',
+                                title: 'Send Mails',
                                 onTap: () {
                                   Navigator.push<void>(
                                     context,

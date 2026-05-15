@@ -4,6 +4,8 @@ class AppNotification {
   final String body;
   final DateTime? createdAt;
   final bool read;
+  /// Target screen from backend `data.flutterpage` (e.g. Profile, Security).
+  final String? flutterPage;
 
   const AppNotification({
     required this.id,
@@ -11,7 +13,14 @@ class AppNotification {
     required this.body,
     required this.createdAt,
     required this.read,
+    this.flutterPage,
   });
+
+  String get displayText {
+    if (body.trim().isNotEmpty) return body.trim();
+    if (title.trim().isNotEmpty && title != 'Notification') return title.trim();
+    return '';
+  }
 
   static bool _truthy(dynamic v) {
     if (v == null) return false;
@@ -55,7 +64,8 @@ class AppNotification {
             'Notification')
         .toString();
 
-    final body = (data['body'] ??
+    final body = (data['description'] ??
+            data['body'] ??
             data['message'] ??
             data['content'] ??
             json['body'] ??
@@ -64,6 +74,13 @@ class AppNotification {
             json['detail'] ??
             '')
         .toString();
+
+    final flutterPage = (data['flutterpage'] ??
+            data['flutter_page'] ??
+            data['flutterPage'] ??
+            '')
+        .toString()
+        .trim();
 
     final createdAt = _parseDate(
       json['created_at'] ??
@@ -85,6 +102,7 @@ class AppNotification {
       body: body,
       createdAt: createdAt,
       read: read,
+      flutterPage: flutterPage.isEmpty ? null : flutterPage,
     );
   }
 }

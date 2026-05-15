@@ -116,13 +116,17 @@ class _ManageProductsState extends State<ManageProducts> {
                               child: SizedBox(
                                 width: 28,
                                 height: 28,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
                               ),
                             ),
                             const SizedBox(height: 24),
                           ] else if (_loadError != null) ...[
                             _ProductNoticePanel(
-                              backgroundColor: Colors.amber.withValues(alpha: 0.12),
+                              backgroundColor: Colors.amber.withValues(
+                                alpha: 0.12,
+                              ),
                               borderColor: Colors.amber.withValues(alpha: 0.45),
                               icon: Icons.cloud_off_outlined,
                               iconColor: Colors.amber.shade300,
@@ -152,14 +156,16 @@ class _ManageProductsState extends State<ManageProducts> {
                             const SizedBox(height: 32),
                           ] else if (!_hasCatalogueFiles) ...[
                             _ProductNoticePanel(
-                              backgroundColor: const Color(0xFF581C87)
-                                  .withValues(alpha: 0.1),
-                              borderColor:
-                                  const Color(0xFF9333EA).withValues(alpha: 0.5),
+                              backgroundColor: const Color(
+                                0xFF581C87,
+                              ).withValues(alpha: 0.1),
+                              borderColor: const Color(
+                                0xFF9333EA,
+                              ).withValues(alpha: 0.5),
                               icon: Icons.warning_rounded,
                               iconColor: Colors.red.shade400,
                               child: Text(
-                                'You have no files in your product catalogue yet. Add documents in View Products or use the assistant to build your library.',
+                                'You have no products in your catalogue.',
                                 style: GoogleFonts.montserrat(
                                   color: Colors.white.withValues(alpha: 0.85),
                                   fontSize: 12,

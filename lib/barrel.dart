@@ -63,6 +63,8 @@ export 'package:autobus/features/settings/notification.dart';
 export 'package:autobus/features/settings/security.dart';
 export 'package:autobus/features/settings/help.dart';
 export 'package:autobus/features/analytics/analytics.dart';
+export 'package:autobus/features/reports/manage_reports.dart';
+export 'package:autobus/features/notifications/models/app_notification.dart';
 export 'package:autobus/features/notifications/notifications_inbox.dart';
 
 // Subscription

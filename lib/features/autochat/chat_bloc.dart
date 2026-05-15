@@ -20,18 +20,21 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       current = List.from((state as ChatLoadSuccess).messages);
     }
 
-    // Optimistic user message
-    final userMsg = ChatMessage(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      userId: event.phone,
-      text: event.message,
-      timestamp: DateTime.now(),
-      sender: Sender.user,
-      status: MessageStatus.pending,
-    );
-
-    current.add(userMsg);
-    emit(ChatLoadSuccess(List.from(current)));
+    ChatMessage? userMsg;
+    if (!event.hidden) {
+      userMsg = ChatMessage(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        userId: event.phone,
+        text: event.message,
+        timestamp: DateTime.now(),
+        sender: Sender.user,
+        status: MessageStatus.pending,
+      );
+      current.add(userMsg);
+      emit(ChatLoadSuccess(List.from(current)));
+    } else if (current.isEmpty) {
+      emit(ChatLoadInProgress());
+    }
 
     try {
       final botReply = await repository.sendMessage(
@@ -40,18 +43,28 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
         context: event.context,
       );
 
-      // mark user message as sent
+      if (event.hidden) {
+        emit(ChatLoadSuccess([botReply]));
+        return;
+      }
+
       final updated = current.map((m) {
-        if (m.id == userMsg.id) return m.copyWith(status: MessageStatus.sent);
+        if (m.id == userMsg!.id) return m.copyWith(status: MessageStatus.sent);
         return m;
       }).toList();
 
       updated.add(botReply);
       emit(ChatLoadSuccess(updated));
     } catch (e) {
-      // mark user message as failed
+      if (event.hidden && current.isEmpty) {
+        emit(ChatLoadFailure(e.toString()));
+        return;
+      }
+
       final failed = current.map((m) {
-        if (m.id == userMsg.id) return m.copyWith(status: MessageStatus.failed);
+        if (userMsg != null && m.id == userMsg.id) {
+          return m.copyWith(status: MessageStatus.failed);
+        }
         return m;
       }).toList();
       emit(ChatLoadSuccess(failed));

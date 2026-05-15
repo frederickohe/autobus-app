@@ -166,6 +166,28 @@ class _AutoBusChatUIState extends State<_AutoBusChatUI> {
       if (mounted) setState(() {});
     };
     _listen.addListener(_controllerListener);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _sendHiddenHello());
+  }
+
+  String _userPhone() {
+    final user = widget.user;
+    if (user is Map &&
+        (user['phone'] ?? user['phoneNumber']) != null) {
+      return (user['phone'] ?? user['phoneNumber']).toString();
+    }
+    return 'unknown';
+  }
+
+  void _sendHiddenHello() {
+    if (!mounted) return;
+    context.read<ChatBloc>().add(
+      SendMessage(
+        phone: _userPhone(),
+        message: 'hello',
+        context: widget.webhookContext,
+        hidden: true,
+      ),
+    );
   }
 
   @override
@@ -177,15 +199,9 @@ class _AutoBusChatUIState extends State<_AutoBusChatUI> {
   void _sendMessage() {
     if (widget.controller.text.isEmpty) return;
 
-    final String phone =
-        (widget.user is Map &&
-            (widget.user['phone'] ?? widget.user['phone']) != null)
-        ? (widget.user['phone'] ?? widget.user['phone']).toString()
-        : 'unknown';
-
     context.read<ChatBloc>().add(
       SendMessage(
-        phone: phone,
+        phone: _userPhone(),
         message: widget.controller.text,
         context: widget.webhookContext,
       ),
@@ -714,14 +730,8 @@ class _AutoBusChatUIState extends State<_AutoBusChatUI> {
 
   @override
   Widget build(BuildContext context) {
-    final user = widget.user;
     final controller = widget.controller;
     final title = widget.title;
-    String username = "User";
-
-    if (user is Map && user.containsKey('fullname')) {
-      username = user['fullname'];
-    }
 
     return Container(
       color: Colors.white,
@@ -771,7 +781,7 @@ class _AutoBusChatUIState extends State<_AutoBusChatUI> {
                     ),
                     Align(
                       alignment: Alignment.centerRight,
-                      child: _avatarButton(user),
+                      child: _avatarButton(widget.user),
                     ),
                   ],
                 ),
@@ -789,21 +799,37 @@ class _AutoBusChatUIState extends State<_AutoBusChatUI> {
                     Expanded(
                       child: BlocBuilder<ChatBloc, ChatState>(
                         builder: (context, state) {
-                          List<ChatMessage> msgs = [];
-                          if (state is ChatLoadSuccess) msgs = state.messages;
+                          if (state is ChatLoadInProgress) {
+                            return const Center(
+                              child: CircularProgressIndicator(
+                                color: _purple,
+                              ),
+                            );
+                          }
 
-                          if (msgs.isEmpty) {
+                          if (state is ChatLoadFailure) {
                             return ListView(
                               padding: const EdgeInsets.only(top: 8),
                               children: [
                                 Align(
                                   alignment: Alignment.centerLeft,
                                   child: _chatBubble(
-                                    'Hello $username, what task we performing today?',
+                                    'Unable to start the conversation. Please try again.',
                                     isUser: false,
                                   ),
                                 ),
                               ],
+                            );
+                          }
+
+                          List<ChatMessage> msgs = [];
+                          if (state is ChatLoadSuccess) msgs = state.messages;
+
+                          if (msgs.isEmpty) {
+                            return const Center(
+                              child: CircularProgressIndicator(
+                                color: _purple,
+                              ),
                             );
                           }
 

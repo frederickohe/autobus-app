@@ -214,129 +214,75 @@ class _ViewProductsPageState extends State<ViewProductsPage> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          const DecoratedBox(
-            decoration: ManageScreenStyle.homeDashboardBodyDecoration,
+  bool get _hasNothingToShow =>
+      _products.isEmpty && _documents.isEmpty;
+
+  bool get _showEmptyState =>
+      _hasNothingToShow && _productsError == null && _loadError == null;
+
+  String? get _blockingError => _productsError ?? _loadError;
+
+  Widget _emptyStateList() {
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      children: [
+        SizedBox(height: MediaQuery.sizeOf(context).height * 0.25),
+        Center(
+          child: Text(
+            'No products yet',
+            style: GoogleFonts.outfit(
+              color: Colors.white.withValues(alpha: 0.6),
+              fontSize: 16,
+            ),
           ),
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const ManageScreenBackButton(),
-                      const SizedBox(width: 18),
-                      Expanded(
-                        child: Text(
-                          'Product catalogue',
-                          style: ManageScreenStyle.headerTitleStyle(),
-                        ),
-                      ),
-                    ],
+        ),
+      ],
+    );
+  }
+
+  List<Widget> _productSectionChildren() {
+    if (_products.isEmpty) return [];
+    return [
+      _sectionTitle('Products'),
+      ..._products.map(_productCard),
+      const SizedBox(height: 8),
+    ];
+  }
+
+  List<Widget> _catalogueSectionChildren() {
+    if (_documents.isEmpty && _loadError == null) return [];
+    return [
+      _sectionTitle('Catalogue files'),
+      if (_loadError != null)
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Text(
+                  _loadError!,
+                  style: GoogleFonts.outfit(
+                    color: Colors.white.withValues(alpha: 0.65),
+                    fontSize: 13,
                   ),
-                  const SizedBox(height: 32),
-                  Expanded(
-                    child: _loading
-                        ? const Center(
-                            child: SizedBox(
-                              width: 32,
-                              height: 32,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            ),
-                          )
-                        : RefreshIndicator(
-                            color: const Color(0xFFA855F7),
-                            onRefresh: _loadAll,
-                            child: ListView(
-                              physics: const AlwaysScrollableScrollPhysics(),
-                              children: [
-                                _sectionTitle('Products'),
-                                if (_productsError != null)
-                                  Padding(
-                                    padding: const EdgeInsets.only(bottom: 16),
-                                    child: Text(
-                                      _productsError!,
-                                      style: GoogleFonts.outfit(
-                                        color: Colors.white.withValues(
-                                          alpha: 0.65,
-                                        ),
-                                        fontSize: 13,
-                                      ),
-                                    ),
-                                  )
-                                else if (_products.isEmpty)
-                                  Padding(
-                                    padding: const EdgeInsets.only(bottom: 20),
-                                    child: Text(
-                                      'No products from the server yet',
-                                      style: GoogleFonts.outfit(
-                                        color: Colors.white.withValues(
-                                          alpha: 0.55,
-                                        ),
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                  )
-                                else
-                                  ..._products.map(_productCard),
-                                const SizedBox(height: 8),
-                                _sectionTitle('Catalogue files'),
-                                if (_loadError != null)
-                                  Padding(
-                                    padding: const EdgeInsets.only(bottom: 12),
-                                    child: Row(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Expanded(
-                                          child: Text(
-                                            _loadError!,
-                                            style: GoogleFonts.outfit(
-                                              color: Colors.white.withValues(
-                                                alpha: 0.65,
-                                              ),
-                                              fontSize: 13,
-                                            ),
-                                          ),
-                                        ),
-                                        TextButton(
-                                          onPressed: _loadAll,
-                                          child: Text(
-                                            'Retry',
-                                            style: GoogleFonts.outfit(
-                                              color: const Color(0xFFA855F7),
-                                              fontSize: 14,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  )
-                                else if (_documents.isEmpty)
-                                  Padding(
-                                    padding: const EdgeInsets.only(bottom: 12),
-                                    child: Text(
-                                      'No catalogue files yet',
-                                      style: GoogleFonts.outfit(
-                                        color: Colors.white.withValues(
-                                          alpha: 0.55,
-                                        ),
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                  )
-                                else
-                                  ...List.generate(_documents.length, (
-                                    index,
-                                  ) {
+                ),
+              ),
+              TextButton(
+                onPressed: _loadAll,
+                child: Text(
+                  'Retry',
+                  style: GoogleFonts.outfit(
+                    color: const Color(0xFFA855F7),
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        )
+      else
+        ...List.generate(_documents.length, (index) {
                                     final doc = _documents[index];
                                     final name = _fileName(doc);
                                     final key = _objectKey(doc);
@@ -457,9 +403,95 @@ class _ViewProductsPageState extends State<ViewProductsPage> {
                                         ),
                                       ),
                                     );
-                                  }),
+        }),
+    ];
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          const DecoratedBox(
+            decoration: ManageScreenStyle.homeDashboardBodyDecoration,
+          ),
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const ManageScreenBackButton(),
+                      const SizedBox(width: 18),
+                      Expanded(
+                        child: Text(
+                          'Product catalogue',
+                          style: ManageScreenStyle.headerTitleStyle(),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 32),
+                  Expanded(
+                    child: _loading
+                        ? const Center(
+                            child: SizedBox(
+                              width: 32,
+                              height: 32,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          )
+                        : _blockingError != null && _hasNothingToShow
+                        ? Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                  ),
+                                  child: Text(
+                                    _blockingError!,
+                                    textAlign: TextAlign.center,
+                                    style: GoogleFonts.outfit(
+                                      color: Colors.white.withValues(
+                                        alpha: 0.75,
+                                      ),
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                TextButton(
+                                  onPressed: _loadAll,
+                                  child: Text(
+                                    'Retry',
+                                    style: GoogleFonts.outfit(
+                                      color: const Color(0xFFA855F7),
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ),
                               ],
                             ),
+                          )
+                        : RefreshIndicator(
+                            color: const Color(0xFFA855F7),
+                            onRefresh: _loadAll,
+                            child: _showEmptyState
+                                ? _emptyStateList()
+                                : ListView(
+                                    physics:
+                                        const AlwaysScrollableScrollPhysics(),
+                                    children: [
+                                      ..._productSectionChildren(),
+                                      ..._catalogueSectionChildren(),
+                                    ],
+                                  ),
                           ),
                   ),
                 ],

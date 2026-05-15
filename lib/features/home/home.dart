@@ -45,47 +45,61 @@ class Home extends StatefulWidget {
 
 class _HomeState extends State<Home> {
   Future<int>? _unreadCountFuture;
-
-  @override
-  void initState() {
-    super.initState();
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
-  }
+  Future<List<AppNotification>>? _alertsFuture;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _unreadCountFuture ??= context
-        .read<ApiService>()
-        .getUnreadNotificationCount();
+    final api = context.read<ApiService>();
+    _unreadCountFuture ??= api.getUnreadNotificationCount();
+    _alertsFuture ??= api.getUnreadNotifications();
   }
 
-  Future<void> _refreshUnread() async {
+  Future<void> _refreshNotifications() async {
+    final api = context.read<ApiService>();
     setState(() {
-      _unreadCountFuture = context
-          .read<ApiService>()
-          .getUnreadNotificationCount();
+      _unreadCountFuture = api.getUnreadNotificationCount();
+      _alertsFuture = api.getUnreadNotifications();
     });
+  }
+
+  void _openNotificationTarget(AppNotification notification) {
+    switch (notification.flutterPage?.toLowerCase()) {
+      case 'profile':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const Profile()),
+        );
+        break;
+      case 'security':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const Security()),
+        );
+        break;
+      default:
+        break;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    print('=== HOME SCREEN BUILDING ===');
     final List<HomeMenuItem> menuItems = [
+      HomeMenuItem("Your AI", Mdi.account_group_outline, () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const AutoBus(
+              title: 'Interactions',
+              webhookContext: 'interactions_agent',
+            ),
+          ),
+        );
+      }),
       HomeMenuItem("Intelligence", MaterialSymbols.psychology_outline, () {
         Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => const ManageIntelligence()),
-        );
-      }),
-      HomeMenuItem("Interact", Mdi.account_group_outline, () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const ManageInteractions()),
         );
       }),
       HomeMenuItem("Chats", Mdi.chat_outline, () {
@@ -121,7 +135,7 @@ class _HomeState extends State<Home> {
       HomeMenuItem("Reports", MaterialSymbols.account_balance, () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => const AnalyticsPage()),
+          MaterialPageRoute(builder: (_) => const ManageReports()),
         );
       }),
     ];
@@ -169,7 +183,7 @@ class _HomeState extends State<Home> {
                                       const NotificationsInboxPage(),
                                 ),
                               );
-                              await _refreshUnread();
+                              await _refreshNotifications();
                             },
                             child: _notificationBell(unreadCount: unread),
                           );
@@ -216,26 +230,32 @@ class _HomeState extends State<Home> {
                     },
                   ),
                   const SizedBox(height: 32),
-                  _AlertBox(
-                    text: 'You need to set up your business profile',
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const Profile()),
+                  FutureBuilder<List<AppNotification>>(
+                    future: _alertsFuture,
+                    builder: (context, snap) {
+                      if (snap.connectionState != ConnectionState.done) {
+                        return const SizedBox(height: 36);
+                      }
+                      final alerts = snap.data ?? const [];
+                      if (alerts.isEmpty) {
+                        return const SizedBox(height: 36);
+                      }
+                      return Column(
+                        children: [
+                          for (var i = 0; i < alerts.length; i++) ...[
+                            if (i > 0) const SizedBox(height: 12),
+                            _AlertBox(
+                              text: alerts[i].displayText.isNotEmpty
+                                  ? alerts[i].displayText
+                                  : alerts[i].title,
+                              onTap: () => _openNotificationTarget(alerts[i]),
+                            ),
+                          ],
+                          const SizedBox(height: 36),
+                        ],
                       );
                     },
                   ),
-                  const SizedBox(height: 12),
-                  _AlertBox(
-                    text: 'Enable 2FA to ensure added security',
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const Security()),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 36),
                   GridView.builder(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),

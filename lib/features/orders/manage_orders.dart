@@ -94,21 +94,6 @@ class ManageOrders extends StatelessWidget {
                                   );
                                 },
                               ),
-                              _OrderHubCard(
-                                icon: Icons.auto_awesome_outlined,
-                                title: 'Order Assistant',
-                                onTap: () {
-                                  Navigator.push<void>(
-                                    context,
-                                    MaterialPageRoute<void>(
-                                      builder: (_) => const AutoBus(
-                                        title: 'Orders',
-                                        webhookContext: 'order_agent',
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
                             ],
                           ),
                           const SizedBox(height: 40),

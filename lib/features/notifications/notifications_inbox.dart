@@ -10,24 +10,55 @@ class NotificationsInboxPage extends StatefulWidget {
 
 class _NotificationsInboxPageState extends State<NotificationsInboxPage> {
   late Future<List<AppNotification>> _future;
+  final Set<String> _markingIds = {};
 
   @override
   void initState() {
     super.initState();
-    _future = context.read<ApiService>().getNotifications();
+    _future = _loadUnread();
+  }
+
+  Future<List<AppNotification>> _loadUnread() {
+    return context.read<ApiService>().getUnreadNotifications();
   }
 
   Future<void> _refresh() async {
     setState(() {
-      _future = context.read<ApiService>().getNotifications();
+      _future = _loadUnread();
     });
+    await _future;
+  }
+
+  Future<void> _markAsRead(AppNotification notification) async {
+    if (_markingIds.contains(notification.id)) return;
+    setState(() => _markingIds.add(notification.id));
+    try {
+      await context.read<ApiService>().markNotificationAsRead(notification.id);
+      if (!mounted) return;
+      await _refresh();
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Could not mark notification as read',
+            style: GoogleFonts.montserrat(fontWeight: FontWeight.w300),
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _markingIds.remove(notification.id));
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: ManageScreenStyle.backgroundEnd,
-      body: _GradientBackground(
+      backgroundColor: Colors.black,
+      body: DecoratedBox(
+        decoration: ManageScreenStyle.homeDashboardBodyDecoration,
         child: SafeArea(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 18),
@@ -83,15 +114,16 @@ class _NotificationsInboxPageState extends State<NotificationsInboxPage> {
                         child: ListView.separated(
                           physics: const AlwaysScrollableScrollPhysics(),
                           itemCount: items.length,
-                          separatorBuilder: (_, __) => const SizedBox(height: 10),
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(height: 10),
                           itemBuilder: (context, i) {
                             final n = items[i];
                             final created = n.createdAt;
                             final subtitle = [
-                              if (n.body.trim().isNotEmpty) n.body.trim(),
                               if (created != null)
                                 '${created.toLocal()}'.split('.').first,
                             ].join('\n');
+                            final marking = _markingIds.contains(n.id);
 
                             return Container(
                               padding: const EdgeInsets.symmetric(
@@ -101,11 +133,8 @@ class _NotificationsInboxPageState extends State<NotificationsInboxPage> {
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(16),
                                 border: Border.all(
-                                  color: const Color(0xFFA92FEB),
-                                  width: 0.5,
-                                ),
-                                color: Colors.white.withValues(
-                                  alpha: n.read ? 0.03 : 0.06,
+                                  color: const Color(0xFF3F1163),
+                                  width: 1,
                                 ),
                               ),
                               child: Row(
@@ -115,23 +144,24 @@ class _NotificationsInboxPageState extends State<NotificationsInboxPage> {
                                     width: 10,
                                     height: 10,
                                     margin: const EdgeInsets.only(top: 6),
-                                    decoration: BoxDecoration(
-                                      color: n.read
-                                          ? Colors.transparent
-                                          : const Color(0xFFE53935),
+                                    decoration: const BoxDecoration(
+                                      color: Color(0xFFEF4444),
                                       shape: BoxShape.circle,
                                     ),
                                   ),
                                   const SizedBox(width: 10),
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          n.title,
+                                          n.displayText.isNotEmpty
+                                              ? n.displayText
+                                              : n.title,
                                           style: GoogleFonts.montserrat(
                                             color: Colors.white,
-                                            fontSize: 13,
+                                            fontSize: 12,
                                             fontWeight: FontWeight.w400,
                                           ),
                                         ),
@@ -148,6 +178,37 @@ class _NotificationsInboxPageState extends State<NotificationsInboxPage> {
                                         ],
                                       ],
                                     ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  TextButton(
+                                    onPressed: marking
+                                        ? null
+                                        : () => _markAsRead(n),
+                                    style: TextButton.styleFrom(
+                                      foregroundColor: const Color(0xFFA855F7),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 4,
+                                      ),
+                                      minimumSize: Size.zero,
+                                      tapTargetSize:
+                                          MaterialTapTargetSize.shrinkWrap,
+                                    ),
+                                    child: marking
+                                        ? const SizedBox(
+                                            width: 16,
+                                            height: 16,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                            ),
+                                          )
+                                        : Text(
+                                            'Mark read',
+                                            style: GoogleFonts.montserrat(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w400,
+                                            ),
+                                          ),
                                   ),
                                 ],
                               ),
@@ -166,17 +227,3 @@ class _NotificationsInboxPageState extends State<NotificationsInboxPage> {
     );
   }
 }
-
-class _GradientBackground extends StatelessWidget {
-  final Widget child;
-  const _GradientBackground({required this.child});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: ManageScreenStyle.bodyGradientDecoration(),
-      child: child,
-    );
-  }
-}
-

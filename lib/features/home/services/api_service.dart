@@ -769,6 +769,73 @@ class ApiService {
     return 0.0;
   }
 
+  /// GET /api/v1/payment/revenue/{timeline} — revenue for TODAY, THIS_WEEK, etc.
+  Future<double> getRevenueByTimeline(String timeline) async {
+    final key = timeline.trim().toUpperCase();
+    if (key.isEmpty || key == 'ALL') return getTotalRevenue();
+    final response = await httpClient.get(
+      Uri.parse('$baseUrl/payment/revenue/$key'),
+    );
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return (data as num).toDouble();
+    }
+    return 0.0;
+  }
+
+  /// GET /api/v1/products/inventory/low-stock
+  Future<List<Map<String, dynamic>>> getLowStockInventory({
+    double threshold = 0.5,
+  }) async {
+    final uri = Uri.parse('$baseUrl/products/inventory/low-stock').replace(
+      queryParameters: {'threshold': '$threshold'},
+    );
+    final response = await httpClient.get(uri);
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data is! List) return [];
+      return data
+          .map((e) {
+            if (e is Map<String, dynamic>) return e;
+            if (e is Map) return Map<String, dynamic>.from(e);
+            return <String, dynamic>{};
+          })
+          .where((m) => m.isNotEmpty)
+          .toList();
+    }
+    if (response.statusCode == 401) {
+      throw Exception('Session expired');
+    }
+    return [];
+  }
+
+  /// GET /api/v1/interventions/list
+  Future<List<Map<String, dynamic>>> listInterventions({
+    String? status,
+    int limit = 50,
+  }) async {
+    final qp = <String, String>{'limit': '$limit'};
+    final trimmedStatus = status?.trim();
+    if (trimmedStatus != null && trimmedStatus.isNotEmpty) {
+      qp['status'] = trimmedStatus;
+    }
+    final uri = Uri.parse('$baseUrl/interventions/list').replace(
+      queryParameters: qp,
+    );
+    final response = await httpClient.get(uri);
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data is Map) {
+        return _decodeMapList(data['items']);
+      }
+      if (data is List) return _decodeMapList(data);
+    }
+    if (response.statusCode == 401) {
+      throw Exception('Session expired');
+    }
+    return [];
+  }
+
   /// Get financial transaction history
   Future<List<Map<String, dynamic>>> getFinancials({
     int page = 1,
@@ -854,12 +921,20 @@ class ApiService {
 
   /// GET /api/v1/user/me/notifications — paged list for the current user.
   /// Also accepts the legacy shape from GET /api/v1/notification/.
-  Future<List<AppNotification>> getNotifications({int page = 1, int size = 100}) async {
+  Future<List<AppNotification>> getNotifications({
+    int page = 1,
+    int size = 100,
+    String? status,
+  }) async {
+    final queryParameters = <String, String>{
+      'page': '$page',
+      'size': '$size',
+    };
+    if (status != null && status.trim().isNotEmpty) {
+      queryParameters['status'] = status.trim();
+    }
     final uri = Uri.parse('$baseUrl/user/me/notifications').replace(
-      queryParameters: {
-        'page': '$page',
-        'size': '$size',
-      },
+      queryParameters: queryParameters,
     );
     final response = await httpClient.get(uri);
     if (response.statusCode == 200) {
@@ -888,13 +963,47 @@ class ApiService {
     );
   }
 
+  Future<List<AppNotification>> getUnreadNotifications({
+    int page = 1,
+    int size = 100,
+  }) async {
+    final items = await getNotifications(
+      page: page,
+      size: size,
+      status: 'UNREAD',
+    );
+    return items.where((n) => !n.read).toList();
+  }
+
   Future<int> getUnreadNotificationCount() async {
     try {
-      final items = await getNotifications();
-      return items.where((n) => !n.read).length;
+      final items = await getUnreadNotifications();
+      return items.length;
     } catch (_) {
       return 0;
     }
+  }
+
+  /// PATCH /api/v1/notification/{id}/read
+  Future<AppNotification> markNotificationAsRead(String notificationId) async {
+    final response = await httpClient.patch(
+      Uri.parse('$baseUrl/notification/$notificationId/read'),
+    );
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data is Map<String, dynamic>) {
+        return AppNotification.fromJson(data);
+      }
+      if (data is Map) {
+        return AppNotification.fromJson(Map<String, dynamic>.from(data));
+      }
+      throw Exception('Invalid mark-as-read response');
+    } else if (response.statusCode == 401) {
+      throw Exception('Session expired');
+    }
+    throw Exception(
+      'Failed to mark notification as read: ${response.statusCode} ${response.body}',
+    );
   }
 
   /// GET /api/v1/chatwoot/status — env + workspace mapping (no subscription required).
@@ -915,7 +1024,7 @@ class ApiService {
     throw Exception(msg ?? 'Chatwoot status failed (${response.statusCode})');
   }
 
-  /// GET /api/v1/orders/ — paged list; optional [orderStatus] filter (e.g. `pending`).
+  /// GET /api/v1/orders/me — current user's orders; optional [orderStatus] filter.
   Future<List<Map<String, dynamic>>> listOrders({
     int skip = 0,
     int limit = 100,
@@ -929,7 +1038,7 @@ class ApiService {
     if (trimmedStatus != null && trimmedStatus.isNotEmpty) {
       qp['order_status'] = trimmedStatus;
     }
-    final uri = Uri.parse('$baseUrl/orders/').replace(queryParameters: qp);
+    final uri = Uri.parse('$baseUrl/orders/me').replace(queryParameters: qp);
     final response = await httpClient.get(uri);
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
@@ -952,7 +1061,7 @@ class ApiService {
     );
   }
 
-  /// GET /api/v1/products/ — paged list; optional [category] filter.
+  /// GET /api/v1/products/me — current user's products; optional [category] filter.
   Future<List<Map<String, dynamic>>> listProducts({
     int skip = 0,
     int limit = 100,
@@ -966,7 +1075,7 @@ class ApiService {
     if (trimmedCategory != null && trimmedCategory.isNotEmpty) {
       qp['category'] = trimmedCategory;
     }
-    final uri = Uri.parse('$baseUrl/products/').replace(queryParameters: qp);
+    final uri = Uri.parse('$baseUrl/products/me').replace(queryParameters: qp);
     final response = await httpClient.get(uri);
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
@@ -987,6 +1096,46 @@ class ApiService {
       _httpDetailMessage(response.body) ??
           'Failed to load products (${response.statusCode})',
     );
+  }
+
+  /// GET /api/v1/conversations/me — `{ completed, intervention_active }` for the current user.
+  Future<Map<String, List<Map<String, dynamic>>>> listMyConversations({
+    int skip = 0,
+    int limit = 100,
+  }) async {
+    final uri = Uri.parse('$baseUrl/conversations/me').replace(
+      queryParameters: {'skip': '$skip', 'limit': '$limit'},
+    );
+    final response = await httpClient.get(uri);
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data is! Map) {
+        return {'completed': [], 'intervention_active': []};
+      }
+      return {
+        'completed': _decodeMapList(data['completed']),
+        'intervention_active': _decodeMapList(data['intervention_active']),
+      };
+    }
+    if (response.statusCode == 401) {
+      throw Exception('Session expired');
+    }
+    throw Exception(
+      _httpDetailMessage(response.body) ??
+          'Failed to load conversations (${response.statusCode})',
+    );
+  }
+
+  List<Map<String, dynamic>> _decodeMapList(dynamic raw) {
+    if (raw is! List) return [];
+    return raw
+        .map((e) {
+          if (e is Map<String, dynamic>) return e;
+          if (e is Map) return Map<String, dynamic>.from(e);
+          return <String, dynamic>{};
+        })
+        .where((m) => m.isNotEmpty)
+        .toList();
   }
 
   /// GET /api/v1/user/me/emails/sent — body `{ emails: [...], total_returned }`.
