@@ -63,8 +63,25 @@ class _AllOrdersHistoryState extends State<AllOrdersHistory> {
     }
   }
 
-  Widget _orderTile(Map<String, dynamic> o) {
-    return Container(
+  void _openOrder(BuildContext context, Map<String, dynamic> o) {
+    final orderId = (o['order_id'] ?? '').toString().trim();
+    if (orderId.isEmpty) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => OrderDetailScreen(
+          orderId: orderId,
+          initialTitle: _orderHistoryTitle(o),
+        ),
+      ),
+    );
+  }
+
+  Widget _orderTile(BuildContext context, Map<String, dynamic> o) {
+    return GestureDetector(
+      onTap: () => _openOrder(context, o),
+      behavior: HitTestBehavior.opaque,
+      child: Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         border: Border.all(color: const Color(0xFF3F1163), width: 1),
@@ -117,6 +134,7 @@ class _AllOrdersHistoryState extends State<AllOrdersHistory> {
             ],
           ),
         ],
+      ),
       ),
     );
   }
@@ -226,7 +244,7 @@ class _AllOrdersHistoryState extends State<AllOrdersHistory> {
                                     separatorBuilder: (_, __) =>
                                         const SizedBox(height: 16),
                                     itemBuilder: (context, index) {
-                                      return _orderTile(_orders[index]);
+                                      return _orderTile(context, _orders[index]);
                                     },
                                   ),
                           ),

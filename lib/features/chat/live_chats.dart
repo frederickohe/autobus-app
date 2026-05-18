@@ -18,6 +18,12 @@ String _liveChatSubtitleId(Map<String, dynamic> c) {
   return '';
 }
 
+String _liveChatSubtitlePhoneOrId(Map<String, dynamic> c) {
+  final phone = (c['customer_phone'] ?? '').toString().trim();
+  if (phone.isNotEmpty) return phone;
+  return _liveChatSubtitleId(c);
+}
+
 String _formatLiveChatDate(Map<String, dynamic> c) {
   final raw = c['updated_at']?.toString() ?? c['conversation_date']?.toString();
   final dt = DateTime.tryParse(raw ?? '');
@@ -44,6 +50,26 @@ class _LiveChatsPageState extends State<LiveChatsPage> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) => _loadChats());
+  }
+
+  void _openConversation(BuildContext context, Map<String, dynamic> c) {
+    final sessionId = c['id'];
+    final sid = sessionId is int
+        ? sessionId
+        : (sessionId is num ? sessionId.toInt() : null);
+    if (sid == null) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ConversationDetailScreen(
+          title: _liveChatTitle(c),
+          mode: ConversationScreenMode.liveChat,
+          sessionId: sid,
+        ),
+      ),
+    ).then((_) {
+      if (mounted) _loadChats();
+    });
   }
 
   Future<void> _loadChats() async {
@@ -177,8 +203,9 @@ class _LiveChatsPageState extends State<LiveChatsPage> {
                                       final c = _chats[index];
                                       return _LiveChatTile(
                                         title: _liveChatTitle(c),
-                                        id: _liveChatSubtitleId(c),
+                                        id: _liveChatSubtitlePhoneOrId(c),
                                         date: _formatLiveChatDate(c),
+                                        onTap: () => _openConversation(context, c),
                                       );
                                     },
                                   ),
@@ -198,16 +225,21 @@ class _LiveChatTile extends StatelessWidget {
   final String title;
   final String id;
   final String date;
+  final VoidCallback? onTap;
 
   const _LiveChatTile({
     required this.title,
     required this.id,
     required this.date,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
       width: double.infinity,
       constraints: const BoxConstraints(minHeight: 83),
       decoration: BoxDecoration(
@@ -257,6 +289,7 @@ class _LiveChatTile extends StatelessWidget {
             ],
           ),
         ],
+      ),
       ),
     );
   }

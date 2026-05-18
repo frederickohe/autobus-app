@@ -1,4 +1,5 @@
 import 'package:autobus/barrel.dart';
+import 'package:autobus/features/products/product_requirements_sheet.dart';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:file_picker/file_picker.dart';
@@ -167,7 +168,13 @@ class _AutoBusChatUIState extends State<_AutoBusChatUI> {
       if (mounted) setState(() {});
     };
     _listen.addListener(_controllerListener);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _sendHiddenHello());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (widget.webhookContext == 'products_agent') {
+        showProductRequirementsSheet(context);
+      }
+      _sendHiddenHello();
+    });
   }
 
   String _userPhone() {
@@ -178,12 +185,22 @@ class _AutoBusChatUIState extends State<_AutoBusChatUI> {
     return 'unknown';
   }
 
+  /// Merchant ``users.id`` for webhook ``company_number``; empty → legacy API.
+  String _userCompanyNumber() {
+    final user = widget.user;
+    if (user is Map && user['id'] != null) {
+      return user['id'].toString().trim();
+    }
+    return '';
+  }
+
   void _sendHiddenHello() {
     if (!mounted) return;
     context.read<ChatBloc>().add(
       SendMessage(
         phone: _userPhone(),
         message: 'hello',
+        companyNumber: _userCompanyNumber(),
         context: widget.webhookContext,
         hidden: true,
       ),
@@ -203,6 +220,7 @@ class _AutoBusChatUIState extends State<_AutoBusChatUI> {
       SendMessage(
         phone: _userPhone(),
         message: widget.controller.text,
+        companyNumber: _userCompanyNumber(),
         context: widget.webhookContext,
       ),
     );
@@ -979,6 +997,7 @@ class _AutoBusChatUIState extends State<_AutoBusChatUI> {
       size: 54,
       avatarUrl: avatarUrl,
       initials: initials,
+      onLightBackground: true,
       onTap: () {
         Navigator.push(
           context,
@@ -1041,7 +1060,12 @@ class _AutoBusChatUIState extends State<_AutoBusChatUI> {
     );
 
     final avatar = isUser
-        ? UserAvatar(size: 34, avatarUrl: avatarUrl, initials: initials)
+        ? UserAvatar(
+            size: 34,
+            avatarUrl: avatarUrl,
+            initials: initials,
+            onLightBackground: true,
+          )
         : Container(
             width: 34,
             height: 34,

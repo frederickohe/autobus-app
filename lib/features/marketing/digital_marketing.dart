@@ -1,7 +1,9 @@
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:autobus/barrel.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 const _kPrimary = Color(0xFF1A1A2E);
@@ -21,6 +23,7 @@ class MarketingContent {
   String? manualText;
   String? generatedResult;
   Uint8List? generatedBytes;
+  String? localFilePath;
   MediaGenState genState = MediaGenState.idle;
 
   MarketingContent(this.type);
@@ -70,8 +73,12 @@ class DigitalMarketingCampaign {
 
 class _MarketingScaffold extends StatelessWidget {
   final Widget child;
+  final double contentHorizontalPadding;
 
-  const _MarketingScaffold({required this.child});
+  const _MarketingScaffold({
+    required this.child,
+    this.contentHorizontalPadding = 18,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -123,7 +130,7 @@ class _MarketingScaffold extends StatelessWidget {
                     ),
                     Align(
                       alignment: Alignment.centerRight,
-                      child: UserAvatar(showRingDecoration: true),
+                      child: const UserAvatar(onLightBackground: true),
                     ),
                   ],
                 ),
@@ -133,7 +140,7 @@ class _MarketingScaffold extends StatelessWidget {
             const SizedBox(height: 26),
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 18),
+                padding: EdgeInsets.symmetric(horizontal: contentHorizontalPadding),
                 child: child,
               ),
             ),
@@ -225,7 +232,8 @@ class _PromptBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -238,42 +246,65 @@ class _PromptBar extends StatelessWidget {
           ),
         ],
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          GestureDetector(
-            onTap: onAttach,
-            child: Icon(
-              Icons.add,
-              color: onAttach != null ? Colors.black87 : Colors.black38,
-              size: 22,
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: TextField(
-              controller: controller,
-              onSubmitted: (_) => onGenerate?.call(),
-              style: GoogleFonts.montserrat(fontSize: 14),
-              decoration: InputDecoration(
-                hintText: hint,
-                hintStyle: GoogleFonts.montserrat(
-                  fontSize: 14,
-                  color: Colors.black38,
-                ),
-                border: InputBorder.none,
-                isDense: true,
-                contentPadding: EdgeInsets.zero,
+          TextField(
+            controller: controller,
+            minLines: 4,
+            maxLines: 6,
+            onSubmitted: (_) => onGenerate?.call(),
+            style: GoogleFonts.montserrat(fontSize: 14, height: 1.45),
+            decoration: InputDecoration(
+              hintText: hint,
+              hintStyle: GoogleFonts.montserrat(
+                fontSize: 14,
+                color: Colors.black38,
               ),
+              border: InputBorder.none,
+              contentPadding: EdgeInsets.zero,
             ),
           ),
-          const SizedBox(width: 10),
-          GestureDetector(
-            onTap: onGenerate,
-            child: Icon(
-              Icons.send_rounded,
-              color: onGenerate != null ? _kPrimary : Colors.black38,
-              size: 20,
-            ),
+          const SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              if (onAttach != null)
+                GestureDetector(
+                  onTap: onAttach,
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: CustColors.logodeep.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(
+                      Icons.add,
+                      color: CustColors.logodeep,
+                      size: 22,
+                    ),
+                  ),
+                )
+              else
+                const SizedBox(width: 38),
+              GestureDetector(
+                onTap: onGenerate,
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: onGenerate != null
+                        ? CustColors.logodeep.withValues(alpha: 0.14)
+                        : Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    Icons.send_rounded,
+                    color: onGenerate != null ? CustColors.logodeep : Colors.black38,
+                    size: 20,
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -313,7 +344,7 @@ class _DigitalMarketingPageState extends State<DigitalMarketingPage> {
         MaterialPageRoute(
           builder: (_) => _GenerateMediaPage(
             campaign: DigitalMarketingCampaign(contents),
-            contentIndex: 0,
+            segmentStartIndex: 0,
           ),
         ),
       );
@@ -390,11 +421,12 @@ class _TypeCard extends StatelessWidget {
 
 class _GenerateMediaPage extends StatefulWidget {
   final DigitalMarketingCampaign campaign;
-  final int contentIndex;
+  /// Index of the first item in this step’s contiguous block (pictures, videos, or text).
+  final int segmentStartIndex;
 
   const _GenerateMediaPage({
     required this.campaign,
-    required this.contentIndex,
+    required this.segmentStartIndex,
   });
 
   @override
@@ -409,17 +441,53 @@ class _GenerateMediaPageState extends State<_GenerateMediaPage> {
     httpClient: SessionAwareHttpClient(tokenService: TokenService()),
   );
 
-  MarketingContent get _content =>
-      widget.campaign.contents[widget.contentIndex];
-  bool get _isText => _content.type == MarketingContentType.text;
+  late int _selectedSlotIndex;
+
+  MarketingContentType get _segmentType =>
+      widget.campaign.contents[widget.segmentStartIndex].type;
+
+  MarketingContent get _activeContent =>
+      widget.campaign.contents[_selectedSlotIndex];
+
+  bool get _isText => _segmentType == MarketingContentType.text;
+
+  List<int> _segmentIndices() {
+    final t = _segmentType;
+    final out = <int>[];
+    for (var i = widget.segmentStartIndex;
+        i < widget.campaign.contents.length &&
+            widget.campaign.contents[i].type == t;
+        i++) {
+      out.add(i);
+    }
+    return out;
+  }
+
+  /// First index after this segment’s block (pictures / videos / text).
+  int _segmentEndExclusive() {
+    return widget.segmentStartIndex + _segmentIndices().length;
+  }
+
+  bool get _isMultiSlotMedia =>
+      !_isText &&
+      (_segmentType == MarketingContentType.pictures ||
+          _segmentType == MarketingContentType.videos);
 
   @override
   void initState() {
     super.initState();
+    _selectedSlotIndex = widget.segmentStartIndex;
     _promptCtrl.addListener(() => setState(() {}));
-    _textBodyCtrl.addListener(() => _content.manualText = _textBodyCtrl.text);
+    _textBodyCtrl.addListener(() {
+      if (_isText) _activeContent.manualText = _textBodyCtrl.text;
+    });
 
-    if (_content.manualText != null) _textBodyCtrl.text = _content.manualText!;
+    if (_activeContent.manualText != null) {
+      _textBodyCtrl.text = _activeContent.manualText!;
+    }
+    if (_promptCtrl.text.isEmpty && (_activeContent.prompt?.isNotEmpty ?? false)) {
+      _promptCtrl.text = _activeContent.prompt!;
+    }
   }
 
   @override
@@ -433,11 +501,13 @@ class _GenerateMediaPageState extends State<_GenerateMediaPage> {
     final prompt = _promptCtrl.text.trim();
     if (prompt.isEmpty) return;
 
+    final slot = _activeContent;
     setState(() {
-      _content.prompt = prompt;
-      _content.genState = MediaGenState.generating;
-      _content.generatedBytes = null;
-      if (!_isText) _content.generatedResult = null;
+      slot.prompt = prompt;
+      slot.genState = MediaGenState.generating;
+      slot.generatedBytes = null;
+      slot.localFilePath = null;
+      if (!_isText) slot.generatedResult = null;
     });
     _promptCtrl.clear();
 
@@ -452,7 +522,7 @@ class _GenerateMediaPageState extends State<_GenerateMediaPage> {
 
       String result = '';
 
-      if (_content.type == MarketingContentType.pictures) {
+      if (slot.type == MarketingContentType.pictures) {
         final response = await _apiService.generateImageMedia(
           userId: userId,
           prompt: prompt,
@@ -461,34 +531,34 @@ class _GenerateMediaPageState extends State<_GenerateMediaPage> {
         final cleanedBase64 = rawBase64.contains(',')
             ? rawBase64.substring(rawBase64.indexOf(',') + 1)
             : rawBase64;
-        _content.generatedBytes = base64Decode(cleanedBase64);
-        _content.generatedResult = response['mime_type']?.toString();
-      } else if (_content.type == MarketingContentType.videos) {
+        slot.generatedBytes = base64Decode(cleanedBase64);
+        slot.generatedResult = response['mime_type']?.toString();
+      } else if (slot.type == MarketingContentType.videos) {
         final response = await _apiService.generateVideoMedia(
           userId: userId,
           prompt: prompt,
         );
         result = (response['stored_url'] ?? response['video_url'] ?? '')
             .toString();
-        _content.generatedResult = result;
+        slot.generatedResult = result;
       } else {
         result = await _apiService.generateAgentContent(
           userId: userId,
           prompt: prompt,
           agentName: 'marketing',
         );
-        _content.generatedResult = result;
+        slot.generatedResult = result;
         _textBodyCtrl.text = result;
       }
 
       if (!mounted) return;
       setState(() {
-        _content.genState = MediaGenState.ready;
+        slot.genState = MediaGenState.ready;
         if (_isText) _textBodyCtrl.text = result;
       });
     } catch (e) {
       if (!mounted) return;
-      setState(() => _content.genState = MediaGenState.idle);
+      setState(() => slot.genState = MediaGenState.idle);
 
       final message = e is Exception ? e.toString() : 'Media generation failed';
 
@@ -509,23 +579,38 @@ class _GenerateMediaPageState extends State<_GenerateMediaPage> {
   Future<void> _pickAndAttachMedia() async {
     if (_isText) return;
 
-    final allowedExtensions = _content.type == MarketingContentType.pictures
+    final allowedExtensions = _activeContent.type == MarketingContentType.pictures
         ? <String>['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp']
         : <String>['mp4', 'mov', 'avi', 'mkv', 'webm', 'm4v'];
 
+    final isPicture = _activeContent.type == MarketingContentType.pictures;
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: allowedExtensions,
       allowMultiple: false,
-      withData: _content.type == MarketingContentType.pictures,
+      withData: isPicture && kIsWeb,
     );
 
     if (!mounted || result == null || result.files.isEmpty) return;
 
     final file = result.files.single;
-    if (_content.type == MarketingContentType.pictures) {
-      final bytes = file.bytes;
+    final path = file.path?.trim();
+
+    if (isPicture) {
+      Uint8List? bytes = file.bytes;
+      if ((bytes == null || bytes.isEmpty) &&
+          !kIsWeb &&
+          path != null &&
+          path.isNotEmpty) {
+        try {
+          bytes = await File(path).readAsBytes();
+        } catch (_) {
+          bytes = null;
+        }
+      }
+
       if (bytes == null || bytes.isEmpty) {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Unable to load selected image. Please try again.'),
@@ -534,15 +619,16 @@ class _GenerateMediaPageState extends State<_GenerateMediaPage> {
         return;
       }
 
+      if (!mounted) return;
       setState(() {
-        _content.generatedBytes = bytes;
-        _content.generatedResult = file.name;
-        _content.genState = MediaGenState.ready;
+        _activeContent.generatedBytes = bytes;
+        _activeContent.localFilePath = path;
+        _activeContent.generatedResult = file.name;
+        _activeContent.genState = MediaGenState.ready;
       });
       return;
     }
 
-    final path = file.path;
     if (path == null || path.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -553,23 +639,171 @@ class _GenerateMediaPageState extends State<_GenerateMediaPage> {
     }
 
     setState(() {
-      _content.generatedBytes = null;
-      _content.generatedResult = path;
-      _content.genState = MediaGenState.ready;
+      _activeContent.generatedBytes = null;
+      _activeContent.localFilePath = path;
+      _activeContent.generatedResult = path;
+      _activeContent.genState = MediaGenState.ready;
+    });
+  }
+
+  void _selectSlot(int index) {
+    if (!_isMultiSlotMedia) return;
+    final busy = _segmentIndices().any(
+      (i) =>
+          widget.campaign.contents[i].genState == MediaGenState.generating,
+    );
+    if (busy) return;
+    setState(() {
+      _selectedSlotIndex = index;
+      _promptCtrl.text = _activeContent.prompt ?? '';
+    });
+  }
+
+  bool _isSlotEmpty(MarketingContent content) {
+    if (content.genState == MediaGenState.idle) return true;
+    if (content.genState == MediaGenState.ready && !_slotHasViewableMedia(content)) {
+      return true;
+    }
+    return false;
+  }
+
+  int? _firstEmptySlotIndex() {
+    for (final i in _segmentIndices()) {
+      if (_isSlotEmpty(widget.campaign.contents[i])) return i;
+    }
+    return null;
+  }
+
+  void _addAnotherMediaSlot() {
+    if (!_isMultiSlotMedia) return;
+    final busy = _segmentIndices().any(
+      (i) =>
+          widget.campaign.contents[i].genState == MediaGenState.generating,
+    );
+    if (busy) return;
+
+    final emptyIndex = _firstEmptySlotIndex();
+    if (emptyIndex != null) {
+      setState(() {
+        _selectedSlotIndex = emptyIndex;
+        _promptCtrl.text = _activeContent.prompt ?? '';
+      });
+      return;
+    }
+
+    setState(() {
+      final insertAt = _segmentEndExclusive();
+      widget.campaign.contents.insert(
+        insertAt,
+        MarketingContent(_segmentType),
+      );
+      _selectedSlotIndex = insertAt;
+      _promptCtrl.clear();
+    });
+  }
+
+  bool _slotHasViewableMedia(MarketingContent content) {
+    if (content.genState != MediaGenState.ready) return false;
+    if (content.type == MarketingContentType.pictures) {
+      final hasBytes = content.generatedBytes != null;
+      final localPath = content.localFilePath;
+      final hasLocalFile = !kIsWeb &&
+          localPath != null &&
+          localPath.isNotEmpty &&
+          File(localPath).existsSync();
+      return hasBytes || hasLocalFile;
+    }
+    if (content.type == MarketingContentType.videos) {
+      final hasRemote = content.generatedResult?.isNotEmpty ?? false;
+      final localPath = content.localFilePath;
+      final hasLocalFile = !kIsWeb &&
+          localPath != null &&
+          localPath.isNotEmpty &&
+          File(localPath).existsSync();
+      return hasRemote || hasLocalFile;
+    }
+    return false;
+  }
+
+  void _onSlotTap(int index) {
+    _selectSlot(index);
+    if (_slotHasViewableMedia(widget.campaign.contents[index])) {
+      _showMediaPreview(index);
+    }
+  }
+
+  Future<void> _showMediaPreview(int index) async {
+    final content = widget.campaign.contents[index];
+    await showDialog<void>(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.85),
+      builder: (dialogContext) => _MediaSlotPreviewDialog(
+        content: content,
+        onDelete: () {
+          Navigator.of(dialogContext).pop();
+          _deleteSlot(index);
+        },
+      ),
+    );
+  }
+
+  void _clearSlotMedia(MarketingContent slot) {
+    slot.genState = MediaGenState.idle;
+    slot.generatedBytes = null;
+    slot.localFilePath = null;
+    slot.generatedResult = null;
+    slot.prompt = null;
+  }
+
+  void _deleteSlot(int index) {
+    if (!_isMultiSlotMedia) return;
+    final busy = _segmentIndices().any(
+      (i) =>
+          widget.campaign.contents[i].genState == MediaGenState.generating,
+    );
+    if (busy) return;
+
+    final indices = _segmentIndices();
+    if (!indices.contains(index)) return;
+
+    setState(() {
+      final slot = widget.campaign.contents[index];
+      if (indices.length == 1 || slot.genState == MediaGenState.idle) {
+        _clearSlotMedia(slot);
+        if (_selectedSlotIndex == index) {
+          _promptCtrl.clear();
+        }
+        return;
+      }
+
+      widget.campaign.contents.removeAt(index);
+      final newIndices = _segmentIndices();
+      if (newIndices.isEmpty) {
+        _selectedSlotIndex = widget.segmentStartIndex;
+      } else if (!newIndices.contains(_selectedSlotIndex)) {
+        final fallback = index < _selectedSlotIndex
+            ? _selectedSlotIndex - 1
+            : newIndices.last;
+        _selectedSlotIndex =
+            newIndices.contains(fallback) ? fallback : newIndices.first;
+      }
+      _promptCtrl.text = _activeContent.prompt ?? '';
     });
   }
 
   void _goNext() {
-    _content.manualText = _isText ? _textBodyCtrl.text : null;
+    if (_isText) {
+      _activeContent.manualText = _textBodyCtrl.text;
+    }
 
-    final nextIdx = widget.contentIndex + 1;
-    if (nextIdx < widget.campaign.contents.length) {
+    final nextStart = _segmentEndExclusive();
+    if (nextStart < widget.campaign.contents.length) {
       Navigator.push(
         context,
         MaterialPageRoute(
           builder: (_) => _GenerateMediaPage(
             campaign: widget.campaign,
-            contentIndex: nextIdx,
+            segmentStartIndex: nextStart,
           ),
         ),
       );
@@ -587,43 +821,54 @@ class _GenerateMediaPageState extends State<_GenerateMediaPage> {
   Widget build(BuildContext context) {
     final canGenerate =
         _promptCtrl.text.trim().isNotEmpty &&
-        _content.genState != MediaGenState.generating;
+        _activeContent.genState != MediaGenState.generating;
 
     return _MarketingScaffold(
+      contentHorizontalPadding: 10,
       child: Column(
         children: [
           Text(
-            _content.pageTitle,
+            widget.campaign.contents[widget.segmentStartIndex].pageTitle,
             style: GoogleFonts.montserrat(fontSize: 16, color: Colors.black87),
           ),
           const SizedBox(height: 20),
 
-          Expanded(
-            child: Container(
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.grey.shade200),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.03),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
+          if (_isText)
+            Expanded(
+              child: Container(
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.grey.shade200),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.03),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: _buildPreviewBox(),
+                ),
               ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: _buildPreviewBox(),
+            )
+          else
+            Expanded(
+              child: Center(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.center,
+                  child: _buildMediaSlotsRow(),
+                ),
               ),
             ),
-          ),
 
-          const SizedBox(height: 16),
           _PromptBar(
             controller: _promptCtrl,
-            hint: _content.promptHint,
+            hint: _activeContent.promptHint,
             onAttach: _isText ? null : _pickAndAttachMedia,
             onGenerate: canGenerate ? _generate : null,
           ),
@@ -637,76 +882,471 @@ class _GenerateMediaPageState extends State<_GenerateMediaPage> {
   }
 
   Widget _buildPreviewBox() {
-    if (_isText) {
-      return Stack(
-        fit: StackFit.expand,
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: TextField(
-              controller: _textBodyCtrl,
-              maxLines: null,
-              expands: true,
-              style: GoogleFonts.montserrat(
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: TextField(
+            controller: _textBodyCtrl,
+            maxLines: null,
+            expands: true,
+            style: GoogleFonts.montserrat(
+              fontSize: 14,
+              color: Colors.black87,
+            ),
+            decoration: InputDecoration(
+              hintText: 'Type Text Here...',
+              hintStyle: GoogleFonts.montserrat(
                 fontSize: 14,
-                color: Colors.black87,
+                color: Colors.black38,
               ),
-              decoration: InputDecoration(
-                hintText: 'Type Text Here...',
-                hintStyle: GoogleFonts.montserrat(
-                  fontSize: 14,
-                  color: Colors.black38,
-                ),
-                border: InputBorder.none,
+              border: InputBorder.none,
+            ),
+          ),
+        ),
+        if (_activeContent.genState == MediaGenState.generating)
+          _GeneratingOverlay(label: _activeContent.label),
+      ],
+    );
+  }
+
+  Widget _buildMediaSlotsRow() {
+    final indices = _segmentIndices();
+    final hasEmptySlot = indices.any(
+      (i) => _isSlotEmpty(widget.campaign.contents[i]),
+    );
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          _segmentType == MarketingContentType.pictures
+              ? 'Tap a slot to select. Tap an image to view or delete it.'
+              : 'Tap a slot to select. Tap a video to view or delete it.',
+          textAlign: TextAlign.center,
+          style: GoogleFonts.montserrat(fontSize: 11, color: Colors.black38),
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          height: 120,
+          child: Center(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  for (var i = 0; i < indices.length; i++) ...[
+                    if (i > 0) const SizedBox(width: 10),
+                    _MediaSlotThumbCard(
+                      content: widget.campaign.contents[indices[i]],
+                      selected: indices[i] == _selectedSlotIndex,
+                      onTap: () => _onSlotTap(indices[i]),
+                    ),
+                  ],
+                  if (!hasEmptySlot) ...[
+                    if (indices.isNotEmpty) const SizedBox(width: 10),
+                    _AddAnotherMediaSlotCard(
+                      type: _segmentType,
+                      onTap: _addAnotherMediaSlot,
+                    ),
+                  ],
+                ],
               ),
             ),
           ),
-          if (_content.genState == MediaGenState.generating)
-            _GeneratingOverlay(label: _content.label),
-        ],
-      );
-    }
-
-    switch (_content.genState) {
-      case MediaGenState.idle:
-        return _IdlePreview(content: _content);
-      case MediaGenState.generating:
-        return _GeneratingOverlay(label: _content.label);
-      case MediaGenState.ready:
-        return _ReadyPreview(content: _content);
-    }
-  }
-}
-
-class _IdlePreview extends StatelessWidget {
-  final MarketingContent content;
-  const _IdlePreview({required this.content});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Icon(
-          content.type == MarketingContentType.pictures
-              ? Icons.image_rounded
-              : Icons.movie_rounded,
-          size: 80,
-          color: _kPurple,
-        ),
-        const SizedBox(height: 12),
-        Text(
-          content.label,
-          style: GoogleFonts.montserrat(fontSize: 13, color: _kPurple),
         ),
       ],
     );
   }
 }
 
+class _MediaSlotThumbCard extends StatelessWidget {
+  final MarketingContent content;
+  final bool selected;
+  final VoidCallback onTap;
+
+  static const _w = 96.0;
+  static const _h = 112.0;
+
+  const _MediaSlotThumbCard({
+    required this.content,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: _w,
+        height: _h,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: selected ? _kHeaderBorder : CustColors.mainCol.withValues(alpha: 0.2),
+            width: selected ? 2 : 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: CustColors.mainCol.withValues(alpha: selected ? 0.12 : 0.06),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: _thumbFill(),
+      ),
+    );
+  }
+
+  Widget _thumbFill() {
+    final isPicture = content.type == MarketingContentType.pictures;
+    switch (content.genState) {
+      case MediaGenState.idle:
+        return ColoredBox(
+          color: CustColors.mainCol.withValues(alpha: 0.06),
+          child: Center(
+            child: Icon(
+              isPicture
+                  ? Icons.add_photo_alternate_outlined
+                  : Icons.video_call_outlined,
+              color: CustColors.logodeep.withValues(alpha: 0.7),
+              size: 34,
+            ),
+          ),
+        );
+      case MediaGenState.generating:
+        return ColoredBox(
+          color: CustColors.mainCol.withValues(alpha: 0.08),
+          child: Center(
+            child: SizedBox(
+              width: 26,
+              height: 26,
+              child: CircularProgressIndicator(
+                strokeWidth: 2.2,
+                color: CustColors.logodeep,
+              ),
+            ),
+          ),
+        );
+      case MediaGenState.ready:
+        if (isPicture) {
+          final hasBytes = content.generatedBytes != null;
+          final localPath = content.localFilePath;
+          final hasLocalFile =
+              !kIsWeb &&
+              localPath != null &&
+              localPath.isNotEmpty &&
+              File(localPath).existsSync();
+          if (hasBytes || hasLocalFile) {
+            return hasBytes
+                ? Image.memory(
+                    content.generatedBytes!,
+                    fit: BoxFit.cover,
+                    gaplessPlayback: true,
+                  )
+                : Image.file(
+                    File(localPath!),
+                    fit: BoxFit.cover,
+                    gaplessPlayback: true,
+                  );
+          }
+        }
+        if (!isPicture && (content.generatedResult?.isNotEmpty ?? false)) {
+          return ColoredBox(
+            color: CustColors.logodeep.withValues(alpha: 0.1),
+            child: Center(
+              child: Icon(
+                Icons.play_circle_fill_rounded,
+                size: 40,
+                color: CustColors.logodeep,
+              ),
+            ),
+          );
+        }
+        return ColoredBox(
+          color: CustColors.logodeep.withValues(alpha: 0.1),
+          child: Center(
+            child: Icon(
+              Icons.check_rounded,
+              color: CustColors.logodeep,
+              size: 34,
+            ),
+          ),
+        );
+    }
+  }
+}
+
+class _MediaSlotPreviewDialog extends StatelessWidget {
+  final MarketingContent content;
+  final VoidCallback onDelete;
+
+  const _MediaSlotPreviewDialog({
+    required this.content,
+    required this.onDelete,
+  });
+
+  Future<void> _openVideo(BuildContext context) async {
+    final videoRef = content.localFilePath ?? content.generatedResult ?? '';
+    if (videoRef.isEmpty) return;
+
+    final isRemote =
+        videoRef.startsWith('http://') || videoRef.startsWith('https://');
+    final uri = isRemote ? Uri.parse(videoRef) : Uri.file(videoRef);
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Unable to open video.')),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isPicture = content.type == MarketingContentType.pictures;
+    final deleteLabel = isPicture ? 'Delete image' : 'Delete video';
+
+    final maxPreviewHeight = MediaQuery.sizeOf(context).height * 0.55;
+
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 32),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Align(
+            alignment: Alignment.topRight,
+            child: IconButton(
+              onPressed: () => Navigator.of(context).pop(),
+              icon: const Icon(Icons.close, color: Colors.white, size: 28),
+            ),
+          ),
+          ConstrainedBox(
+            constraints: BoxConstraints(maxHeight: maxPreviewHeight),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: Material(
+                color: Colors.black,
+                child: isPicture ? _buildImagePreview() : _buildVideoPreview(context),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: onDelete,
+              icon: const Icon(Icons.delete_outline, color: CustColors.accentRed),
+              label: Text(
+                deleteLabel,
+                style: GoogleFonts.montserrat(
+                  fontWeight: FontWeight.w600,
+                  color: CustColors.accentRed,
+                ),
+              ),
+              style: OutlinedButton.styleFrom(
+                backgroundColor: Colors.white,
+                side: const BorderSide(color: CustColors.accentRed),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildImagePreview() {
+    final hasBytes = content.generatedBytes != null;
+    final localPath = content.localFilePath;
+    final hasLocalFile = !kIsWeb &&
+        localPath != null &&
+        localPath.isNotEmpty &&
+        File(localPath).existsSync();
+
+    final image = hasBytes
+        ? Image.memory(content.generatedBytes!, fit: BoxFit.contain)
+        : Image.file(File(localPath!), fit: BoxFit.contain);
+
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxHeight: 420),
+      child: InteractiveViewer(
+        minScale: 0.5,
+        maxScale: 4,
+        child: hasBytes || hasLocalFile
+            ? image
+            : const Center(
+                child: Icon(Icons.broken_image_outlined, color: Colors.white54, size: 48),
+              ),
+      ),
+    );
+  }
+
+  Widget _buildVideoPreview(BuildContext context) {
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxHeight: 280, minWidth: 280),
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.play_circle_fill_rounded,
+              size: 72,
+              color: CustColors.logodeep,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Video ready',
+              style: GoogleFonts.montserrat(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 20),
+            FilledButton.icon(
+              onPressed: () => _openVideo(context),
+              icon: const Icon(Icons.open_in_new, size: 18),
+              label: Text(
+                'Open video',
+                style: GoogleFonts.montserrat(fontWeight: FontWeight.w600),
+              ),
+              style: FilledButton.styleFrom(
+                backgroundColor: CustColors.logodeep,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AddAnotherMediaSlotCard extends StatelessWidget {
+  final MarketingContentType type;
+  final VoidCallback onTap;
+
+  const _AddAnotherMediaSlotCard({
+    required this.type,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isPicture = type == MarketingContentType.pictures;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: _MediaSlotThumbCard._w,
+        height: _MediaSlotThumbCard._h,
+        decoration: BoxDecoration(
+          color: CustColors.mainCol.withValues(alpha: 0.06),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: CustColors.mainCol.withValues(alpha: 0.2),
+            width: 1,
+          ),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.add_circle_outline,
+              size: 36,
+              color: CustColors.logodeep,
+            ),
+            const SizedBox(height: 6),
+            Text(
+              isPicture ? 'Add image' : 'Add video',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.montserrat(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: CustColors.mainCol.withValues(alpha: 0.7),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _IdlePreview extends StatelessWidget {
+  final MarketingContent content;
+  final VoidCallback? onUpload;
+  final bool compact;
+
+  const _IdlePreview({
+    required this.content,
+    this.onUpload,
+    this.compact = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isPicture = content.type == MarketingContentType.pictures;
+    final iconSize = compact ? 48.0 : 80.0;
+    return GestureDetector(
+      onTap: onUpload,
+      behavior: HitTestBehavior.opaque,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            isPicture ? Icons.image_rounded : Icons.movie_rounded,
+            size: iconSize,
+            color: _kPurple,
+          ),
+          SizedBox(height: compact ? 8 : 12),
+          Text(
+            content.label,
+            style: GoogleFonts.montserrat(
+              fontSize: compact ? 12 : 13,
+              color: _kPurple,
+            ),
+          ),
+          if (onUpload != null) ...[
+            SizedBox(height: compact ? 6 : 10),
+            Text(
+              isPicture ? 'Tap to upload your image' : 'Tap to upload your video',
+              style: GoogleFonts.montserrat(
+                fontSize: compact ? 11 : 12,
+                color: Colors.black45,
+              ),
+            ),
+            if (!compact) ...[
+              const SizedBox(height: 4),
+              Text(
+                'or use + below',
+                style: GoogleFonts.montserrat(fontSize: 11, color: Colors.black26),
+              ),
+            ],
+          ],
+        ],
+      ),
+    );
+  }
+}
+
 class _GeneratingOverlay extends StatefulWidget {
   final String label;
-  const _GeneratingOverlay({required this.label});
+  final bool compact;
+
+  const _GeneratingOverlay({
+    required this.label,
+    this.compact = false,
+  });
 
   @override
   State<_GeneratingOverlay> createState() => _GeneratingOverlayState();
@@ -732,6 +1372,7 @@ class _GeneratingOverlayState extends State<_GeneratingOverlay>
 
   @override
   Widget build(BuildContext context) {
+    final c = widget.compact;
     return Container(
       color: Colors.white.withOpacity(0.93),
       child: Center(
@@ -741,35 +1382,35 @@ class _GeneratingOverlayState extends State<_GeneratingOverlay>
             FadeTransition(
               opacity: _fade,
               child: Container(
-                padding: const EdgeInsets.all(22),
+                padding: EdgeInsets.all(c ? 14 : 22),
                 decoration: BoxDecoration(
                   color: _kPurple.withOpacity(0.12),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.auto_awesome,
-                  size: 44,
+                  size: c ? 30 : 44,
                   color: _kPurple,
                 ),
               ),
             ),
-            const SizedBox(height: 22),
+            SizedBox(height: c ? 12 : 22),
             FadeTransition(
               opacity: _fade,
               child: Text(
                 'Generating...',
                 style: GoogleFonts.montserrat(
-                  fontSize: 18,
+                  fontSize: c ? 15 : 18,
                   fontWeight: FontWeight.w600,
                   color: _kPrimary,
                 ),
               ),
             ),
-            const SizedBox(height: 6),
+            SizedBox(height: c ? 4 : 6),
             Text(
               'Creating your ${widget.label.toLowerCase()}',
               style: GoogleFonts.montserrat(
-                fontSize: 13,
+                fontSize: c ? 11 : 13,
                 color: Colors.black45,
               ),
             ),
@@ -782,49 +1423,171 @@ class _GeneratingOverlayState extends State<_GeneratingOverlay>
 
 class _ReadyPreview extends StatelessWidget {
   final MarketingContent content;
-  const _ReadyPreview({required this.content});
+  final bool compact;
+
+  const _ReadyPreview({
+    required this.content,
+    this.compact = false,
+  });
 
   @override
   Widget build(BuildContext context) {
-    if (content.type == MarketingContentType.pictures &&
-        content.generatedBytes != null) {
-      return Column(
-        children: [
-          Expanded(
-            child: Container(
+    if (content.type == MarketingContentType.pictures) {
+      final hasBytes = content.generatedBytes != null;
+      final localPath = content.localFilePath;
+      final hasLocalFile =
+          !kIsWeb && localPath != null && localPath.isNotEmpty && File(localPath).existsSync();
+
+      if (hasBytes || hasLocalFile) {
+        final caption = (content.prompt?.trim().isNotEmpty ?? false)
+            ? content.prompt!
+            : (content.generatedResult ?? 'Uploaded image');
+
+        if (compact) {
+          return SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: AspectRatio(
+                      aspectRatio: 16 / 10,
+                      child: Container(
+                        width: double.infinity,
+                        color: Colors.black,
+                        child: hasBytes
+                            ? Image.memory(
+                                content.generatedBytes!,
+                                fit: BoxFit.cover,
+                                gaplessPlayback: true,
+                              )
+                            : Image.file(
+                                File(localPath!),
+                                fit: BoxFit.cover,
+                                gaplessPlayback: true,
+                              ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    caption,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.montserrat(
+                      fontSize: 11,
+                      color: Colors.black45,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        return Column(
+          children: [
+            Expanded(
+              child: Container(
+                width: double.infinity,
+                color: Colors.black,
+                child: hasBytes
+                    ? Image.memory(
+                        content.generatedBytes!,
+                        fit: BoxFit.cover,
+                        gaplessPlayback: true,
+                      )
+                    : Image.file(
+                        File(localPath!),
+                        fit: BoxFit.cover,
+                        gaplessPlayback: true,
+                      ),
+              ),
+            ),
+            Container(
               width: double.infinity,
-              color: Colors.black,
-              child: Image.memory(
-                content.generatedBytes!,
-                fit: BoxFit.cover,
-                gaplessPlayback: true,
+              padding: const EdgeInsets.all(16),
+              color: Colors.white,
+              child: Text(
+                caption,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.montserrat(
+                  fontSize: 12,
+                  color: Colors.black45,
+                ),
               ),
             ),
-          ),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            color: Colors.white,
-            child: Text(
-              content.prompt ?? '',
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.montserrat(
-                fontSize: 12,
-                color: Colors.black45,
-              ),
-            ),
-          ),
-        ],
-      );
+          ],
+        );
+      }
     }
 
     if (content.type == MarketingContentType.videos &&
         (content.generatedResult?.isNotEmpty ?? false)) {
-      final videoRef = content.generatedResult!;
+      final videoRef = content.localFilePath ?? content.generatedResult!;
       final isRemoteUrl =
           videoRef.startsWith('http://') || videoRef.startsWith('https://');
       final openUri = isRemoteUrl ? Uri.parse(videoRef) : Uri.file(videoRef);
+
+      if (compact) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: _kPurple.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.play_circle_fill_rounded,
+                  size: 36,
+                  color: _kPurple,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'Video ready',
+                style: GoogleFonts.montserrat(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: _kPrimary,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                content.prompt ?? '',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.montserrat(
+                  fontSize: 11,
+                  color: Colors.black45,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 10),
+              ElevatedButton.icon(
+                onPressed: () =>
+                    launchUrl(openUri, mode: LaunchMode.externalApplication),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  textStyle: GoogleFonts.montserrat(fontSize: 12),
+                ),
+                icon: const Icon(Icons.open_in_new_rounded, size: 18),
+                label: const Text('Open video'),
+              ),
+            ],
+          ),
+        );
+      }
+
       return Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
@@ -872,6 +1635,47 @@ class _ReadyPreview extends StatelessWidget {
             ),
           ],
         ),
+      );
+    }
+
+    if (compact) {
+      return Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              color: Colors.green.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.check_circle_rounded,
+              size: 32,
+              color: Colors.green,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            '${content.label} ready',
+            style: GoogleFonts.montserrat(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: _kPrimary,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Text(
+              content.prompt ?? '',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.montserrat(fontSize: 11, color: Colors.black45),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
       );
     }
 
@@ -1328,13 +2132,36 @@ class _SelectOutletPageState extends State<_SelectOutletPage> {
         .where((s) => s.isNotEmpty)
         .join('\n\n');
 
-    final mediaUrls = widget.campaign.contents
-        .where(
-          (c) =>
-              c.type != MarketingContentType.text && c.generatedResult != null,
-        )
-        .map((c) => c.generatedResult!)
-        .toList();
+    final mediaUrls = <String>[];
+    for (final c in widget.campaign.contents) {
+      if (c.type == MarketingContentType.text) continue;
+
+      final existing = c.generatedResult?.trim();
+      if (existing != null &&
+          existing.isNotEmpty &&
+          (existing.startsWith('http://') || existing.startsWith('https://'))) {
+        mediaUrls.add(existing);
+        continue;
+      }
+
+      final localPath = c.localFilePath?.trim();
+      if (!kIsWeb && localPath != null && localPath.isNotEmpty) {
+        try {
+          final file = File(localPath);
+          if (await file.exists()) {
+            final url = await _apiService.uploadFile(
+              file: file,
+              filename: file.uri.pathSegments.isNotEmpty
+                  ? file.uri.pathSegments.last
+                  : null,
+            );
+            mediaUrls.add(url);
+          }
+        } catch (_) {
+          // Skip media that could not be uploaded.
+        }
+      }
+    }
 
     final scheduleTime = widget.campaign.scheduledDate
         ?.toUtc()

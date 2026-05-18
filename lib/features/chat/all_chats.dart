@@ -18,6 +18,13 @@ String _chatListSubtitleId(Map<String, dynamic> c) {
   return '';
 }
 
+/// Customer phone when provided by API; otherwise conversation / session id.
+String _chatListSubtitlePhoneOrId(Map<String, dynamic> c) {
+  final phone = (c['customer_phone'] ?? '').toString().trim();
+  if (phone.isNotEmpty) return phone;
+  return _chatListSubtitleId(c);
+}
+
 String _formatChatListDate(Map<String, dynamic> c) {
   final raw = c['updated_at']?.toString() ?? c['conversation_date']?.toString();
   final dt = DateTime.tryParse(raw ?? '');
@@ -44,6 +51,24 @@ class _AllChatsPageState extends State<AllChatsPage> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) => _loadChats());
+  }
+
+  void _openConversation(BuildContext context, Map<String, dynamic> c) {
+    final sessionId = c['id'];
+    final sid = sessionId is int
+        ? sessionId
+        : (sessionId is num ? sessionId.toInt() : null);
+    if (sid == null) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ConversationDetailScreen(
+          title: _chatListTitle(c),
+          mode: ConversationScreenMode.historyOnly,
+          sessionId: sid,
+        ),
+      ),
+    );
   }
 
   Future<void> _loadChats() async {
@@ -156,7 +181,7 @@ class _AllChatsPageState extends State<AllChatsPage> {
                                       ),
                                       Center(
                                         child: Text(
-                                          'No completed chats yet',
+                                          'No chats yet',
                                           style: GoogleFonts.outfit(
                                             color: Colors.white.withValues(
                                               alpha: 0.6,
@@ -177,8 +202,9 @@ class _AllChatsPageState extends State<AllChatsPage> {
                                       final c = _chats[index];
                                       return _AllChatTile(
                                         title: _chatListTitle(c),
-                                        id: _chatListSubtitleId(c),
+                                        id: _chatListSubtitlePhoneOrId(c),
                                         date: _formatChatListDate(c),
+                                        onTap: () => _openConversation(context, c),
                                       );
                                     },
                                   ),
@@ -198,16 +224,21 @@ class _AllChatTile extends StatelessWidget {
   final String title;
   final String id;
   final String date;
+  final VoidCallback? onTap;
 
   const _AllChatTile({
     required this.title,
     required this.id,
     required this.date,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
       width: double.infinity,
       constraints: const BoxConstraints(minHeight: 83),
       decoration: BoxDecoration(
@@ -257,6 +288,7 @@ class _AllChatTile extends StatelessWidget {
             ],
           ),
         ],
+      ),
       ),
     );
   }

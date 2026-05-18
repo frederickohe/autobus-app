@@ -33,6 +33,7 @@ class _ManageReportsState extends State<ManageReports> {
         api.getRevenueByTimeline(_period.apiValue),
         api.getFinancials(page: 1, pageSize: 200),
         api.listOrders(skip: 0, limit: 200),
+        api.listBillings(page: 0, size: 200),
         api.listProducts(skip: 0, limit: 200),
         api.getLowStockInventory(),
         api.listMyConversations(skip: 0, limit: 100),
@@ -42,10 +43,18 @@ class _ManageReportsState extends State<ManageReports> {
       ]);
 
       final conversations =
-          results[5] as Map<String, List<Map<String, dynamic>>>;
-      final marketing = results[7] as Map<String, dynamic>;
-      final emails = results[8] as Map<String, dynamic>;
-      final interventions = results[6] as List<Map<String, dynamic>>;
+          results[6] as Map<String, List<Map<String, dynamic>>>;
+      final marketing = results[8] as Map<String, dynamic>;
+      final emails = results[9] as Map<String, dynamic>;
+      final interventions = results[7] as List<Map<String, dynamic>>;
+
+      final completedList = conversations['completed'] ?? const [];
+      final completedLifecycleCount = completedList
+          .where(
+            (c) =>
+                (c['conversation_lifecycle'] ?? '').toString() == 'completed',
+          )
+          .length;
 
       if (!mounted) return;
       setState(() {
@@ -54,9 +63,11 @@ class _ManageReportsState extends State<ManageReports> {
           revenue: results[0] as double,
           financials: results[1] as List<Map<String, dynamic>>,
           orders: results[2] as List<Map<String, dynamic>>,
-          products: results[3] as List<Map<String, dynamic>>,
-          lowStock: results[4] as List<Map<String, dynamic>>,
-          conversationsCompleted: conversations['completed']?.length ?? 0,
+          billings: results[3] as List<Map<String, dynamic>>,
+          products: results[4] as List<Map<String, dynamic>>,
+          lowStock: results[5] as List<Map<String, dynamic>>,
+          conversationsCompleted: completedLifecycleCount,
+          conversationsNonIntervention: completedList.length,
           conversationsActive:
               conversations['intervention_active']?.length ?? 0,
           interventions: interventions.length,
@@ -223,6 +234,22 @@ class _ManageReportsState extends State<ManageReports> {
                                         ),
                                       ),
                                       _ReportHubCard(
+                                        icon: Icons.request_quote_outlined,
+                                        title: 'Invoices',
+                                        subtitle: snap.orderInvoicesSent > 0
+                                            ? '${snap.orderInvoicesSent} sent · ${snap.paidOrderInvoices} paid'
+                                            : 'No invoices yet',
+                                        onTap: () => Navigator.push<void>(
+                                          context,
+                                          MaterialPageRoute<void>(
+                                            builder: (_) =>
+                                                OrderInvoicesReportDetail(
+                                                  snapshot: snap,
+                                                ),
+                                          ),
+                                        ),
+                                      ),
+                                      _ReportHubCard(
                                         icon: Icons.inventory_2_outlined,
                                         title: 'Inventory',
                                         subtitle:
@@ -241,7 +268,7 @@ class _ManageReportsState extends State<ManageReports> {
                                         icon: Icons.forum_outlined,
                                         title: 'Engagement',
                                         subtitle:
-                                            '${snap.conversationsCompleted + snap.conversationsActive} chats',
+                                            '${snap.conversationsNonIntervention + snap.conversationsActive} chats',
                                         onTap: () => Navigator.push<void>(
                                           context,
                                           MaterialPageRoute<void>(
@@ -390,6 +417,26 @@ class _OverviewSection extends StatelessWidget {
                 label: 'Pending / failed',
                 value:
                     '${snap.pendingTransactions} / ${snap.failedTransactions}',
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _MetricTile(
+                label: 'Order invoices',
+                value: '${snap.orderInvoicesSent}',
+                sub: '${snap.paidOrderInvoices} paid',
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _MetricTile(
+                label: 'Invoiced value',
+                value: formatReportCurrency(snap.orderInvoicesValue),
+                sub: '${formatReportCurrency(snap.paidOrderInvoicesValue)} collected',
               ),
             ),
           ],

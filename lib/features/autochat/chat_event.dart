@@ -10,6 +10,9 @@ class SendMessage extends ChatEvent {
   final String phone;
   final String message;
 
+  /// Merchant ``users.id`` for webhook ``company_number`` (scopes NLU per business).
+  final String companyNumber;
+
   /// Backend webhook `context` (e.g. `order_agent`, `products_agent`).
   final String context;
 
@@ -19,12 +22,13 @@ class SendMessage extends ChatEvent {
   const SendMessage({
     required this.phone,
     required this.message,
+    required this.companyNumber,
     required this.context,
     this.hidden = false,
   });
 
   @override
-  List<Object?> get props => [phone, message, context, hidden];
+  List<Object?> get props => [phone, message, companyNumber, context, hidden];
 }
 
 class LoadHistory extends ChatEvent {

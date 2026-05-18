@@ -29,10 +29,14 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
       final results = await Future.wait([
         _apiService.getTotalRevenue(),
         _apiService.getFinancials(),
+        _apiService.listOrders(skip: 0, limit: 200),
+        _apiService.listBillings(page: 0, size: 200),
       ]);
 
       final revenue = results[0] as double;
       final transactions = results[1] as List<Map<String, dynamic>>;
+      final orders = results[2] as List<Map<String, dynamic>>;
+      final billings = results[3] as List<Map<String, dynamic>>;
 
       final completed = transactions
           .where((t) => t['status'] == 'completed')
@@ -68,6 +72,30 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
           ? ((revenue / totalAmount) * 100).clamp(0.0, 100.0)
           : 0.0;
 
+      final orderIds = orders
+          .map((o) => (o['order_id'] ?? '').toString())
+          .where((id) => id.isNotEmpty)
+          .toSet();
+      final orderInvoices = billings.where((b) {
+        if ((b['source_type'] ?? '').toString().toUpperCase() != 'ORDER') {
+          return false;
+        }
+        final externalId = (b['external_id'] ?? '').toString();
+        return externalId.isEmpty || orderIds.contains(externalId);
+      }).toList();
+      final paidInvoices = orderInvoices
+          .where((b) => (b['status'] ?? '').toString().toUpperCase() == 'PAID')
+          .length;
+      final pendingInvoices = orderInvoices
+          .where(
+            (b) => (b['status'] ?? '').toString().toUpperCase() == 'PENDING',
+          )
+          .length;
+      final invoicedValue = orderInvoices.fold<double>(
+        0,
+        (sum, b) => sum + ((b['amount'] as num?)?.toDouble() ?? 0),
+      );
+
       setState(() {
         _growthPercentage = double.parse(growth.toStringAsFixed(1));
         _growthMonth = monthNames[now.month];
@@ -80,6 +108,10 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
           MetricData('Failed', failed, 0),
           MetricData('Total Amount', totalAmount.toInt(), 0),
           MetricData('Revenue', revenue.toInt(), 0),
+          MetricData('Order Invoices', orderInvoices.length, 0),
+          MetricData('Invoices Paid', paidInvoices, 0),
+          MetricData('Invoices Pending', pendingInvoices, 0),
+          MetricData('Invoiced Value', invoicedValue.toInt(), 0),
         ];
       });
     } catch (_) {
@@ -155,7 +187,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
             ),
           ),
 
-          const UserAvatar(size: 48, showRingDecoration: false),
+          const UserAvatar(size: 48, onLightBackground: true),
         ],
       ),
     );

@@ -189,7 +189,7 @@ class _HomeState extends State<Home> {
                           );
                         },
                       ),
-                      const UserAvatar(showRingDecoration: false),
+                      const UserAvatar(),
                     ],
                   ),
                   const SizedBox(height: 32),

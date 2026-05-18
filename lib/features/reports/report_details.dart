@@ -263,6 +263,18 @@ class OrdersReportDetail extends StatelessWidget {
             label: 'Total value',
             value: formatReportCurrency(snapshot.ordersValue),
           ),
+          _StatRow(
+            label: 'Invoices sent',
+            value: '${snapshot.orderInvoicesSent}',
+          ),
+          _StatRow(
+            label: 'Invoices paid',
+            value: '${snapshot.paidOrderInvoices}',
+          ),
+          _StatRow(
+            label: 'Invoiced amount',
+            value: formatReportCurrency(snapshot.orderInvoicesValue),
+          ),
           ...statuses.entries.map(
             (e) => _StatRow(label: e.key, value: '${e.value}'),
           ),
@@ -289,6 +301,87 @@ class OrdersReportDetail extends StatelessWidget {
                 ),
               );
             }),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class OrderInvoicesReportDetail extends StatelessWidget {
+  final ReportsSnapshot snapshot;
+
+  const OrderInvoicesReportDetail({super.key, required this.snapshot});
+
+  @override
+  Widget build(BuildContext context) {
+    final invoices = snapshot.recentOrderInvoices;
+
+    return _ReportDetailScaffold(
+      title: 'Order invoices',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            snapshot.period.label,
+            style: GoogleFonts.montserrat(color: Colors.white54, fontSize: 12),
+          ),
+          const SizedBox(height: 16),
+          _StatRow(
+            label: 'Invoices sent',
+            value: '${snapshot.orderInvoicesSent}',
+          ),
+          _StatRow(label: 'Paid', value: '${snapshot.paidOrderInvoices}'),
+          _StatRow(
+            label: 'Pending',
+            value: '${snapshot.pendingOrderInvoices}',
+          ),
+          _StatRow(
+            label: 'Failed',
+            value: '${snapshot.failedOrderInvoices}',
+          ),
+          _StatRow(
+            label: 'Total invoiced',
+            value: formatReportCurrency(snapshot.orderInvoicesValue),
+          ),
+          _StatRow(
+            label: 'Collected',
+            value: formatReportCurrency(snapshot.paidOrderInvoicesValue),
+          ),
+          if (invoices.isNotEmpty) ...[
+            const SizedBox(height: 20),
+            Text(
+              'Recent invoices',
+              style: GoogleFonts.montserrat(
+                color: Colors.white,
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 12),
+            ...invoices.take(20).map((inv) {
+              final orderLabel =
+                  snapshot.orderNumberForBilling(inv) ??
+                  (inv['description'] ?? 'Order invoice').toString();
+              final status = (inv['status'] ?? '').toString();
+              final ref = (inv['reference'] ?? '').toString();
+              return _ListTile(
+                title: orderLabel,
+                subtitle: ref.isEmpty ? status : '$status · $ref',
+                trailing: formatReportCurrency(asReportDouble(inv['amount'])),
+              );
+            }),
+          ] else ...[
+            const SizedBox(height: 24),
+            Text(
+              'No Paystack invoices were sent for orders in this period. '
+              'Use “Send invoice” on an order to generate a payment link for your customer.',
+              style: GoogleFonts.montserrat(
+                color: Colors.white38,
+                fontSize: 12,
+                height: 1.5,
+              ),
+            ),
           ],
         ],
       ),

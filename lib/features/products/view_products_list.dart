@@ -144,10 +144,29 @@ class _ViewProductsPageState extends State<ViewProductsPage> {
     );
   }
 
+  void _openProduct(BuildContext context, Map<String, dynamic> p) {
+    final id = (p['product_id'] ?? '').toString().trim();
+    if (id.isEmpty) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ProductDetailScreen(
+          productId: id,
+          initialName: _productName(p),
+        ),
+      ),
+    ).then((refreshed) {
+      if (refreshed == true && mounted) _loadAll();
+    });
+  }
+
   Widget _productCard(Map<String, dynamic> p) {
     final category = _productCategory(p);
     final stock = _stockLabel(p);
-    return Container(
+    return GestureDetector(
+      onTap: () => _openProduct(context, p),
+      behavior: HitTestBehavior.opaque,
+      child: Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       margin: const EdgeInsets.only(bottom: 12),
@@ -205,6 +224,7 @@ class _ViewProductsPageState extends State<ViewProductsPage> {
             ),
           ],
         ],
+      ),
       ),
     );
   }

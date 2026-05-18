@@ -40,6 +40,22 @@ class _ActiveQueriesState extends State<ActiveQueries> {
     WidgetsBinding.instance.addPostFrameCallback((_) => _loadOrders());
   }
 
+  void _openOrder(BuildContext context, Map<String, dynamic> o) {
+    final orderId = (o['order_id'] ?? '').toString().trim();
+    if (orderId.isEmpty) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => OrderDetailScreen(
+          orderId: orderId,
+          initialTitle: _orderListTitle(o),
+        ),
+      ),
+    ).then((refreshed) {
+      if (refreshed == true && mounted) _loadOrders();
+    });
+  }
+
   Future<void> _loadOrders() async {
     setState(() {
       _loading = true;
@@ -177,6 +193,7 @@ class _ActiveQueriesState extends State<ActiveQueries> {
                                         title: _orderListTitle(o),
                                         id: _orderListSubtitleId(o),
                                         date: _formatOrderListDate(o),
+                                        onTap: () => _openOrder(context, o),
                                       );
                                     },
                                   ),
@@ -196,16 +213,21 @@ class _PendingOrderTile extends StatelessWidget {
   final String title;
   final String id;
   final String date;
+  final VoidCallback? onTap;
 
   const _PendingOrderTile({
     required this.title,
     required this.id,
     required this.date,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         border: Border.all(color: const Color(0xFF3F1163), width: 1),
@@ -249,6 +271,7 @@ class _PendingOrderTile extends StatelessWidget {
             ],
           ),
         ],
+      ),
       ),
     );
   }

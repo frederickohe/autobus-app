@@ -578,11 +578,15 @@ class ApiService {
   ///
   /// Backend: `POST /api/v1/storage/me/upload-rag-document?folder=<folder>`
   /// Multipart field name: `file` (single). Requires active subscription on server.
+  ///
+  /// When [asyncMode] is true, returns immediately with a `job_id` (HTTP 202);
+  /// poll [getRagIndexJobStatus] for progress.
   Future<Map<String, dynamic>> uploadRagDocument({
     String folder = chatbotStorageFolder,
     required String filename,
     String? filePath,
     List<int>? fileBytes,
+    bool asyncMode = false,
   }) async {
     final trimmedPath = filePath?.trim();
     final hasPath = trimmedPath != null && trimmedPath.isNotEmpty;
@@ -597,7 +601,12 @@ class ApiService {
     final normalizedFolder = folder.trim().replaceAll('\\', '/');
     final uri = Uri.parse(
       '$baseUrl/storage/me/upload-rag-document',
-    ).replace(queryParameters: {'folder': normalizedFolder});
+    ).replace(
+      queryParameters: {
+        'folder': normalizedFolder,
+        if (asyncMode) 'async_mode': 'true',
+      },
+    );
 
     final request = http.MultipartRequest('POST', uri);
     final http.MultipartFile multipartFile =
@@ -613,7 +622,9 @@ class ApiService {
     final streamed = await httpClient.send(request);
     final response = await http.Response.fromStream(streamed);
 
-    if (response.statusCode == 200 || response.statusCode == 201) {
+    if (response.statusCode == 200 ||
+        response.statusCode == 201 ||
+        (asyncMode && response.statusCode == 202)) {
       final decoded = jsonDecode(response.body);
       if (decoded is Map<String, dynamic>) return decoded;
       if (decoded is Map) return Map<String, dynamic>.from(decoded);
@@ -625,6 +636,93 @@ class ApiService {
     throw Exception(
       'Failed to upload RAG document: ${response.statusCode} ${response.body}',
     );
+  }
+
+  /// Scrape a public website and index its text into RAG.
+  ///
+  /// Backend: `POST /api/v1/storage/me/upload-rag-url?folder=<folder>`
+  /// Returns immediately with a `job_id`; poll [getRagIndexJobStatus].
+  Future<Map<String, dynamic>> uploadRagUrl({
+    required String url,
+    String folder = chatbotStorageFolder,
+  }) async {
+    final trimmed = url.trim();
+    if (trimmed.isEmpty) {
+      throw ArgumentError('url must not be empty');
+    }
+
+    final normalizedFolder = folder.trim().replaceAll('\\', '/');
+    final uri = Uri.parse('$baseUrl/storage/me/upload-rag-url').replace(
+      queryParameters: {'folder': normalizedFolder},
+    );
+
+    final response = await httpClient.post(
+      uri,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'url': trimmed}),
+    );
+
+    if (response.statusCode == 200 ||
+        response.statusCode == 201 ||
+        response.statusCode == 202) {
+      final decoded = jsonDecode(response.body);
+      if (decoded is Map<String, dynamic>) return decoded;
+      if (decoded is Map) return Map<String, dynamic>.from(decoded);
+      throw Exception('URL index started but response shape was unexpected');
+    }
+    if (response.statusCode == 401) {
+      throw Exception('Session expired');
+    }
+    throw Exception(
+      'Failed to index website: ${response.statusCode} ${response.body}',
+    );
+  }
+
+  /// Poll indexing progress for an async file or URL upload.
+  ///
+  /// Backend: `GET /api/v1/storage/me/rag-index-jobs/{job_id}`
+  Future<Map<String, dynamic>> getRagIndexJobStatus(String jobId) async {
+    final trimmed = jobId.trim();
+    if (trimmed.isEmpty) {
+      throw ArgumentError('jobId must not be empty');
+    }
+
+    final uri = Uri.parse(
+      '$baseUrl/storage/me/rag-index-jobs/${Uri.encodeComponent(trimmed)}',
+    );
+    final response = await httpClient.get(uri);
+
+    if (response.statusCode == 200) {
+      final decoded = jsonDecode(response.body);
+      if (decoded is Map<String, dynamic>) return decoded;
+      if (decoded is Map) return Map<String, dynamic>.from(decoded);
+      throw Exception('Unexpected job status response shape');
+    }
+    if (response.statusCode == 401) {
+      throw Exception('Session expired');
+    }
+    if (response.statusCode == 404) {
+      throw Exception('Indexing job not found');
+    }
+    throw Exception(
+      'Failed to get RAG job status: ${response.statusCode} ${response.body}',
+    );
+  }
+
+  static String? ragIndexJobId(Map<String, dynamic> startResponse) {
+    final id = startResponse['job_id'];
+    if (id == null) return null;
+    final s = id.toString().trim();
+    return s.isEmpty ? null : s;
+  }
+
+  static bool ragIndexJobTerminal(Map<String, dynamic> status) {
+    final s = (status['status'] ?? '').toString().toLowerCase();
+    return s == 'completed' || s == 'failed';
+  }
+
+  static bool ragIndexJobSucceeded(Map<String, dynamic> status) {
+    return (status['status'] ?? '').toString().toLowerCase() == 'completed';
   }
 
   /// Get available rides with filters
@@ -821,6 +919,27 @@ class ApiService {
       '$baseUrl/interventions/list',
     ).replace(queryParameters: qp);
     final response = await httpClient.get(uri);
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data is Map) {
+        return _decodeMapList(data['items']);
+      }
+      if (data is List) return _decodeMapList(data);
+    }
+    if (response.statusCode == 401) {
+      throw Exception('Session expired');
+    }
+    return [];
+  }
+
+  /// GET /api/v1/billing — Paystack billing charges (order invoices, etc.)
+  Future<List<Map<String, dynamic>>> listBillings({
+    int page = 0,
+    int size = 200,
+  }) async {
+    final response = await httpClient.get(
+      Uri.parse('$baseUrl/billing?page=$page&size=$size'),
+    );
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
       if (data is Map) {
@@ -1141,7 +1260,292 @@ class ApiService {
     );
   }
 
-  /// GET /api/v1/conversations/me — `{ completed, intervention_active }` for the current user.
+  /// GET /api/v1/products/{productId}
+  Future<Map<String, dynamic>> getProduct(String productId) async {
+    final uri = Uri.parse(
+      '$baseUrl/products/${Uri.encodeComponent(productId)}',
+    );
+    final response = await httpClient.get(uri);
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data is Map<String, dynamic>) return data;
+      if (data is Map) return Map<String, dynamic>.from(data);
+    }
+    if (response.statusCode == 401) {
+      throw Exception('Session expired');
+    }
+    if (response.statusCode == 404) {
+      throw Exception('Product not found');
+    }
+    throw Exception(
+      _httpDetailMessage(response.body) ??
+          'Failed to load product (${response.statusCode})',
+    );
+  }
+
+  /// PUT /api/v1/products/{productId}
+  Future<Map<String, dynamic>> updateProduct(
+    String productId, {
+    String? name,
+    String? description,
+    double? price,
+    String? category,
+    String? condition,
+    int? numberInStock,
+    String? photo,
+    String? link,
+  }) async {
+    final body = <String, dynamic>{};
+    if (name != null && name.trim().isNotEmpty) body['name'] = name.trim();
+    if (description != null) body['description'] = description.trim();
+    if (price != null) body['price'] = price;
+    if (category != null) body['category'] = category.trim();
+    if (condition != null && condition.trim().isNotEmpty) {
+      body['condition'] = condition.trim();
+    }
+    if (numberInStock != null) body['number_in_stock'] = numberInStock;
+    if (photo != null && photo.trim().isNotEmpty) body['photo'] = photo.trim();
+    if (link != null) body['link'] = link.trim();
+
+    final uri = Uri.parse(
+      '$baseUrl/products/${Uri.encodeComponent(productId)}',
+    );
+    final response = await httpClient.put(
+      uri,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(body),
+    );
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data is Map<String, dynamic>) return data;
+      if (data is Map) return Map<String, dynamic>.from(data);
+    }
+    if (response.statusCode == 401) {
+      throw Exception('Session expired');
+    }
+    throw Exception(
+      _httpDetailMessage(response.body) ??
+          'Failed to update product (${response.statusCode})',
+    );
+  }
+
+  /// DELETE /api/v1/products/{productId}
+  Future<void> deleteProduct(String productId) async {
+    final uri = Uri.parse(
+      '$baseUrl/products/${Uri.encodeComponent(productId)}',
+    );
+    final response = await httpClient.delete(uri);
+    if (response.statusCode == 204 || response.statusCode == 200) {
+      return;
+    }
+    if (response.statusCode == 401) {
+      throw Exception('Session expired');
+    }
+    if (response.statusCode == 404) {
+      throw Exception('Product not found');
+    }
+    throw Exception(
+      _httpDetailMessage(response.body) ??
+          'Failed to delete product (${response.statusCode})',
+    );
+  }
+
+  /// GET /api/v1/conversations/session/{sessionId} — full session with history.
+  Future<Map<String, dynamic>> getConversationSession(int sessionId) async {
+    final uri = Uri.parse('$baseUrl/conversations/session/$sessionId');
+    final response = await httpClient.get(uri);
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data is Map<String, dynamic>) return data;
+      if (data is Map) return Map<String, dynamic>.from(data);
+    }
+    if (response.statusCode == 401) {
+      throw Exception('Session expired');
+    }
+    if (response.statusCode == 404) {
+      throw Exception('Conversation not found');
+    }
+    throw Exception(
+      _httpDetailMessage(response.body) ??
+          'Failed to load conversation (${response.statusCode})',
+    );
+  }
+
+  /// GET /api/v1/conversations/for-order/{orderId} — customer chat for an order.
+  Future<Map<String, dynamic>> getConversationForOrder(String orderId) async {
+    final uri = Uri.parse(
+      '$baseUrl/conversations/for-order/${Uri.encodeComponent(orderId)}',
+    );
+    final response = await httpClient.get(uri);
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data is Map<String, dynamic>) return data;
+      if (data is Map) return Map<String, dynamic>.from(data);
+    }
+    if (response.statusCode == 401) {
+      throw Exception('Session expired');
+    }
+    if (response.statusCode == 404) {
+      throw Exception('No conversation found for this order');
+    }
+    throw Exception(
+      _httpDetailMessage(response.body) ??
+          'Failed to load order conversation (${response.statusCode})',
+    );
+  }
+
+  /// POST /api/v1/interventions/human-message — agent reply during intervention.
+  Future<Map<String, dynamic>> sendInterventionHumanMessage(
+    String message, {
+    int? sessionId,
+  }) async {
+    final trimmed = message.trim();
+    if (trimmed.isEmpty) {
+      throw Exception('Message cannot be empty');
+    }
+    final qp = <String, String>{'message': trimmed};
+    if (sessionId != null) {
+      qp['session_id'] = '$sessionId';
+    }
+    final uri = Uri.parse(
+      '$baseUrl/interventions/human-message',
+    ).replace(queryParameters: qp);
+    final response = await httpClient.post(uri);
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      final conv = data is Map ? data['conversation'] : null;
+      if (conv is Map<String, dynamic>) return conv;
+      if (conv is Map) return Map<String, dynamic>.from(conv);
+      if (data is Map<String, dynamic>) return data;
+      if (data is Map) return Map<String, dynamic>.from(data);
+      return {'success': true};
+    }
+    if (response.statusCode == 401) {
+      throw Exception('Session expired');
+    }
+    throw Exception(
+      _httpDetailMessage(response.body) ??
+          'Failed to send message (${response.statusCode})',
+    );
+  }
+
+  /// POST /api/v1/conversations/session/{sessionId}/deactivate-intervention
+  Future<Map<String, dynamic>> deactivateConversationIntervention(
+    int sessionId,
+  ) async {
+    final uri = Uri.parse(
+      '$baseUrl/conversations/session/$sessionId/deactivate-intervention',
+    );
+    final response = await httpClient.post(uri);
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      final conv = data is Map ? data['conversation'] : null;
+      if (conv is Map<String, dynamic>) return conv;
+      if (conv is Map) return Map<String, dynamic>.from(conv);
+      if (data is Map<String, dynamic>) return data;
+      if (data is Map) return Map<String, dynamic>.from(data);
+    }
+    if (response.statusCode == 401) {
+      throw Exception('Session expired');
+    }
+    throw Exception(
+      _httpDetailMessage(response.body) ??
+          'Failed to deactivate intervention (${response.statusCode})',
+    );
+  }
+
+  /// GET /api/v1/orders/{orderId}
+  Future<Map<String, dynamic>> getOrder(String orderId) async {
+    final uri = Uri.parse(
+      '$baseUrl/orders/${Uri.encodeComponent(orderId)}',
+    );
+    final response = await httpClient.get(uri);
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data is Map<String, dynamic>) return data;
+      if (data is Map) return Map<String, dynamic>.from(data);
+    }
+    if (response.statusCode == 401) {
+      throw Exception('Session expired');
+    }
+    if (response.statusCode == 404) {
+      throw Exception('Order not found');
+    }
+    throw Exception(
+      _httpDetailMessage(response.body) ??
+          'Failed to load order (${response.statusCode})',
+    );
+  }
+
+  /// PUT /api/v1/orders/{orderId}
+  Future<Map<String, dynamic>> updateOrder(
+    String orderId, {
+    String? orderStatus,
+    String? paymentStatus,
+    String? fulfillmentStatus,
+  }) async {
+    final body = <String, dynamic>{};
+    if (orderStatus != null && orderStatus.trim().isNotEmpty) {
+      body['order_status'] = orderStatus.trim();
+    }
+    if (paymentStatus != null && paymentStatus.trim().isNotEmpty) {
+      body['payment_status'] = paymentStatus.trim();
+    }
+    if (fulfillmentStatus != null && fulfillmentStatus.trim().isNotEmpty) {
+      body['fulfillment_status'] = fulfillmentStatus.trim();
+    }
+    final uri = Uri.parse(
+      '$baseUrl/orders/${Uri.encodeComponent(orderId)}',
+    );
+    final response = await httpClient.put(
+      uri,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(body),
+    );
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data is Map<String, dynamic>) return data;
+      if (data is Map) return Map<String, dynamic>.from(data);
+    }
+    if (response.statusCode == 401) {
+      throw Exception('Session expired');
+    }
+    throw Exception(
+      _httpDetailMessage(response.body) ??
+          'Failed to update order (${response.statusCode})',
+    );
+  }
+
+  /// POST /api/v1/orders/{orderId}/send-invoice — Paystack link + message to customer chat.
+  Future<Map<String, dynamic>> sendOrderInvoice(
+    String orderId, {
+    String? customerEmail,
+  }) async {
+    final qp = <String, String>{};
+    final trimmedEmail = customerEmail?.trim();
+    if (trimmedEmail != null && trimmedEmail.isNotEmpty) {
+      qp['customer_email'] = trimmedEmail;
+    }
+    final uri = Uri.parse(
+      '$baseUrl/orders/${Uri.encodeComponent(orderId)}/send-invoice',
+    ).replace(queryParameters: qp.isEmpty ? null : qp);
+    final response = await httpClient.post(uri);
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data is Map<String, dynamic>) return data;
+      if (data is Map) return Map<String, dynamic>.from(data);
+    }
+    if (response.statusCode == 401) {
+      throw Exception('Session expired');
+    }
+    throw Exception(
+      _httpDetailMessage(response.body) ??
+          'Failed to send invoice (${response.statusCode})',
+    );
+  }
+
+  /// GET /api/v1/conversations/me — `{ completed, intervention_active }`.
+  /// `completed` lists sessions without active intervention (history / all chats).
   Future<Map<String, List<Map<String, dynamic>>>> listMyConversations({
     int skip = 0,
     int limit = 100,

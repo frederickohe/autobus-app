@@ -40,6 +40,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       final botReply = await repository.sendMessage(
         event.phone,
         event.message,
+        companyNumber: event.companyNumber,
         context: event.context,
       );
 

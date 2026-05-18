@@ -43,7 +43,9 @@ export 'package:autobus/features/chat/manage_chats.dart';
 export 'package:autobus/features/chat/manage_channels.dart';
 export 'package:autobus/features/chat/live_chats.dart';
 export 'package:autobus/features/chat/all_chats.dart';
+export 'package:autobus/features/chat/conversation_detail_screen.dart';
 export 'package:autobus/features/products/view_products_list.dart';
+export 'package:autobus/features/products/product_detail_screen.dart';
 export 'package:autobus/features/marketing/manage_marketing.dart';
 export 'package:autobus/common_design/manage_screen_style.dart';
 export 'package:autobus/common_design/widgets/ctabutton.dart';
@@ -79,6 +81,7 @@ export 'package:autobus/features/marketing/manage_outlets.dart';
 export 'package:autobus/features/orders/manage_orders.dart';
 export 'package:autobus/features/orders/active_queries.dart';
 export 'package:autobus/features/orders/all_orders_history.dart';
+export 'package:autobus/features/orders/order_detail_screen.dart';
 // Icons import
 export 'package:flutter_bloc/flutter_bloc.dart';
 
