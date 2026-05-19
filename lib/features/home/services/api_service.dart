@@ -1,5 +1,7 @@
 import 'package:autobus/barrel.dart';
 import 'dart:developer';
+import 'package:autobus/features/chat/models/chatwoot_inbox.dart';
+import 'package:autobus/features/marketing/models/postiz_integration.dart';
 import 'package:autobus/features/notifications/models/app_notification.dart';
 import 'dart:io';
 import 'package:http/http.dart' as http;
@@ -1039,15 +1041,23 @@ class ApiService {
   Future<Map<String, dynamic>> generateImageMedia({
     required String prompt,
     String? userId,
+    Duration timeout = const Duration(minutes: 11),
   }) async {
-    final response = await httpClient.post(
-      Uri.parse('$baseUrl/media/generate-image'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'prompt': prompt,
-        if (userId != null && userId.trim().isNotEmpty) 'user_id': userId,
-      }),
-    );
+    final response = await httpClient
+        .post(
+          Uri.parse('$baseUrl/media/generate-image'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'prompt': prompt,
+            if (userId != null && userId.trim().isNotEmpty) 'user_id': userId,
+          }),
+        )
+        .timeout(
+          timeout,
+          onTimeout: () => throw Exception(
+            'Image generation timed out. The server may still be processing; try again.',
+          ),
+        );
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
@@ -1065,18 +1075,26 @@ class ApiService {
     required String prompt,
     String? userId,
     bool store = false,
+    Duration timeout = const Duration(minutes: 11),
   }) async {
     final uri = Uri.parse('$baseUrl/media/generate-video').replace(
       queryParameters: {'store': store.toString()},
     );
-    final response = await httpClient.post(
-      uri,
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'prompt': prompt,
-        if (userId != null && userId.trim().isNotEmpty) 'user_id': userId,
-      }),
-    );
+    final response = await httpClient
+        .post(
+          uri,
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'prompt': prompt,
+            if (userId != null && userId.trim().isNotEmpty) 'user_id': userId,
+          }),
+        )
+        .timeout(
+          timeout,
+          onTimeout: () => throw Exception(
+            'Video generation timed out. The server may still be processing; try again.',
+          ),
+        );
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
@@ -1171,6 +1189,173 @@ class ApiService {
     }
     throw Exception(
       'Failed to mark notification as read: ${response.statusCode} ${response.body}',
+    );
+  }
+
+  /// GET /api/v1/social/postiz/integrations — connected Postiz channels.
+  Future<List<PostizIntegration>> listPostizIntegrations() async {
+    final response = await httpClient.get(
+      Uri.parse('$baseUrl/social/postiz/integrations'),
+    );
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      final List<dynamic> raw;
+      if (data is List) {
+        raw = data;
+      } else if (data is Map && data['integrations'] is List) {
+        raw = data['integrations'] as List;
+      } else if (data is Map && data['items'] is List) {
+        raw = data['items'] as List;
+      } else {
+        return [];
+      }
+      return raw
+          .whereType<Map>()
+          .map((e) => PostizIntegration.fromJson(Map<String, dynamic>.from(e)))
+          .where((i) => i.isActive)
+          .toList();
+    }
+    if (response.statusCode == 401) {
+      throw Exception('Session expired');
+    }
+    // No Postiz org / API key yet — treat as nothing linked.
+    if (response.statusCode == 404) {
+      return [];
+    }
+    throw Exception(
+      _httpDetailMessage(response.body) ??
+          'Could not load linked outlets (${response.statusCode})',
+    );
+  }
+
+  /// POST /api/v1/social/postiz/auto-login — Postiz LOCAL login + integrations URL.
+  Future<PlatformEmbedSession> postizAutoLogin() async {
+    final response = await httpClient.post(
+      Uri.parse('$baseUrl/social/postiz/auto-login'),
+      headers: {'Content-Type': 'application/json'},
+    );
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data is Map<String, dynamic>) {
+        return PlatformEmbedSession.fromPostizAutoLogin(data);
+      }
+      if (data is Map) {
+        return PlatformEmbedSession.fromPostizAutoLogin(
+          Map<String, dynamic>.from(data),
+        );
+      }
+      throw Exception('Invalid Postiz auto-login response');
+    }
+    if (response.statusCode == 401) {
+      throw Exception('Session expired');
+    }
+    throw Exception(
+      _httpDetailMessage(response.body) ??
+          'Postiz sign-in failed (${response.statusCode})',
+    );
+  }
+
+  /// GET /api/v1/social/connect/{platform} — OAuth or Postiz embed for Facebook, etc.
+  Future<PlatformEmbedSession> initiateSocialConnect(String platform) async {
+    final slug = platform.trim().toLowerCase();
+    final response = await httpClient.get(
+      Uri.parse('$baseUrl/social/connect/$slug'),
+    );
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data is Map<String, dynamic>) {
+        final provider = (data['provider'] ?? '').toString().toUpperCase();
+        if (provider == 'POSTIZ') {
+          return PlatformEmbedSession.fromSocialConnect(data);
+        }
+        final authUrl = (data['authorization_url'] ?? data['auth_url'] ?? '')
+            .toString();
+        if (authUrl.isNotEmpty) {
+          return PlatformEmbedSession(authorizationUrl: authUrl);
+        }
+        throw Exception('Unsupported social connect response for $slug');
+      }
+      if (data is Map) {
+        final map = Map<String, dynamic>.from(data);
+        final provider = (map['provider'] ?? '').toString().toUpperCase();
+        if (provider == 'POSTIZ') {
+          return PlatformEmbedSession.fromSocialConnect(map);
+        }
+        final authUrl = (map['authorization_url'] ?? map['auth_url'] ?? '')
+            .toString();
+        if (authUrl.isNotEmpty) {
+          return PlatformEmbedSession(authorizationUrl: authUrl);
+        }
+      }
+      throw Exception('Invalid social connect response');
+    }
+    if (response.statusCode == 401) {
+      throw Exception('Session expired');
+    }
+    throw Exception(
+      _httpDetailMessage(response.body) ??
+          'Could not start $slug connection (${response.statusCode})',
+    );
+  }
+
+  /// GET /api/v1/chatwoot/session — Chatwoot login + inbox settings URL.
+  Future<PlatformEmbedSession> getChatwootSession() async {
+    final response = await httpClient.get(
+      Uri.parse('$baseUrl/chatwoot/session'),
+    );
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data is Map<String, dynamic>) {
+        return PlatformEmbedSession.fromChatwoot(data);
+      }
+      if (data is Map) {
+        return PlatformEmbedSession.fromChatwoot(Map<String, dynamic>.from(data));
+      }
+      throw Exception('Invalid Chatwoot session response');
+    }
+    if (response.statusCode == 401) {
+      throw Exception('Session expired');
+    }
+    if (response.statusCode == 403) {
+      throw Exception(
+        _httpDetailMessage(response.body) ??
+            'An active subscription is required for Chatwoot.',
+      );
+    }
+    throw Exception(
+      _httpDetailMessage(response.body) ??
+          'Chatwoot sign-in failed (${response.statusCode})',
+    );
+  }
+
+  /// GET /api/v1/chatwoot/channels/{channel}/link — per-channel Chatwoot embed.
+  Future<PlatformEmbedSession> getChatwootChannelLink(String channel) async {
+    final slug = channel.trim().toLowerCase();
+    final response = await httpClient.get(
+      Uri.parse('$baseUrl/chatwoot/channels/$slug/link'),
+    );
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data is Map<String, dynamic>) {
+        return PlatformEmbedSession.fromChatwoot(data);
+      }
+      if (data is Map) {
+        return PlatformEmbedSession.fromChatwoot(Map<String, dynamic>.from(data));
+      }
+      throw Exception('Invalid Chatwoot channel link response');
+    }
+    if (response.statusCode == 401) {
+      throw Exception('Session expired');
+    }
+    if (response.statusCode == 403) {
+      throw Exception(
+        _httpDetailMessage(response.body) ??
+            'An active subscription is required to link channels.',
+      );
+    }
+    throw Exception(
+      _httpDetailMessage(response.body) ??
+          'Chatwoot channel link failed (${response.statusCode})',
     );
   }
 
@@ -1632,26 +1817,51 @@ class ApiService {
     );
   }
 
-  /// GET /api/v1/chatwoot/inboxes — Chatwoot channel integrations (subscription required).
-  Future<int> getChatwootInboxTotal() async {
+  /// GET /api/v1/chatwoot/inboxes — Chatwoot inboxes (subscription required).
+  Future<List<ChatwootInbox>> listChatwootInboxes() async {
     final response = await httpClient.get(
       Uri.parse('$baseUrl/chatwoot/inboxes'),
     );
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
-      if (data is! Map) return 0;
-      final total = data['total'];
-      if (total is int) return total;
-      if (total is num) return total.toInt();
-      final inboxes = data['inboxes'];
-      if (inboxes is List) return inboxes.length;
-      return 0;
+      final List<dynamic> raw;
+      if (data is Map && data['inboxes'] is List) {
+        raw = data['inboxes'] as List;
+      } else if (data is Map && data['payload'] is List) {
+        raw = data['payload'] as List;
+      } else if (data is List) {
+        raw = data;
+      } else {
+        return [];
+      }
+      return raw
+          .whereType<Map>()
+          .map((e) => ChatwootInbox.fromJson(Map<String, dynamic>.from(e)))
+          .where((i) => i.isActive)
+          .toList();
     }
     if (response.statusCode == 401) {
       throw Exception('Session expired');
     }
-    final msg = _httpDetailMessage(response.body);
-    throw Exception(msg ?? 'Could not load inboxes (${response.statusCode})');
+    if (response.statusCode == 404) {
+      return [];
+    }
+    if (response.statusCode == 403) {
+      throw Exception(
+        _httpDetailMessage(response.body) ??
+            'An active subscription is required for Chatwoot.',
+      );
+    }
+    throw Exception(
+      _httpDetailMessage(response.body) ??
+          'Could not load Chatwoot inboxes (${response.statusCode})',
+    );
+  }
+
+  /// Inbox count for dashboard summaries.
+  Future<int> getChatwootInboxTotal() async {
+    final inboxes = await listChatwootInboxes();
+    return inboxes.length;
   }
 
   static String? _httpDetailMessage(String body) {

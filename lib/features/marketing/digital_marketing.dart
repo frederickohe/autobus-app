@@ -527,11 +527,14 @@ class _GenerateMediaPageState extends State<_GenerateMediaPage> {
           userId: userId,
           prompt: prompt,
         );
-        final rawBase64 = (response['image_base64'] ?? '').toString();
+        final rawBase64 = (response['image_base64'] ?? '').toString().trim();
+        if (rawBase64.isEmpty) {
+          throw Exception('Image generation returned no image data');
+        }
         final cleanedBase64 = rawBase64.contains(',')
             ? rawBase64.substring(rawBase64.indexOf(',') + 1)
             : rawBase64;
-        slot.generatedBytes = base64Decode(cleanedBase64);
+        slot.generatedBytes = await compute(base64Decode, cleanedBase64);
         slot.generatedResult = response['mime_type']?.toString();
       } else if (slot.type == MarketingContentType.videos) {
         final response = await _apiService.generateVideoMedia(
@@ -539,7 +542,11 @@ class _GenerateMediaPageState extends State<_GenerateMediaPage> {
           prompt: prompt,
         );
         result = (response['stored_url'] ?? response['video_url'] ?? '')
-            .toString();
+            .toString()
+            .trim();
+        if (result.isEmpty) {
+          throw Exception('Video generation returned no video URL');
+        }
         slot.generatedResult = result;
       } else {
         result = await _apiService.generateAgentContent(
