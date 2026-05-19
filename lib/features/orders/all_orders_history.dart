@@ -171,11 +171,7 @@ class _AllOrdersHistoryState extends State<AllOrdersHistory> {
                   Expanded(
                     child: _loading
                         ? const Center(
-                            child: SizedBox(
-                              width: 32,
-                              height: 32,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            ),
+                            child:                             const AutobusLoadingIndicator(size: 32),
                           )
                         : _loadError != null
                         ? Center(

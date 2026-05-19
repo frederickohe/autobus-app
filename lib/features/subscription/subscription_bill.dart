@@ -345,7 +345,7 @@ class _SubscriptionBillPageState extends State<SubscriptionBillPage> {
                 ),
                 const Spacer(),
                 _isLoading
-                    ? const CircularProgressIndicator(color: Colors.white)
+                    ? const AutobusLoadingIndicator(size: 28)
                     : _BottomCta(
                         label: 'Subscribe Now',
                         onPressed: _handleSubscription,

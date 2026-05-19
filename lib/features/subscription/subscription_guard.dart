@@ -163,7 +163,7 @@ class SubscriptionGuard extends StatelessWidget {
         );
         if (snap.connectionState != ConnectionState.done) {
           return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
+            body: Center(child: AutobusLoadingIndicator()),
           );
         }
 

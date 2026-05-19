@@ -127,13 +127,7 @@ class _ManageChatsState extends State<ManageChats> {
                           if (_loading) ...[
                             const SizedBox(height: 8),
                             const Center(
-                              child: SizedBox(
-                                width: 28,
-                                height: 28,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              ),
+                              child:                               const AutobusLoadingIndicator(size: 28),
                             ),
                             const SizedBox(height: 24),
                           ] else if (_statusError != null) ...[

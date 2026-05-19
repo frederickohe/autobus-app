@@ -56,6 +56,7 @@ export 'package:autobus/features/auth/verifycode.dart';
 export 'package:autobus/common_design/widgets/success.dart';
 export 'package:autobus/common_design/widgets/trans_ctabutton.dart';
 export 'package:autobus/common_design/widgets/autobus_branding.dart';
+export 'package:autobus/common_design/widgets/autobus_loading_indicator.dart';
 export 'package:autobus/features/autochat/autobus.dart';
 export 'package:autobus/features/interactions/manage_interactions.dart';
 export 'package:autobus/features/intelligence/manage_intelligence.dart';

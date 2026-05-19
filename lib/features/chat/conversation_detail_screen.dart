@@ -236,14 +236,7 @@ class _ConversationDetailScreenState extends State<ConversationDetailScreen> {
               ),
             ),
             icon: _actionBusy
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
-                    ),
-                  )
+                ? const AutobusLoadingIndicator(size: 18)
                 : const Icon(Icons.smart_toy_outlined, size: 20),
             label: Text(
               'Turn off intervention',
@@ -300,14 +293,7 @@ class _ConversationDetailScreenState extends State<ConversationDetailScreen> {
                 IconButton(
                   onPressed: canSend ? _sendMessage : null,
                   icon: _sending
-                      ? const SizedBox(
-                          width: 22,
-                          height: 22,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Color(0xFFA855F7),
-                          ),
-                        )
+                      ? const AutobusLoadingIndicator(size: 22)
                       : Icon(
                           Icons.send_rounded,
                           color: canSend
@@ -325,13 +311,7 @@ class _ConversationDetailScreenState extends State<ConversationDetailScreen> {
 
   Widget _buildBody() {
     if (_loading) {
-      return const Center(
-        child: SizedBox(
-          width: 32,
-          height: 32,
-          child: CircularProgressIndicator(strokeWidth: 2),
-        ),
-      );
+      return const Center(child: AutobusLoadingIndicator(size: 32));
     }
     if (_loadError != null) {
       return Center(

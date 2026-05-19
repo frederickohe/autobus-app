@@ -163,9 +163,7 @@ class _ManageReportsState extends State<ManageReports> {
                 Expanded(
                   child: _loading
                       ? const Center(
-                          child: CircularProgressIndicator(
-                            color: Color(0xFF7B4BB7),
-                          ),
+                          child: AutobusLoadingIndicator(),
                         )
                       : RefreshIndicator(
                           color: const Color(0xFF7B4BB7),

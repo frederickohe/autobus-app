@@ -62,7 +62,7 @@ class AuthWrapper extends StatelessWidget {
           } else if (state is TokenRefreshing) {
             print('⏳ Token Refreshing...');
             return const Scaffold(
-              body: Center(child: CircularProgressIndicator()),
+              body: Center(child: AutobusLoadingIndicator()),
             );
           } else if (state is TokenRefreshFailed) {
             print('✗ Token Refresh Failed: ${state.message} - showing Signin');
@@ -70,7 +70,7 @@ class AuthWrapper extends StatelessWidget {
           } else {
             print('⏳ Initial Loading State: $state');
             return const Scaffold(
-              body: Center(child: CircularProgressIndicator()),
+              body: Center(child: AutobusLoadingIndicator()),
             );
           }
         },

@@ -82,7 +82,7 @@ class _NotificationsInboxPageState extends State<NotificationsInboxPage> {
                     future: _future,
                     builder: (context, snap) {
                       if (snap.connectionState != ConnectionState.done) {
-                        return const Center(child: CircularProgressIndicator());
+                        return const Center(child: AutobusLoadingIndicator());
                       }
                       if (snap.hasError) {
                         return Center(
@@ -195,12 +195,8 @@ class _NotificationsInboxPageState extends State<NotificationsInboxPage> {
                                           MaterialTapTargetSize.shrinkWrap,
                                     ),
                                     child: marking
-                                        ? const SizedBox(
-                                            width: 16,
-                                            height: 16,
-                                            child: CircularProgressIndicator(
-                                              strokeWidth: 2,
-                                            ),
+                                        ? const AutobusLoadingIndicator(
+                                            size: 16,
                                           )
                                         : Text(
                                             'Mark read',

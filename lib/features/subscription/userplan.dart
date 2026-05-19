@@ -57,7 +57,7 @@ class _SelectPlanState extends State<SelectPlan> with TickerProviderStateMixin {
                 Expanded(
                   child: _isLoading
                       ? const Center(
-                          child: CircularProgressIndicator(color: Colors.white),
+                          child: AutobusLoadingIndicator(size: 36),
                         )
                       : _plans.isEmpty
                       ? Center(

@@ -354,7 +354,7 @@ class _DigitalMarketingPageState extends State<DigitalMarketingPage> {
   @override
   Widget build(BuildContext context) {
     return _MarketingScaffold(
-      child: const Center(child: CircularProgressIndicator()),
+      child: const Center(child: AutobusLoadingIndicator()),
     );
   }
 }
@@ -1022,14 +1022,7 @@ class _MediaSlotThumbCard extends StatelessWidget {
         return ColoredBox(
           color: CustColors.mainCol.withValues(alpha: 0.08),
           child: Center(
-            child: SizedBox(
-              width: 26,
-              height: 26,
-              child: CircularProgressIndicator(
-                strokeWidth: 2.2,
-                color: CustColors.logodeep,
-              ),
-            ),
+            child: const AutobusLoadingIndicator(size: 26),
           ),
         );
       case MediaGenState.ready:
@@ -2031,7 +2024,7 @@ class _SelectOutletPageState extends State<_SelectOutletPage> {
           const SizedBox(height: 24),
 
           if (_loadingAccounts)
-            const Expanded(child: Center(child: CircularProgressIndicator()))
+            const Expanded(child: Center(child: AutobusLoadingIndicator()))
           else
             Expanded(
               child: GridView.builder(

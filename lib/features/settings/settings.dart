@@ -136,16 +136,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                 ),
                               ),
                               if (isLoading)
-                                const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                      Colors.red,
-                                    ),
-                                  ),
-                                )
+                                const AutobusLoadingIndicator(size: 20)
                               else
                                 const Icon(
                                   Icons.logout,

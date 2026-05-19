@@ -215,11 +215,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       OutlinedButton.icon(
         onPressed: _actionBusy ? null : _updateOrderStatus,
         icon: _actionBusy
-            ? const SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
+            ? const AutobusLoadingIndicator(size: 18)
             : const Icon(Icons.task_alt_outlined, size: 20),
         label: Text(
           'Apply status',
@@ -269,11 +265,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       OutlinedButton.icon(
         onPressed: _invoiceBusy ? null : _sendOrderInvoice,
         icon: _invoiceBusy
-            ? const SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
+            ? const AutobusLoadingIndicator(size: 18)
             : const Icon(Icons.receipt_long_outlined, size: 20),
         label: Text(
           'Send invoice to customer',
@@ -381,11 +373,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                 Expanded(
                   child: _loading
                       ? const Center(
-                          child: SizedBox(
-                            width: 32,
-                            height: 32,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          ),
+                          child:                           const AutobusLoadingIndicator(size: 32),
                         )
                       : _loadError != null
                       ? Center(

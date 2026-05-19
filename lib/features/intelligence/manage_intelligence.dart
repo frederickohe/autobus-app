@@ -428,13 +428,7 @@ class _ManageIntelligenceState extends State<ManageIntelligence> {
                           if (_presenceLoading) ...[
                             const SizedBox(height: 8),
                             const Center(
-                              child: SizedBox(
-                                width: 28,
-                                height: 28,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              ),
+                              child:                               const AutobusLoadingIndicator(size: 28),
                             ),
                             const SizedBox(height: 24),
                           ] else if (_presenceError != null) ...[
@@ -1032,11 +1026,7 @@ class _IntelligenceHistoryPageState extends State<IntelligenceHistoryPage> {
               builder: (context, snapshot) {
                 if (snapshot.connectionState != ConnectionState.done) {
                   return const Center(
-                    child: SizedBox(
-                      width: 28,
-                      height: 28,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    ),
+                    child:                     const AutobusLoadingIndicator(size: 28),
                   );
                 }
                 if (snapshot.hasError) {
@@ -1193,11 +1183,7 @@ class _IntelligenceHistoryPageState extends State<IntelligenceHistoryPage> {
                   Expanded(
                     child: _loading
                         ? const Center(
-                            child: SizedBox(
-                              width: 32,
-                              height: 32,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            ),
+                            child:                             const AutobusLoadingIndicator(size: 32),
                           )
                         : _loadError != null
                         ? Center(

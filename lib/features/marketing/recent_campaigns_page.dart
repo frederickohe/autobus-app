@@ -122,11 +122,7 @@ class _RecentCampaignsPageState extends State<RecentCampaignsPage> {
                   Expanded(
                     child: _loading
                         ? const Center(
-                            child: SizedBox(
-                              width: 32,
-                              height: 32,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            ),
+                            child:                             const AutobusLoadingIndicator(size: 32),
                           )
                         : _loadError != null
                         ? Center(

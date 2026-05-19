@@ -99,7 +99,7 @@ class _AutoBusState extends State<AutoBus> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    CircularProgressIndicator(),
+                    AutobusLoadingIndicator(),
                     SizedBox(height: 16),
                     Text('Refreshing session...'),
                   ],
@@ -110,7 +110,7 @@ class _AutoBusState extends State<AutoBus> {
                 child: Text('Session expired. Redirecting to login...'),
               );
             }
-            return const Center(child: CircularProgressIndicator());
+            return const Center(child: AutobusLoadingIndicator());
           },
         ),
       ),
@@ -418,13 +418,7 @@ class _AutoBusChatUIState extends State<_AutoBusChatUI> {
                           TextButton.icon(
                             onPressed: uploading ? null : pickAndUpload,
                             icon: uploading
-                                ? const SizedBox(
-                                    width: 16,
-                                    height: 16,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                    ),
-                                  )
+                                ? const AutobusLoadingIndicator(size: 16)
                                 : const Icon(Icons.upload_file_rounded),
                             label: Text(
                               uploading ? 'Uploading…' : 'Upload file',
@@ -506,7 +500,7 @@ class _AutoBusChatUIState extends State<_AutoBusChatUI> {
                             if (snap.connectionState ==
                                 ConnectionState.waiting) {
                               return const Center(
-                                child: CircularProgressIndicator(),
+                                child: AutobusLoadingIndicator(),
                               );
                             }
                             if (snap.hasError) {
@@ -819,7 +813,7 @@ class _AutoBusChatUIState extends State<_AutoBusChatUI> {
                         builder: (context, state) {
                           if (state is ChatLoadInProgress) {
                             return const Center(
-                              child: CircularProgressIndicator(color: _purple),
+                              child: AutobusLoadingIndicator(),
                             );
                           }
 
@@ -843,7 +837,7 @@ class _AutoBusChatUIState extends State<_AutoBusChatUI> {
 
                           if (msgs.isEmpty) {
                             return const Center(
-                              child: CircularProgressIndicator(color: _purple),
+                              child: AutobusLoadingIndicator(),
                             );
                           }
 

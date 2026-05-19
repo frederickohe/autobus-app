@@ -521,7 +521,7 @@ class _ProfileState extends State<Profile> {
                 const SizedBox(height: 40),
                 if (_loading)
                   const Expanded(
-                    child: Center(child: CircularProgressIndicator()),
+                    child: Center(child: AutobusLoadingIndicator()),
                   )
                 else
                   Expanded(
@@ -770,13 +770,7 @@ class _ProfileState extends State<Profile> {
                       child: Padding(
                         padding: const EdgeInsets.all(12.0),
                         child: _uploadingPhoto
-                            ? const SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              )
+                            ? const AutobusLoadingIndicator(size: 18)
                             : const Icon(
                                 Icons.camera_alt_outlined,
                                 size: 18,

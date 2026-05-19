@@ -288,13 +288,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
   Widget _buildBody() {
     if (_loading) {
-      return const Center(
-        child: SizedBox(
-          width: 32,
-          height: 32,
-          child: CircularProgressIndicator(strokeWidth: 2),
-        ),
-      );
+      return const Center(child: AutobusLoadingIndicator(size: 32));
     }
     if (_loadError != null) {
       return Center(
@@ -451,14 +445,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               ),
             ),
             child: _saving
-                ? const SizedBox(
-                    width: 22,
-                    height: 22,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
-                    ),
-                  )
+                ? const AutobusLoadingIndicator(size: 22)
                 : Text(
                     'Save changes',
                     style: GoogleFonts.outfit(
