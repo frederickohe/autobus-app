@@ -1793,6 +1793,69 @@ class ApiService {
     );
   }
 
+  /// Notifications where `sms_sent` is true (`GET /api/v1/user/me/notifications`).
+  Future<List<Map<String, dynamic>>> getMySentSms({int size = 100}) async {
+    final uri = Uri.parse('$baseUrl/user/me/notifications').replace(
+      queryParameters: {'page': '1', 'size': '${size.clamp(1, 100)}'},
+    );
+    final response = await httpClient.get(uri);
+    if (response.statusCode == 401) {
+      throw Exception('Session expired');
+    }
+    if (response.statusCode != 200) {
+      throw Exception(
+        _httpDetailMessage(response.body) ??
+            'Failed to load sent SMS (${response.statusCode})',
+      );
+    }
+
+    final data = jsonDecode(response.body);
+    final list = data is List
+        ? data
+        : (data is Map
+              ? (data['notifications'] ??
+                    data['data'] ??
+                    data['items'] ??
+                    data['results'] ??
+                    [])
+              : []);
+    if (list is! List) return const [];
+
+    final sent = <Map<String, dynamic>>[];
+    for (final item in list) {
+      if (item is! Map) continue;
+      final raw = Map<String, dynamic>.from(item);
+      if (!_jsonTruthy(raw['sms_sent'])) continue;
+
+      final nested = raw['data'];
+      final map = nested is Map ? Map<String, dynamic>.from(nested) : <String, dynamic>{};
+      sent.add({
+        'phone': (raw['sms_phone'] ?? map['phone'] ?? map['to'] ?? '').toString(),
+        'message': (map['message'] ??
+                map['body'] ??
+                map['content'] ??
+                map['description'] ??
+                '')
+            .toString(),
+        'sent_at': (raw['sms_sent_at'] ?? raw['created_at'] ?? '').toString(),
+        'status':
+            (raw['sms_status'] ?? raw['sms_delivery_status'] ?? '').toString(),
+      });
+    }
+    return sent;
+  }
+
+  static bool _jsonTruthy(dynamic v) {
+    if (v == null) return false;
+    if (v is bool) return v;
+    if (v is num) return v != 0;
+    if (v is String) {
+      final s = v.trim().toLowerCase();
+      return s == 'true' || s == '1' || s == 'yes';
+    }
+    return false;
+  }
+
   /// GET /api/v1/social/digital-marketing/assets — body `{ items: [...], total }`.
   Future<Map<String, dynamic>> listDigitalMarketingAssets({
     int limit = 30,
@@ -1872,6 +1935,189 @@ class ApiService {
       }
     } catch (_) {}
     return null;
+  }
+
+  /// GET /api/v1/customers/list
+  Future<List<Map<String, dynamic>>> listCustomers() async {
+    final response = await httpClient.get(Uri.parse('$baseUrl/customers/list'));
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      if (data is List) {
+        return data
+            .whereType<Map>()
+            .map((e) => Map<String, dynamic>.from(e))
+            .toList();
+      }
+      return [];
+    }
+    if (response.statusCode == 401) throw Exception('Session expired');
+    throw Exception(
+      _httpDetailMessage(response.body) ??
+          'Failed to load customers (${response.statusCode})',
+    );
+  }
+
+  /// GET /api/v1/customers/get/{customerId}
+  Future<Map<String, dynamic>> getCustomer(int customerId) async {
+    final response = await httpClient.get(
+      Uri.parse('$baseUrl/customers/get/$customerId'),
+    );
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      if (data is Map<String, dynamic>) return data;
+      if (data is Map) return Map<String, dynamic>.from(data);
+    }
+    if (response.statusCode == 401) throw Exception('Session expired');
+    if (response.statusCode == 404) throw Exception('Customer not found');
+    throw Exception(
+      _httpDetailMessage(response.body) ??
+          'Failed to load customer (${response.statusCode})',
+    );
+  }
+
+  /// POST /api/v1/customers/add
+  Future<Map<String, dynamic>> addCustomer({
+    required String name,
+    required String customerNumber,
+    String? network,
+    String? bankCode,
+    String? email,
+  }) async {
+    final body = <String, dynamic>{
+      'name': name.trim(),
+      'customer_number': customerNumber.trim(),
+    };
+    if (network != null && network.trim().isNotEmpty) {
+      body['network'] = network.trim();
+    }
+    if (bankCode != null && bankCode.trim().isNotEmpty) {
+      body['bank_code'] = bankCode.trim();
+    }
+    if (email != null && email.trim().isNotEmpty) {
+      body['email'] = email.trim();
+    }
+
+    final response = await httpClient.post(
+      Uri.parse('$baseUrl/customers/add'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode(body),
+    );
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      if (data is Map<String, dynamic>) return data;
+      if (data is Map) return Map<String, dynamic>.from(data);
+    }
+    if (response.statusCode == 401) throw Exception('Session expired');
+    throw Exception(
+      _httpDetailMessage(response.body) ??
+          'Failed to add customer (${response.statusCode})',
+    );
+  }
+
+  /// PUT /api/v1/customers/update/{customerId}
+  Future<Map<String, dynamic>> updateCustomer(
+    int customerId, {
+    required String name,
+    required String customerNumber,
+    String? network,
+    String? bankCode,
+    String? email,
+  }) async {
+    final body = <String, dynamic>{
+      'name': name.trim(),
+      'customer_number': customerNumber.trim(),
+    };
+    if (network != null && network.trim().isNotEmpty) {
+      body['network'] = network.trim();
+    }
+    if (bankCode != null && bankCode.trim().isNotEmpty) {
+      body['bank_code'] = bankCode.trim();
+    }
+    if (email != null && email.trim().isNotEmpty) {
+      body['email'] = email.trim();
+    }
+
+    final response = await httpClient.put(
+      Uri.parse('$baseUrl/customers/update/$customerId'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode(body),
+    );
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      if (data is Map<String, dynamic>) return data;
+      if (data is Map) return Map<String, dynamic>.from(data);
+    }
+    if (response.statusCode == 401) throw Exception('Session expired');
+    throw Exception(
+      _httpDetailMessage(response.body) ??
+          'Failed to update customer (${response.statusCode})',
+    );
+  }
+
+  /// DELETE /api/v1/customers/delete/{customerId}
+  Future<void> deleteCustomer(int customerId) async {
+    final response = await httpClient.delete(
+      Uri.parse('$baseUrl/customers/delete/$customerId'),
+    );
+    if (response.statusCode == 200) return;
+    if (response.statusCode == 401) throw Exception('Session expired');
+    if (response.statusCode == 404) throw Exception('Customer not found');
+    throw Exception(
+      _httpDetailMessage(response.body) ??
+          'Failed to delete customer (${response.statusCode})',
+    );
+  }
+
+  /// POST /api/v1/customers/message/sms
+  Future<Map<String, dynamic>> sendCustomerSms({
+    required List<int> customerIds,
+    required String message,
+  }) async {
+    final response = await httpClient.post(
+      Uri.parse('$baseUrl/customers/message/sms'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({
+        'customer_ids': customerIds,
+        'message': message.trim(),
+      }),
+    );
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      if (data is Map<String, dynamic>) return data;
+      if (data is Map) return Map<String, dynamic>.from(data);
+    }
+    if (response.statusCode == 401) throw Exception('Session expired');
+    throw Exception(
+      _httpDetailMessage(response.body) ??
+          'Failed to send SMS (${response.statusCode})',
+    );
+  }
+
+  /// POST /api/v1/customers/message/email
+  Future<Map<String, dynamic>> sendCustomerEmail({
+    required List<int> customerIds,
+    required String subject,
+    required String body,
+  }) async {
+    final response = await httpClient.post(
+      Uri.parse('$baseUrl/customers/message/email'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({
+        'customer_ids': customerIds,
+        'subject': subject.trim(),
+        'body': body,
+      }),
+    );
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      if (data is Map<String, dynamic>) return data;
+      if (data is Map) return Map<String, dynamic>.from(data);
+    }
+    if (response.statusCode == 401) throw Exception('Session expired');
+    throw Exception(
+      _httpDetailMessage(response.body) ??
+          'Failed to send email (${response.statusCode})',
+    );
   }
 }
 

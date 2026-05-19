@@ -33,6 +33,8 @@ class AutoBus extends StatefulWidget {
         return 'chatbot_agent';
       case 'email':
         return 'email_agent';
+      case 'sms':
+        return 'chatbot_agent';
       case 'interactions':
         return 'interactions_agent';
       default:

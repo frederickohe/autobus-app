@@ -26,7 +26,7 @@ class ManageInteractions extends StatelessWidget {
                         children: [
                           const SizedBox(height: 60),
                           Text(
-                            'Welcome to Chats',
+                            'Welcome to Inbox',
                             textAlign: TextAlign.center,
                             style: GoogleFonts.montserrat(
                               color: Colors.white,

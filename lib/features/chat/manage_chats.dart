@@ -94,7 +94,7 @@ class _ManageChatsState extends State<ManageChats> {
           SafeArea(
             child: Column(
               children: [
-                const ManageScreenHeader(title: 'Manage Chats'),
+                const ManageScreenHeader(title: 'Manage Inbox'),
                 Expanded(
                   child: SingleChildScrollView(
                     child: Padding(
@@ -103,7 +103,7 @@ class _ManageChatsState extends State<ManageChats> {
                         children: [
                           const SizedBox(height: 60),
                           Text(
-                            'Welcome to Chats',
+                            'Welcome to Inbox',
                             textAlign: TextAlign.center,
                             style: GoogleFonts.montserrat(
                               color: Colors.white,

@@ -102,16 +102,22 @@ class _HomeState extends State<Home> {
           MaterialPageRoute(builder: (_) => const ManageIntelligence()),
         );
       }),
-      HomeMenuItem("Chats", Icons.chat_bubble_outline, () {
+      HomeMenuItem("Inbox", Icons.inbox_outlined, () {
         Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => const ManageChats()),
         );
       }),
-      HomeMenuItem("Email", Mdi.email_outline, () {
+      HomeMenuItem("Messaging", Icons.message_outlined, () {
         Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => const ManageEmails()),
+        );
+      }),
+      HomeMenuItem("Customers", Icons.contacts_outlined, () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const ManageCustomers()),
         );
       }),
       HomeMenuItem("Marketing", Icons8.advertising, () {

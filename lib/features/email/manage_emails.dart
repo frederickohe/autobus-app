@@ -66,7 +66,7 @@ class _ManageEmailsState extends State<ManageEmails> {
           SafeArea(
             child: Column(
               children: [
-                const ManageScreenHeader(title: 'Manage Emails'),
+                const ManageScreenHeader(title: 'Manage Messaging'),
                 Expanded(
                   child: SingleChildScrollView(
                     child: Padding(
@@ -75,7 +75,7 @@ class _ManageEmailsState extends State<ManageEmails> {
                         children: [
                           const SizedBox(height: 60),
                           Text(
-                            'Welcome to Emails',
+                            'Welcome to Messaging',
                             textAlign: TextAlign.center,
                             style: GoogleFonts.montserrat(
                               color: Colors.white,
@@ -86,7 +86,7 @@ class _ManageEmailsState extends State<ManageEmails> {
                           ),
                           const SizedBox(height: 24),
                           Text(
-                            'Send smart emails for customer support, updates, promotions, and notifications — with your AI assistant.',
+                            'Send emails and SMS for customer support, updates, promotions, and notifications — with your AI assistant.',
                             textAlign: TextAlign.center,
                             style: GoogleFonts.montserrat(
                               color: Colors.white.withValues(alpha: 0.9),
@@ -201,10 +201,7 @@ class _ManageEmailsState extends State<ManageEmails> {
                                   Navigator.push<void>(
                                     context,
                                     MaterialPageRoute<void>(
-                                      builder: (_) => const AutoBus(
-                                        title: 'Email',
-                                        webhookContext: 'email_agent',
-                                      ),
+                                      builder: (_) => const SendCustomerEmailPage(),
                                     ),
                                   );
                                 },
@@ -217,6 +214,30 @@ class _ManageEmailsState extends State<ManageEmails> {
                                     context,
                                     MaterialPageRoute<void>(
                                       builder: (_) => const SentEmailsPage(),
+                                    ),
+                                  );
+                                },
+                              ),
+                              _EmailHubCard(
+                                icon: Icons.sms_outlined,
+                                title: 'SMS',
+                                onTap: () {
+                                  Navigator.push<void>(
+                                    context,
+                                    MaterialPageRoute<void>(
+                                      builder: (_) => const SendCustomerSmsPage(),
+                                    ),
+                                  );
+                                },
+                              ),
+                              _EmailHubCard(
+                                icon: Icons.send_to_mobile_outlined,
+                                title: 'Sent SMS',
+                                onTap: () {
+                                  Navigator.push<void>(
+                                    context,
+                                    MaterialPageRoute<void>(
+                                      builder: (_) => const SentSmsPage(),
                                     ),
                                   );
                                 },

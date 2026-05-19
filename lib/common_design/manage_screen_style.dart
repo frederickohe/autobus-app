@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// Visual baseline for hub screens opened from Home (matches [ManageChats]).
+/// Visual baseline for hub screens opened from Home (matches inbox / messaging hubs).
 class ManageScreenStyle {
   ManageScreenStyle._();
 

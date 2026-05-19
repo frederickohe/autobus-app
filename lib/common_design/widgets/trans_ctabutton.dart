@@ -16,7 +16,7 @@ class TransparentCtaButton extends StatelessWidget {
       onTap: onPressed,
       child: Container(
         width: MediaQuery.of(context).size.width * 0.6,
-        height: 60,
+        height: 51,
         padding: const EdgeInsets.symmetric(horizontal: 24),
         decoration: BoxDecoration(
           color: Colors.transparent,
