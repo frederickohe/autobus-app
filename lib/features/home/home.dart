@@ -85,7 +85,7 @@ class _HomeState extends State<Home> {
   @override
   Widget build(BuildContext context) {
     final List<HomeMenuItem> menuItems = [
-      HomeMenuItem("My AI", Icons.smart_toy_outlined, () {
+      HomeMenuItem("My AI", Ph.sparkle, () {
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -96,31 +96,31 @@ class _HomeState extends State<Home> {
           ),
         );
       }),
-      HomeMenuItem("Intelligence", MaterialSymbols.psychology_outline, () {
+      HomeMenuItem("Intelligence", Fluent.brain_circuit_20_regular, () {
         Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => const ManageIntelligence()),
         );
       }),
-      HomeMenuItem("Inbox", Icons.inbox_outlined, () {
+      HomeMenuItem("Inbox", MaterialSymbols.phone_callback_outline_sharp, () {
         Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => const ManageChats()),
         );
       }),
-      HomeMenuItem("Messaging", Icons.message_outlined, () {
+      HomeMenuItem("Messaging", Ph.chats_circle, () {
         Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => const ManageEmails()),
         );
       }),
-      HomeMenuItem("Customers", Icons.contacts_outlined, () {
+      HomeMenuItem("Customers", Fluent.people_call_16_regular, () {
         Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => const ManageCustomers()),
         );
       }),
-      HomeMenuItem("Marketing", Icons8.advertising, () {
+      HomeMenuItem("Marketing", Fluent.people_community_add_20_regular, () {
         Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => const ManageMarketing()),
@@ -132,13 +132,13 @@ class _HomeState extends State<Home> {
           MaterialPageRoute(builder: (_) => const ManageOrders()),
         );
       }),
-      HomeMenuItem("Products", Icons.shopping_bag_outlined, () {
+      HomeMenuItem("Products", Ep.sell, () {
         Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => const ManageProducts()),
         );
       }),
-      HomeMenuItem("Analytics", Icons.bar_chart_outlined, () {
+      HomeMenuItem("Analytics", Uim.analytics, () {
         Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => const ManageReports()),

@@ -113,6 +113,10 @@ export 'package:iconify_flutter/icons/tabler.dart';
 export 'package:iconify_flutter/icons/icons8.dart';
 export 'package:iconify_flutter/icons/ph.dart';
 export 'package:iconify_flutter/icons/ri.dart';
+export 'package:iconify_flutter/icons/humbleicons.dart';
+export 'package:iconify_flutter/icons/ep.dart';
+export 'package:iconify_flutter/icons/uim.dart';
+export 'package:autobus/icons/fluent.dart';
 
 // Design Imports
 export 'package:autobus/common_design/colors.dart';
