@@ -90,8 +90,9 @@ class SubscriptionPlan extends Equatable {
     ),
   ];
 
+  /// Full year total: 12 × monthly plan price (no bundled discount factor).
   double get _annualPrice =>
-      double.parse((price * 12 * 0.8).toStringAsFixed(2));
+      double.parse((price * 12).toStringAsFixed(2));
 
   String get priceText => price == 0 ? 'Free' : 'from GHS $price/mo';
 
