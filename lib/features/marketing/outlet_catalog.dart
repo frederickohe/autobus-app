@@ -88,10 +88,10 @@ class OutletCatalog {
       connectSlug: 'x',
     ),
     OutletOption(
-      label: 'Website',
-      icon: FontAwesomeIcons.globe,
-      iconColor: Color(0xFF94A3B8),
-      postizIdentifiers: {'wordpress', 'medium', 'hashnode', 'devto'},
+      label: 'YouTube',
+      icon: FontAwesomeIcons.youtube,
+      iconColor: Color(0xFFFF0000),
+      postizIdentifiers: {'youtube'},
     ),
   ];
 

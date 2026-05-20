@@ -4,7 +4,7 @@ import 'dart:typed_data';
 import 'package:autobus/barrel.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:video_player/video_player.dart';
 
 const _kPrimary = Color(0xFF1A1A2E);
 const _kHeaderPurple = Color(0xFF2A1447);
@@ -154,21 +154,33 @@ class _MarketingScaffold extends StatelessWidget {
 class _DarkButton extends StatelessWidget {
   final String label;
   final VoidCallback? onTap;
+  /// Narrower pill used on the generate-media step.
+  final bool compact;
 
-  const _DarkButton({required this.label, this.onTap});
+  const _DarkButton({
+    required this.label,
+    this.onTap,
+    this.compact = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     final enabled = onTap != null;
+    final height = compact ? 48.0 : 74.0;
+    final fontSize = compact ? 14.0 : 16.0;
+    final arrowSize = compact ? 11.0 : 14.0;
+    final arrowGap = compact ? 7.0 : 10.0;
+    final labelArrowGap = compact ? 8.0 : 12.0;
+    final hPad = compact ? 18.0 : 22.0;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         width: double.infinity,
-        height: 74,
-        padding: const EdgeInsets.symmetric(horizontal: 22),
+        height: height,
+        padding: EdgeInsets.symmetric(horizontal: hPad),
         decoration: BoxDecoration(
           color: enabled ? _kNextButtonPurple : Colors.grey.shade300,
-          borderRadius: BorderRadius.circular(50),
+          borderRadius: BorderRadius.circular(compact ? 36 : 50),
           border: Border.all(
             color: enabled ? Colors.white : Colors.white.withValues(alpha: 0.0),
             width: 0.5,
@@ -181,30 +193,30 @@ class _DarkButton extends StatelessWidget {
             Text(
               label,
               style: GoogleFonts.montserrat(
-                fontSize: 16,
+                fontSize: fontSize,
                 fontWeight: FontWeight.w500,
                 color: enabled ? Colors.white : Colors.white70,
               ),
             ),
-            const SizedBox(width: 12),
+            SizedBox(width: labelArrowGap),
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
                   Icons.arrow_forward_ios,
-                  size: 14,
+                  size: arrowSize,
                   color: Colors.white.withValues(alpha: enabled ? 1.0 : 0.7),
                 ),
-                const SizedBox(width: 10),
+                SizedBox(width: arrowGap),
                 Icon(
                   Icons.arrow_forward_ios,
-                  size: 14,
+                  size: arrowSize,
                   color: Colors.white.withValues(alpha: enabled ? 0.8 : 0.55),
                 ),
-                const SizedBox(width: 10),
+                SizedBox(width: arrowGap),
                 Icon(
                   Icons.arrow_forward_ios,
-                  size: 14,
+                  size: arrowSize,
                   color: Colors.white.withValues(alpha: enabled ? 0.6 : 0.4),
                 ),
               ],
@@ -221,12 +233,14 @@ class _PromptBar extends StatelessWidget {
   final String hint;
   final VoidCallback? onAttach;
   final VoidCallback? onGenerate;
+  final IconData generateIcon;
 
   const _PromptBar({
     required this.controller,
     required this.hint,
     this.onAttach,
     this.onGenerate,
+    this.generateIcon = Icons.send_rounded,
   });
 
   @override
@@ -298,7 +312,7 @@ class _PromptBar extends StatelessWidget {
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(
-                    Icons.send_rounded,
+                    generateIcon,
                     color: onGenerate != null ? CustColors.logodeep : Colors.black38,
                     size: 20,
                   ),
@@ -473,6 +487,22 @@ class _GenerateMediaPageState extends State<_GenerateMediaPage> {
       (_segmentType == MarketingContentType.pictures ||
           _segmentType == MarketingContentType.videos);
 
+  /// Text step: unchanged. Picture/video: every slot in this segment must have
+  /// uploaded or generated media, and nothing may still be generating.
+  bool get _canGoNext {
+    if (_isText) return true;
+    final indices = _segmentIndices();
+    final anyGenerating = indices.any(
+      (i) =>
+          widget.campaign.contents[i].genState == MediaGenState.generating,
+    );
+    if (anyGenerating) return false;
+    for (final i in indices) {
+      if (!_slotHasViewableMedia(widget.campaign.contents[i])) return false;
+    }
+    return true;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -537,9 +567,12 @@ class _GenerateMediaPageState extends State<_GenerateMediaPage> {
         slot.generatedBytes = await compute(base64Decode, cleanedBase64);
         slot.generatedResult = response['mime_type']?.toString();
       } else if (slot.type == MarketingContentType.videos) {
+        // store=true: server saves MP4 to object storage so ExoPlayer can stream it.
+        // Raw Google Veo URLs often fail on Android (ExoPlaybackException / source error).
         final response = await _apiService.generateVideoMedia(
           userId: userId,
           prompt: prompt,
+          store: true,
         );
         result = (response['stored_url'] ?? response['video_url'] ?? '')
             .toString()
@@ -563,6 +596,12 @@ class _GenerateMediaPageState extends State<_GenerateMediaPage> {
         slot.genState = MediaGenState.ready;
         if (_isText) _textBodyCtrl.text = result;
       });
+      if (slot.type == MarketingContentType.videos) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          _showMediaPreview(_selectedSlotIndex);
+        });
+      }
     } catch (e) {
       if (!mounted) return;
       setState(() => slot.genState = MediaGenState.idle);
@@ -878,10 +917,15 @@ class _GenerateMediaPageState extends State<_GenerateMediaPage> {
             hint: _activeContent.promptHint,
             onAttach: _isText ? null : _pickAndAttachMedia,
             onGenerate: canGenerate ? _generate : null,
+            generateIcon: _isText ? Icons.send_rounded : Icons.auto_awesome,
           ),
 
           const SizedBox(height: 16),
-          _DarkButton(label: 'Next', onTap: _goNext),
+          _DarkButton(
+            label: 'Next',
+            compact: true,
+            onTap: _canGoNext ? _goNext : null,
+          ),
           const SizedBox(height: 20),
         ],
       ),
@@ -1081,6 +1125,191 @@ class _MediaSlotThumbCard extends StatelessWidget {
   }
 }
 
+/// Plays a generated (remote) or uploaded (local) video inside the app.
+class _MarketingInlineVideoPlayer extends StatefulWidget {
+  final String videoRef;
+
+  const _MarketingInlineVideoPlayer({required this.videoRef});
+
+  @override
+  State<_MarketingInlineVideoPlayer> createState() =>
+      _MarketingInlineVideoPlayerState();
+}
+
+class _MarketingInlineVideoPlayerState extends State<_MarketingInlineVideoPlayer> {
+  VideoPlayerController? _controller;
+  bool _failed = false;
+  String _errorDetail = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _init();
+  }
+
+  Future<void> _init() async {
+    final ref = widget.videoRef.trim();
+    if (ref.isEmpty) {
+      if (mounted) {
+        setState(() {
+          _failed = true;
+          _errorDetail = 'No video reference.';
+        });
+      }
+      return;
+    }
+
+    final isNetwork =
+        ref.startsWith('http://') || ref.startsWith('https://');
+
+    late final VideoPlayerController c;
+    if (isNetwork) {
+      c = VideoPlayerController.networkUrl(
+        Uri.parse(ref),
+        httpHeaders: const {
+          // Some CDNs / storage endpoints reject requests with no User-Agent.
+          'User-Agent': 'Autobus/1.0',
+        },
+      );
+    } else {
+      if (kIsWeb) {
+        if (mounted) {
+          setState(() {
+            _failed = true;
+            _errorDetail = 'Local file playback is not supported on web.';
+          });
+        }
+        return;
+      }
+      c = VideoPlayerController.file(File(ref));
+    }
+
+    try {
+      await c.initialize();
+      if (!mounted) {
+        await c.dispose();
+        return;
+      }
+      setState(() => _controller = c);
+      await c.setLooping(true);
+      await c.play();
+    } catch (e) {
+      await c.dispose();
+      if (!mounted) return;
+      setState(() {
+        _failed = true;
+        _errorDetail = e.toString();
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_failed) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Text(
+            'Could not load video.\n$_errorDetail',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.montserrat(
+              color: Colors.white70,
+              fontSize: 13,
+            ),
+          ),
+        ),
+      );
+    }
+
+    final c = _controller;
+    if (c == null || !c.value.isInitialized) {
+      return const Center(
+        child: SizedBox(
+          width: 36,
+          height: 36,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: Colors.white54,
+          ),
+        ),
+      );
+    }
+
+    final ar = c.value.aspectRatio;
+    final ratio = ar > 0 ? ar : 16 / 9;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        var maxW = constraints.maxWidth;
+        var maxH = constraints.maxHeight;
+        if (!maxW.isFinite || maxW <= 0) maxW = 320;
+        final hasBoundedH = maxH.isFinite && maxH > 0 && maxH < double.infinity;
+        if (!hasBoundedH) maxH = maxW / ratio;
+
+        var w = maxW;
+        var h = w / ratio;
+        if (h > maxH) {
+          h = maxH;
+          w = h * ratio;
+        }
+
+        return Center(
+          child: SizedBox(
+            width: w,
+            height: h,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                VideoPlayer(c),
+                ValueListenableBuilder<VideoPlayerValue>(
+                  valueListenable: c,
+                  builder: (context, value, _) {
+                    return GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () {
+                        if (value.isPlaying) {
+                          c.pause();
+                        } else {
+                          c.play();
+                        }
+                      },
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.black.withValues(alpha: value.isPlaying ? 0.0 : 0.35),
+                              Colors.black.withValues(alpha: value.isPlaying ? 0.0 : 0.45),
+                            ],
+                          ),
+                        ),
+                        child: value.isPlaying
+                            ? const SizedBox.expand()
+                            : const Icon(
+                                Icons.play_circle_fill_rounded,
+                                size: 72,
+                                color: Colors.white,
+                              ),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
 class _MediaSlotPreviewDialog extends StatelessWidget {
   final MarketingContent content;
   final VoidCallback onDelete;
@@ -1089,21 +1318,6 @@ class _MediaSlotPreviewDialog extends StatelessWidget {
     required this.content,
     required this.onDelete,
   });
-
-  Future<void> _openVideo(BuildContext context) async {
-    final videoRef = content.localFilePath ?? content.generatedResult ?? '';
-    if (videoRef.isEmpty) return;
-
-    final isRemote =
-        videoRef.startsWith('http://') || videoRef.startsWith('https://');
-    final uri = isRemote ? Uri.parse(videoRef) : Uri.file(videoRef);
-    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Unable to open video.')),
-      );
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -1190,44 +1404,10 @@ class _MediaSlotPreviewDialog extends StatelessWidget {
   }
 
   Widget _buildVideoPreview(BuildContext context) {
+    final videoRef = content.localFilePath ?? content.generatedResult ?? '';
     return ConstrainedBox(
-      constraints: const BoxConstraints(maxHeight: 280, minWidth: 280),
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(
-              Icons.play_circle_fill_rounded,
-              size: 72,
-              color: CustColors.logodeep,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Video ready',
-              style: GoogleFonts.montserrat(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 20),
-            FilledButton.icon(
-              onPressed: () => _openVideo(context),
-              icon: const Icon(Icons.open_in_new, size: 18),
-              label: Text(
-                'Open video',
-                style: GoogleFonts.montserrat(fontWeight: FontWeight.w600),
-              ),
-              style: FilledButton.styleFrom(
-                backgroundColor: CustColors.logodeep,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              ),
-            ),
-          ],
-        ),
-      ),
+      constraints: const BoxConstraints(maxHeight: 420, minWidth: 280),
+      child: _MarketingInlineVideoPlayer(videoRef: videoRef),
     );
   }
 }
@@ -1529,112 +1709,69 @@ class _ReadyPreview extends StatelessWidget {
     if (content.type == MarketingContentType.videos &&
         (content.generatedResult?.isNotEmpty ?? false)) {
       final videoRef = content.localFilePath ?? content.generatedResult!;
-      final isRemoteUrl =
-          videoRef.startsWith('http://') || videoRef.startsWith('https://');
-      final openUri = isRemoteUrl ? Uri.parse(videoRef) : Uri.file(videoRef);
+      final caption = (content.prompt?.trim().isNotEmpty ?? false)
+          ? content.prompt!
+          : 'Generated video';
 
       if (compact) {
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: _kPurple.withOpacity(0.1),
-                  shape: BoxShape.circle,
+        return SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: AspectRatio(
+                    aspectRatio: 16 / 10,
+                    child: ColoredBox(
+                      color: Colors.black,
+                      child: _MarketingInlineVideoPlayer(videoRef: videoRef),
+                    ),
+                  ),
                 ),
-                child: const Icon(
-                  Icons.play_circle_fill_rounded,
-                  size: 36,
-                  color: _kPurple,
+                const SizedBox(height: 10),
+                Text(
+                  caption,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.montserrat(
+                    fontSize: 11,
+                    color: Colors.black45,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                'Video ready',
-                style: GoogleFonts.montserrat(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: _kPrimary,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                content.prompt ?? '',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.montserrat(
-                  fontSize: 11,
-                  color: Colors.black45,
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 10),
-              ElevatedButton.icon(
-                onPressed: () =>
-                    launchUrl(openUri, mode: LaunchMode.externalApplication),
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  textStyle: GoogleFonts.montserrat(fontSize: 12),
-                ),
-                icon: const Icon(Icons.open_in_new_rounded, size: 18),
-                label: const Text('Open video'),
-              ),
-            ],
+              ],
+            ),
           ),
         );
       }
 
-      return Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 76,
-              height: 76,
-              decoration: BoxDecoration(
-                color: _kPurple.withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.play_circle_fill_rounded,
-                size: 48,
-                color: _kPurple,
+      return Column(
+        children: [
+          Expanded(
+            child: ColoredBox(
+              color: Colors.black,
+              child: Center(
+                child: _MarketingInlineVideoPlayer(videoRef: videoRef),
               ),
             ),
-            const SizedBox(height: 14),
-            Text(
-              'Video Ready',
-              style: GoogleFonts.montserrat(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: _kPrimary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              content.prompt ?? '',
-              textAlign: TextAlign.center,
+          ),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            color: Colors.white,
+            child: Text(
+              caption,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
               style: GoogleFonts.montserrat(
                 fontSize: 12,
                 color: Colors.black45,
               ),
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
             ),
-            const SizedBox(height: 16),
-            ElevatedButton.icon(
-              onPressed: () =>
-                  launchUrl(openUri, mode: LaunchMode.externalApplication),
-              icon: const Icon(Icons.open_in_new_rounded),
-              label: const Text('Open video'),
-            ),
-          ],
-        ),
+          ),
+        ],
       );
     }
 
@@ -1952,13 +2089,6 @@ class _InlineCalendar extends StatelessWidget {
   }
 }
 
-class _OutletItem {
-  final String label;
-  final IconData icon;
-  final Color color;
-  const _OutletItem(this.label, this.icon, this.color);
-}
-
 class _SelectOutletPage extends StatefulWidget {
   final DigitalMarketingCampaign campaign;
   const _SelectOutletPage({required this.campaign});
@@ -1972,27 +2102,12 @@ class _SelectOutletPageState extends State<_SelectOutletPage> {
     httpClient: SessionAwareHttpClient(tokenService: TokenService()),
   );
 
-  List<Map<String, dynamic>> _connectedAccounts = [];
-  bool _loadingAccounts = true;
+  /// Blotato-backed accounts from `GET /social/accounts`.
+  List<Map<String, dynamic>> _blotatoAccounts = [];
 
-  // Fallback static outlets when no accounts are connected
-  static final _outlets = [
-    _OutletItem('Email List', Icons.email_outlined, const Color(0xFF546E7A)),
-    _OutletItem('LinkedIn', Icons.work_outline, const Color(0xFF0077B5)),
-    _OutletItem('Facebook', Icons.facebook, const Color(0xFF1877F2)),
-    _OutletItem(
-      'WhatsApp Status',
-      Icons.chat_bubble_outline,
-      const Color(0xFF25D366),
-    ),
-    _OutletItem(
-      'Instagram',
-      Icons.camera_alt_outlined,
-      const Color(0xFFE1306C),
-    ),
-    _OutletItem('X', Icons.close, const Color(0xFF000000)),
-    _OutletItem('YouTube', Icons.play_circle_outline, const Color(0xFFFF0000)),
-  ];
+  /// Postiz channels from `GET /social/postiz/integrations`.
+  List<PostizIntegration> _postizIntegrations = [];
+  bool _loadingAccounts = true;
 
   @override
   void initState() {
@@ -2001,25 +2116,37 @@ class _SelectOutletPageState extends State<_SelectOutletPage> {
   }
 
   Future<void> _loadAccounts() async {
+    List<PostizIntegration> postiz = [];
+    List<Map<String, dynamic>> blotato = [];
     try {
-      final accounts = await _apiService.getSocialAccounts();
-      if (mounted)
-        setState(() {
-          _connectedAccounts = accounts;
-          _loadingAccounts = false;
-        });
+      postiz = await _apiService.listPostizIntegrations();
     } catch (_) {
-      if (mounted) setState(() => _loadingAccounts = false);
+      // Postiz-only flow: do not fail the whole screen if this call errors.
+    }
+    try {
+      blotato = await _apiService.getSocialAccounts();
+    } catch (_) {
+      // Blotato is optional when Postiz channels exist.
+    }
+    if (mounted) {
+      setState(() {
+        _postizIntegrations = postiz;
+        _blotatoAccounts = blotato;
+        _loadingAccounts = false;
+      });
     }
   }
 
+  bool get _usePostiz => _postizIntegrations.isNotEmpty;
+
+  bool get _useBlotato => !_usePostiz && _blotatoAccounts.isNotEmpty;
+
   @override
   Widget build(BuildContext context) {
-    // Use connected accounts if available, otherwise fall back to static outlets
-    final useConnected = !_loadingAccounts && _connectedAccounts.isNotEmpty;
-    final itemCount = useConnected
-        ? _connectedAccounts.length
-        : _outlets.length;
+    // Prefer Postiz-linked channels (same flow as Link Outlet), then Blotato accounts.
+    final useConnected = !_loadingAccounts && (_usePostiz || _useBlotato);
+    final gridCount =
+        _usePostiz ? _postizIntegrations.length : _blotatoAccounts.length;
 
     return _MarketingScaffold(
       child: Column(
@@ -2032,6 +2159,41 @@ class _SelectOutletPageState extends State<_SelectOutletPage> {
 
           if (_loadingAccounts)
             const Expanded(child: Center(child: AutobusLoadingIndicator()))
+          else if (!useConnected)
+            Expanded(
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.link_off, size: 48, color: Colors.grey.shade400),
+                      const SizedBox(height: 16),
+                      Text(
+                        'No outlets linked yet. Use Link Outlet to connect your social channels in Postiz; they will appear here for publishing.',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.montserrat(
+                          fontSize: 13,
+                          color: Colors.black54,
+                          height: 1.4,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      _DarkButton(
+                        label: 'Open Link Outlet',
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) => const ManageOutlets(),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            )
           else
             Expanded(
               child: GridView.builder(
@@ -2041,27 +2203,38 @@ class _SelectOutletPageState extends State<_SelectOutletPage> {
                   crossAxisSpacing: 12,
                   mainAxisSpacing: 12,
                 ),
-                itemCount: itemCount,
+                itemCount: gridCount,
                 itemBuilder: (_, i) {
                   final String id;
                   final String label;
                   final IconData icon;
                   final Color color;
+                  final Widget? avatar;
 
-                  if (useConnected) {
-                    final acct = _connectedAccounts[i];
+                  if (_usePostiz) {
+                    final p = _postizIntegrations[i];
+                    id = p.id;
+                    label = p.name.trim().isNotEmpty ? p.name : p.identifier;
+                    icon = Icons.public;
+                    color = _kPurple;
+                    final pic = p.picture?.trim();
+                    avatar = pic != null &&
+                            (pic.startsWith('http://') || pic.startsWith('https://'))
+                        ? CircleAvatar(
+                            radius: 18,
+                            backgroundImage: NetworkImage(pic),
+                            onBackgroundImageError: (_, __) {},
+                          )
+                        : null;
+                  } else {
+                    final acct = _blotatoAccounts[i];
                     id = acct['id'] as String? ?? '';
                     label =
                         (acct['account_name'] ?? acct['platform'] ?? 'Account')
                             .toString();
                     icon = Icons.link;
                     color = _kPurple;
-                  } else {
-                    final o = _outlets[i];
-                    id = o.label;
-                    label = o.label;
-                    icon = o.icon;
-                    color = o.color;
+                    avatar = null;
                   }
 
                   final sel = widget.campaign.selectedOutlets.contains(id);
@@ -2092,7 +2265,7 @@ class _SelectOutletPageState extends State<_SelectOutletPage> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(icon, size: 30, color: color),
+                          avatar ?? Icon(icon, size: 30, color: color),
                           const SizedBox(height: 6),
                           Text(
                             label,
@@ -2167,26 +2340,59 @@ class _SelectOutletPageState extends State<_SelectOutletPage> {
         ?.toUtc()
         .toIso8601String();
 
-    // Only call the API if we have connected accounts (IDs that are UUIDs)
-    final useApi = _connectedAccounts.isNotEmpty;
+    final canPostiz = _usePostiz;
+    final canBlotato = _useBlotato;
 
     try {
-      if (useApi) {
+      if (canPostiz) {
+        final selected = _postizIntegrations
+            .where((p) => selectedIds.contains(p.id))
+            .toList();
+        if (selected.isEmpty) {
+          throw Exception('No matching Postiz channels for the selection.');
+        }
+        final payload = buildPostizCreatePostPayload(
+          selectedIntegrations: selected,
+          content: textContent,
+          mediaUrls: mediaUrls,
+          postRightAway: widget.campaign.postRightAway,
+          scheduledUtc: widget.campaign.scheduledDate,
+        );
+        await _apiService.createPostizPost(
+          payload,
+          agentName: 'digital_marketing',
+        );
+      } else if (canBlotato) {
         await _apiService.publishSocialPost(
           accountIds: selectedIds,
           content: textContent,
           mediaUrls: mediaUrls,
           scheduleTime: scheduleTime,
         );
+      } else {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Connect an outlet in Marketing → Link Outlet (Postiz) or link a social account, then try again.',
+              style: GoogleFonts.montserrat(color: Colors.white, fontSize: 13),
+            ),
+            backgroundColor: Colors.orange.shade800,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        return;
       }
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            useApi
-                ? 'Published successfully to ${selectedIds.length} account(s)'
-                : 'Scheduled for: ${selectedIds.join(', ')}',
+            canPostiz
+                ? (widget.campaign.postRightAway
+                    ? 'Posted via Postiz to ${selectedIds.length} channel(s)'
+                    : 'Scheduled in Postiz for ${selectedIds.length} channel(s)')
+                : 'Published successfully to ${selectedIds.length} account(s)',
             style: GoogleFonts.montserrat(color: Colors.white),
           ),
           backgroundColor: Colors.green,

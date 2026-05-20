@@ -1,5 +1,6 @@
 import 'package:autobus/barrel.dart';
 import 'package:autobus/features/products/product_requirements_sheet.dart';
+import 'package:autobus/features/products/product_chat_image_attachments.dart';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:file_picker/file_picker.dart';
@@ -162,6 +163,11 @@ class _AutoBusChatUIState extends State<_AutoBusChatUI> {
   static const Color _purple = Color(0xFF2A1447);
   static const Color _lightGrey = Color(0xFFEBEBEB);
 
+  final List<ProductStagingSlot> _productSlots = [ProductStagingSlot()];
+  bool _productImageBusy = false;
+
+  bool get _isProductsAgent => widget.webhookContext == 'products_agent';
+
   @override
   void initState() {
     super.initState();
@@ -215,15 +221,86 @@ class _AutoBusChatUIState extends State<_AutoBusChatUI> {
     super.dispose();
   }
 
-  void _sendMessage() {
-    if (widget.controller.text.isEmpty) return;
+  void _resetProductSlots() {
+    _productSlots
+      ..clear()
+      ..add(ProductStagingSlot());
+  }
 
+  void _addProductImageSlot() {
+    if (!_isProductsAgent || _productSlots.length >= 8) return;
+    setState(() => _productSlots.add(ProductStagingSlot()));
+  }
+
+  Future<void> _onProductImageSlotTap(int index) async {
+    if (!_isProductsAgent || _productImageBusy) return;
+    final slot = _productSlots[index];
+    if (slot.isEmpty) {
+      await pickProductImageForSlot(context, _productSlots, index, setState);
+      return;
+    }
+    await showProductSlotActionsSheet(
+      context,
+      () => pickProductImageForSlot(context, _productSlots, index, setState),
+      () {
+        setState(() {
+          slot.clear();
+          if (_productSlots.every((s) => s.isEmpty)) {
+            _resetProductSlots();
+          }
+        });
+      },
+    );
+  }
+
+  Future<void> _sendMessage() async {
+    if (widget.controller.text.trim().isEmpty) return;
+
+    List<String>? imageUrls;
+    if (_isProductsAgent) {
+      final hasStaged = _productSlots.any((s) => !s.isEmpty);
+      if (hasStaged) {
+        if (!mounted) return;
+        setState(() => _productImageBusy = true);
+        try {
+          final api = context.read<ApiService>();
+          imageUrls = await uploadStagedProductImageUrls(api, _productSlots);
+          if (imageUrls.isEmpty) {
+            if (!mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Could not upload product images. Please try again.',
+                ),
+              ),
+            );
+            setState(() => _productImageBusy = false);
+            return;
+          }
+        } catch (e) {
+          if (!mounted) return;
+          setState(() => _productImageBusy = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(e.toString())),
+          );
+          return;
+        }
+        if (!mounted) return;
+        setState(() {
+          _resetProductSlots();
+          _productImageBusy = false;
+        });
+      }
+    }
+
+    final text = widget.controller.text;
     context.read<ChatBloc>().add(
       SendMessage(
         phone: _userPhone(),
-        message: widget.controller.text,
+        message: text,
         companyNumber: _userCompanyNumber(),
         context: widget.webhookContext,
+        attachedProductImageUrls: imageUrls,
       ),
     );
     widget.controller.clear();
@@ -883,6 +960,15 @@ class _AutoBusChatUIState extends State<_AutoBusChatUI> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  if (_isProductsAgent) ...[
+                    ProductChatImageStrip(
+                      slots: _productSlots,
+                      onSlotTap: _onProductImageSlotTap,
+                      onAddSlot: _addProductImageSlot,
+                      busy: _productImageBusy,
+                    ),
+                    const SizedBox(height: 12),
+                  ],
                   /// Input (expands upward as it grows)
                   ConstrainedBox(
                     constraints: const BoxConstraints(maxHeight: 140),
@@ -947,15 +1033,17 @@ class _AutoBusChatUIState extends State<_AutoBusChatUI> {
 
                       const Spacer(),
 
-                      /// Send (enabled only when there is text)
+                      /// Send (enabled when there is text and not uploading images)
                       GestureDetector(
-                        onTap: controller.text.trim().isEmpty
+                        onTap:
+                            controller.text.trim().isEmpty || _productImageBusy
                             ? null
-                            : _sendMessage,
+                            : () => _sendMessage(),
                         child: Icon(
                           Icons.send_rounded,
                           size: 24,
-                          color: controller.text.trim().isEmpty
+                          color:
+                              controller.text.trim().isEmpty || _productImageBusy
                               ? _purple.withValues(alpha: 0.35)
                               : _purple,
                         ),

@@ -16,6 +16,9 @@ class ApiService {
   /// Catalogue files for product management (`StorageFolder.records_files`).
   static const String productCatalogStorageFolder = 'records-files';
 
+  /// Product listing images (`StorageFolder.product_images` on the API).
+  static const String productImageStorageFolder = 'product-images';
+
   ApiService({required this.httpClient, String? baseUrl})
     : baseUrl = baseUrl?.isNotEmpty == true
           ? baseUrl!
@@ -59,6 +62,76 @@ class ApiService {
       debugPrint('getSubscriptionStatusByPhone: $e');
       return null;
     }
+  }
+
+  /// GET /api/v1/subscription/me — JWT; current user's subscription snapshot.
+  Future<Map<String, dynamic>?> getMySubscriptionStatus() async {
+    try {
+      final response = await httpClient.get(
+        Uri.parse('$baseUrl/subscription/me'),
+      );
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data is Map<String, dynamic>) return data;
+        if (data is Map) return Map<String, dynamic>.from(data);
+      }
+      return null;
+    } catch (e) {
+      debugPrint('getMySubscriptionStatus: $e');
+      return null;
+    }
+  }
+
+  /// POST /api/v1/subscription/me/cancel — JWT.
+  Future<Map<String, dynamic>> cancelMySubscription({String? reason}) async {
+    final body = <String, dynamic>{};
+    if (reason != null && reason.trim().isNotEmpty) {
+      body['reason'] = reason.trim();
+    }
+    final response = await httpClient.post(
+      Uri.parse('$baseUrl/subscription/me/cancel'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode(body),
+    );
+    Map<String, dynamic> map;
+    try {
+      final data = json.decode(response.body);
+      if (data is! Map) {
+        throw Exception('Unexpected cancel response');
+      }
+      map = Map<String, dynamic>.from(data);
+    } catch (_) {
+      throw Exception(
+        'Cancel failed (${response.statusCode}): ${response.body}',
+      );
+    }
+    if (response.statusCode != 200) {
+      final detail = map['detail']?.toString() ?? response.body;
+      throw Exception(detail);
+    }
+    return map;
+  }
+
+  /// POST /api/v1/subscription/me/upgrade — JWT.
+  Future<bool> upgradeMySubscription({
+    required int newPlanId,
+    String? paymentReference,
+  }) async {
+    final body = <String, dynamic>{
+      'new_plan_id': newPlanId,
+      if (paymentReference != null && paymentReference.trim().isNotEmpty)
+        'payment_reference': paymentReference.trim(),
+    };
+    final response = await httpClient.post(
+      Uri.parse('$baseUrl/subscription/me/upgrade'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode(body),
+    );
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data is Map && data['success'] == true) return true;
+    }
+    return false;
   }
 
   /// Get all rides/buses
@@ -396,8 +469,13 @@ class ApiService {
     required File file,
     String? filename,
     String fieldName = 'file',
+    String? storageFolder,
   }) async {
-    final uri = Uri.parse('$baseUrl/storage/upload');
+    var uri = Uri.parse('$baseUrl/storage/upload');
+    final folder = storageFolder?.trim();
+    if (folder != null && folder.isNotEmpty) {
+      uri = uri.replace(queryParameters: {'folder': folder});
+    }
     final request = http.MultipartRequest('POST', uri);
 
     final multipartFile = await http.MultipartFile.fromPath(
@@ -406,6 +484,42 @@ class ApiService {
       filename: filename,
     );
     request.files.add(multipartFile);
+
+    final streamed = await httpClient.send(request);
+    final response = await http.Response.fromStream(streamed);
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final data = jsonDecode(response.body);
+      final url = (data['file_url'] ?? data['url'] ?? '').toString();
+      if (url.isEmpty) {
+        throw Exception('Upload succeeded but no file_url returned');
+      }
+      return url;
+    }
+
+    throw Exception('Upload failed: ${response.statusCode} ${response.body}');
+  }
+
+  /// Same as [uploadFile] but from bytes (e.g. web `FilePicker` with `withData: true`).
+  Future<String> uploadFileBytes({
+    required List<int> fileBytes,
+    required String filename,
+    String fieldName = 'file',
+    String? storageFolder,
+  }) async {
+    var uri = Uri.parse('$baseUrl/storage/upload');
+    final folder = storageFolder?.trim();
+    if (folder != null && folder.isNotEmpty) {
+      uri = uri.replace(queryParameters: {'folder': folder});
+    }
+    final request = http.MultipartRequest('POST', uri);
+    request.files.add(
+      http.MultipartFile.fromBytes(
+        fieldName,
+        fileBytes,
+        filename: filename,
+      ),
+    );
 
     final streamed = await httpClient.send(request);
     final response = await http.Response.fromStream(streamed);
@@ -1071,6 +1185,8 @@ class ApiService {
     );
   }
 
+  /// [store] When true, the backend downloads the Veo output and uploads a public MP4 URL
+  /// (recommended for in-app playback; raw Google URLs often fail on Android ExoPlayer).
   Future<Map<String, dynamic>> generateVideoMedia({
     required String prompt,
     String? userId,
@@ -1202,10 +1318,24 @@ class ApiService {
       final List<dynamic> raw;
       if (data is List) {
         raw = data;
-      } else if (data is Map && data['integrations'] is List) {
-        raw = data['integrations'] as List;
-      } else if (data is Map && data['items'] is List) {
-        raw = data['items'] as List;
+      } else if (data is Map) {
+        const keys = [
+          'integrations',
+          'items',
+          'data',
+          'value',
+          'results',
+          'channels',
+        ];
+        List<dynamic>? found;
+        for (final k in keys) {
+          final v = data[k];
+          if (v is List) {
+            found = v;
+            break;
+          }
+        }
+        raw = found ?? [];
       } else {
         return [];
       }
@@ -1252,6 +1382,39 @@ class ApiService {
     throw Exception(
       _httpDetailMessage(response.body) ??
           'Postiz sign-in failed (${response.statusCode})',
+    );
+  }
+
+  /// POST /api/v1/social/postiz/posts — create or schedule via Postiz Public API.
+  ///
+  /// [payload] is passed through to Postiz `POST /api/public/v1/posts`.
+  /// When [agentName] is `digital_marketing`, the server archives caption/media for assets.
+  Future<Map<String, dynamic>> createPostizPost(
+    Map<String, dynamic> payload, {
+    String? agentName,
+  }) async {
+    final uri = Uri.parse('$baseUrl/social/postiz/posts').replace(
+      queryParameters: (agentName != null && agentName.trim().isNotEmpty)
+          ? {'agent_name': agentName.trim()}
+          : null,
+    );
+    final response = await httpClient.post(
+      uri,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(payload),
+    );
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final data = jsonDecode(response.body);
+      if (data is Map<String, dynamic>) return data;
+      if (data is Map) return Map<String, dynamic>.from(data);
+      return {'ok': true, 'value': data};
+    }
+    if (response.statusCode == 401) {
+      throw Exception('Session expired');
+    }
+    throw Exception(
+      _httpDetailMessage(response.body) ??
+          'Postiz publish failed (${response.statusCode})',
     );
   }
 
@@ -1465,6 +1628,62 @@ class ApiService {
     throw Exception(
       _httpDetailMessage(response.body) ??
           'Failed to load product (${response.statusCode})',
+    );
+  }
+
+  /// POST /api/v1/products — create a product (inventory is created on the server).
+  ///
+  /// [photos] must contain at least one image URL (see backend `ProductCreateDTO`).
+  Future<Map<String, dynamic>> createProduct({
+    required String name,
+    String? description,
+    required double price,
+    String? category,
+    required String condition,
+    int? numberInStock,
+    String? link,
+    required List<String> photos,
+  }) async {
+    final urls = photos
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty)
+        .toList();
+    if (urls.isEmpty) {
+      throw ArgumentError('At least one product image URL is required');
+    }
+
+    final body = <String, dynamic>{
+      'name': name.trim(),
+      'price': price,
+      'condition': condition.trim(),
+      'photos': urls,
+    };
+    if (description != null && description.trim().isNotEmpty) {
+      body['description'] = description.trim();
+    }
+    if (category != null && category.trim().isNotEmpty) {
+      body['category'] = category.trim();
+    }
+    if (numberInStock != null) body['number_in_stock'] = numberInStock;
+    if (link != null && link.trim().isNotEmpty) body['link'] = link.trim();
+
+    final uri = Uri.parse('$baseUrl/products');
+    final response = await httpClient.post(
+      uri,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(body),
+    );
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final data = jsonDecode(response.body);
+      if (data is Map<String, dynamic>) return data;
+      if (data is Map) return Map<String, dynamic>.from(data);
+    }
+    if (response.statusCode == 401) {
+      throw Exception('Session expired');
+    }
+    throw Exception(
+      _httpDetailMessage(response.body) ??
+          'Failed to create product (${response.statusCode})',
     );
   }
 

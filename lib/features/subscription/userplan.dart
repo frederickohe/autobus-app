@@ -4,7 +4,20 @@ import 'dart:developer';
 
 class SelectPlan extends StatefulWidget {
   final String userEmail;
-  const SelectPlan({required this.userEmail, super.key});
+  /// When true, payment completion calls [upgradeMySubscription] instead of subscribe.
+  final bool upgradeFromActivePlan;
+  /// Only plans with `price` strictly greater than this are shown (upgrade flow).
+  final double? minExclusivePlanPrice;
+  /// Passed to [SubscriptionBillPage] so pay+activate returns to this route.
+  final String? successPopUntilRouteName;
+
+  const SelectPlan({
+    required this.userEmail,
+    this.upgradeFromActivePlan = false,
+    this.minExclusivePlanPrice,
+    this.successPopUntilRouteName,
+    super.key,
+  });
 
   @override
   State<SelectPlan> createState() => _SelectPlanState();
@@ -22,6 +35,12 @@ class _SelectPlanState extends State<SelectPlan> with TickerProviderStateMixin {
     _fetchPlans();
   }
 
+  List<SubscriptionPlan> get _visiblePlans {
+    final minP = widget.minExclusivePlanPrice;
+    if (minP == null) return _plans;
+    return _plans.where((p) => p.price > minP).toList();
+  }
+
   Future<void> _fetchPlans() async {
     try {
       final plans = await apiService.getSubscriptionPlans();
@@ -29,6 +48,11 @@ class _SelectPlanState extends State<SelectPlan> with TickerProviderStateMixin {
         setState(() {
           _plans = plans;
           _isLoading = false;
+          if (_selectedPlanId != null &&
+              !_visiblePlans.any((p) => p.id == _selectedPlanId)) {
+            _selectedPlanId = null;
+            _expandedPlanId = null;
+          }
         });
       }
     } catch (e) {
@@ -39,7 +63,7 @@ class _SelectPlanState extends State<SelectPlan> with TickerProviderStateMixin {
 
   SubscriptionPlan? get _selectedPlan => _selectedPlanId == null
       ? null
-      : _plans.where((p) => p.id == _selectedPlanId).firstOrNull;
+      : _visiblePlans.where((p) => p.id == _selectedPlanId).firstOrNull;
 
   @override
   Widget build(BuildContext context) {
@@ -59,11 +83,17 @@ class _SelectPlanState extends State<SelectPlan> with TickerProviderStateMixin {
                       ? const Center(
                           child: AutobusLoadingIndicator(size: 36),
                         )
-                      : _plans.isEmpty
+                      : _visiblePlans.isEmpty
                       ? Center(
-                          child: Text(
-                            'No plans available.',
-                            style: GoogleFonts.montserrat(color: Colors.white),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 24),
+                            child: Text(
+                              widget.minExclusivePlanPrice != null
+                                  ? 'There is no higher plan available right now. Contact support if you need a custom tier.'
+                                  : 'No plans available.',
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.montserrat(color: Colors.white),
+                            ),
                           ),
                         )
                       : Center(
@@ -72,7 +102,9 @@ class _SelectPlanState extends State<SelectPlan> with TickerProviderStateMixin {
                               children: [
                                 const SizedBox(height: 34),
                                 Text(
-                                  'User Type',
+                                  widget.upgradeFromActivePlan
+                                      ? 'Upgrade plan'
+                                      : 'User Type',
                                   style: GoogleFonts.montserrat(
                                     color: Colors.white,
                                     fontSize: 30,
@@ -81,14 +113,16 @@ class _SelectPlanState extends State<SelectPlan> with TickerProviderStateMixin {
                                 ),
                                 const SizedBox(height: 8),
                                 Text(
-                                  'Select a user type',
+                                  widget.upgradeFromActivePlan
+                                      ? 'Pick a higher tier to continue'
+                                      : 'Select a user type',
                                   style: GoogleFonts.montserrat(
                                     color: Colors.white.withOpacity(0.8),
                                     fontSize: 13,
                                   ),
                                 ),
                                 const SizedBox(height: 8),
-                                for (final plan in _plans) ...[
+                                for (final plan in _visiblePlans) ...[
                                   Center(
                                     child: ConstrainedBox(
                                       constraints: const BoxConstraints(
@@ -121,7 +155,7 @@ class _SelectPlanState extends State<SelectPlan> with TickerProviderStateMixin {
                 ),
                 const SizedBox(height: 8),
                 _BottomCta(
-                  label: 'Next',
+                  label: widget.upgradeFromActivePlan ? 'Continue' : 'Next',
                   enabled: _selectedPlan != null,
                   onPressed: () {
                     final selected = _selectedPlan;
@@ -134,6 +168,8 @@ class _SelectPlanState extends State<SelectPlan> with TickerProviderStateMixin {
                         child: SubscriptionBillPage(
                           plan: selected,
                           userEmail: widget.userEmail,
+                          isUpgrade: widget.upgradeFromActivePlan,
+                          successPopUntilRouteName: widget.successPopUntilRouteName,
                         ),
                       ),
                     );

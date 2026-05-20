@@ -19,16 +19,29 @@ class SendMessage extends ChatEvent {
   /// When true, the message is sent to the webhook but not shown in the UI.
   final bool hidden;
 
+  /// When set, appended to the outbound webhook `message` (NLU) but not shown in the user bubble.
+  ///
+  /// Used for products chat: staged photos are uploaded first, then URLs are sent for slot filling.
+  final List<String>? attachedProductImageUrls;
+
   const SendMessage({
     required this.phone,
     required this.message,
     required this.companyNumber,
     required this.context,
     this.hidden = false,
+    this.attachedProductImageUrls,
   });
 
   @override
-  List<Object?> get props => [phone, message, companyNumber, context, hidden];
+  List<Object?> get props => [
+    phone,
+    message,
+    companyNumber,
+    context,
+    hidden,
+    attachedProductImageUrls ?? const <String>[],
+  ];
 }
 
 class LoadHistory extends ChatEvent {

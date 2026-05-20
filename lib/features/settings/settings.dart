@@ -8,6 +8,66 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
+  Map<String, dynamic>? _subscriptionStatus;
+  bool _subscriptionLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadSubscriptionSummary());
+  }
+
+  Future<void> _loadSubscriptionSummary() async {
+    final auth = context.read<AuthBloc>().state;
+    if (auth is! Authenticated) {
+      if (mounted) {
+        setState(() {
+          _subscriptionLoading = false;
+          _subscriptionStatus = null;
+        });
+      }
+      return;
+    }
+    try {
+      final api = context.read<ApiService>();
+      final s = await api.getMySubscriptionStatus();
+      if (!mounted) return;
+      setState(() {
+        _subscriptionStatus = s;
+        _subscriptionLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _subscriptionStatus = null;
+        _subscriptionLoading = false;
+      });
+    }
+  }
+
+  String _subscriptionTitle() {
+    if (_subscriptionLoading) return 'Loading…';
+    final s = _subscriptionStatus;
+    if (s == null) return 'No active plan';
+    final active = s['has_active_subscription'] == true;
+    if (!active) return 'No active plan';
+    final name = (s['plan_name'] ?? '').toString().trim();
+    return name.isEmpty ? 'Active subscription' : name;
+  }
+
+  String _subscriptionSubtitle() {
+    if (_subscriptionLoading) return ' ';
+    final s = _subscriptionStatus;
+    if (s == null) return 'Tap Subscription below to choose a plan';
+    final active = s['has_active_subscription'] == true;
+    if (!active) return 'Tap Subscription below to choose a plan';
+    final d = s['days_remaining'];
+    final days = d is int ? d : int.tryParse(d?.toString() ?? '0') ?? 0;
+    if (days > 1) return '$days days until renewal';
+    if (days == 1) return '1 day until renewal';
+    return 'Renews today';
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocListener<AuthBloc, AuthState>(
@@ -92,6 +152,41 @@ class _SettingsPageState extends State<SettingsPage> {
 
                   const SizedBox(height: 40),
 
+                  /// Subscription summary (under top bar)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.75),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _subscriptionTitle(),
+                          style: GoogleFonts.montserrat(
+                            color: Colors.black87,
+                            fontSize: 20,
+                            fontWeight: FontWeight.w800,
+                            height: 1.2,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          _subscriptionSubtitle(),
+                          style: GoogleFonts.montserrat(
+                            color: Colors.black54,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+
                   /// ⚙️ Settings Card
                   Container(
                     padding: const EdgeInsets.symmetric(vertical: 8),
@@ -165,6 +260,15 @@ class _SettingsPageState extends State<SettingsPage> {
           context,
           MaterialPageRoute(builder: (_) => const Profile()),
         );
+      }),
+      SettingsMenuItem("Subscription", Icons.auto_awesome_rounded, () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            settings: const RouteSettings(name: kManageSubscriptionRouteName),
+            builder: (_) => const ManageSubscriptionPage(),
+          ),
+        ).then((_) => _loadSubscriptionSummary());
       }),
       SettingsMenuItem("Notifications", Icons.notifications_none, () {
         Navigator.push(

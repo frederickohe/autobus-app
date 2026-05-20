@@ -37,9 +37,13 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     }
 
     try {
+      final outbound = _webhookMessageWithOptionalImages(
+        event.message,
+        event.attachedProductImageUrls,
+      );
       final botReply = await repository.sendMessage(
         event.phone,
-        event.message,
+        outbound,
         companyNumber: event.companyNumber,
         context: event.context,
       );
@@ -71,4 +75,27 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       emit(ChatLoadSuccess(failed));
     }
   }
+}
+
+String _webhookMessageWithOptionalImages(
+  String userText,
+  List<String>? imageUrls,
+) {
+  final trimmed = userText.trimRight();
+  if (imageUrls == null || imageUrls.isEmpty) return userText;
+  final cleaned = imageUrls
+      .map((e) => e.trim())
+      .where((e) => e.isNotEmpty)
+      .toList();
+  if (cleaned.isEmpty) return userText;
+  final buf = StringBuffer(trimmed);
+  buf.writeln();
+  buf.writeln();
+  buf.writeln(
+    'Product image URLs (already uploaded; use these for photos / primary image when adding or updating a product):',
+  );
+  for (final u in cleaned) {
+    buf.writeln(u);
+  }
+  return buf.toString();
 }

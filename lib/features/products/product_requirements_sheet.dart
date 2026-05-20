@@ -26,6 +26,11 @@ class ProductRequirementsSheet extends StatelessWidget {
       label: 'Condition',
       detail: 'e.g. New, Used, Refurbished (up to 100 characters).',
     ),
+    _ProductFieldInfo(
+      label: 'Images',
+      detail:
+          'Add thumbnails above the message bar before you send, or paste image URLs in your message.',
+    ),
   ];
 
   static const _optionalFields = <_ProductFieldInfo>[
@@ -44,14 +49,6 @@ class ProductRequirementsSheet extends StatelessWidget {
     _ProductFieldInfo(
       label: 'Link',
       detail: 'Optional external product page URL.',
-    ),
-    _ProductFieldInfo(
-      label: 'Photo',
-      detail: 'Optional single image URL.',
-    ),
-    _ProductFieldInfo(
-      label: 'Photos',
-      detail: 'Optional list of image URLs (two or more supported).',
     ),
   ];
 

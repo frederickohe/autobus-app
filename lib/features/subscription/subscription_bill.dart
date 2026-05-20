@@ -4,10 +4,15 @@ import 'services/subscription_storage.dart';
 class SubscriptionBillPage extends StatefulWidget {
   final SubscriptionPlan plan;
   final String userEmail;
+  final bool isUpgrade;
+  /// When non-null, success pops the stack back to this [RouteSettings.name] instead of [Welcome].
+  final String? successPopUntilRouteName;
 
   const SubscriptionBillPage({
     required this.plan,
     required this.userEmail,
+    this.isUpgrade = false,
+    this.successPopUntilRouteName,
     super.key,
   });
 
@@ -63,7 +68,7 @@ class _SubscriptionBillPageState extends State<SubscriptionBillPage> {
       } catch (_) {}
     }
 
-    if (phone.isEmpty) {
+    if (phone.isEmpty && !widget.isUpgrade) {
       if (!mounted) return;
       messenger.showSnackBar(
         const SnackBar(
@@ -75,17 +80,31 @@ class _SubscriptionBillPageState extends State<SubscriptionBillPage> {
       return;
     }
 
-    final subscribed = await api.subscribeToPlan(
-      planId: widget.plan.id.toString(),
-      billingId: _selected.id.toString(),
-      reference: reference,
-      phone: phone,
-    );
+    final bool upgraded;
+    if (widget.isUpgrade) {
+      upgraded = await api.upgradeMySubscription(
+        newPlanId: widget.plan.id,
+        paymentReference: reference,
+      );
+    } else {
+      upgraded = await api.subscribeToPlan(
+        planId: widget.plan.id.toString(),
+        billingId: _selected.id.toString(),
+        reference: reference,
+        phone: phone,
+      );
+    }
 
-    if (!subscribed) {
+    if (!upgraded) {
       if (!mounted) return;
       messenger.showSnackBar(
-        const SnackBar(content: Text('Subscription activation failed.')),
+        SnackBar(
+          content: Text(
+            widget.isUpgrade
+                ? 'Plan change failed. Check that you chose a higher-priced plan.'
+                : 'Subscription activation failed.',
+          ),
+        ),
       );
       return;
     }
@@ -105,6 +124,14 @@ class _SubscriptionBillPageState extends State<SubscriptionBillPage> {
     // SuccessBloc and would push the generic Success page on top after Paystack
     // closes. Subscription completion goes straight to Welcome.
     successBloc.add(ClearSuccessEvent());
+
+    final popName = widget.successPopUntilRouteName?.trim();
+    if (popName != null && popName.isNotEmpty) {
+      navigator.popUntil(
+        (route) => route.settings.name == popName || route.isFirst,
+      );
+      return;
+    }
 
     navigator.pushReplacement(
       PageTransition(

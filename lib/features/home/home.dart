@@ -71,10 +71,13 @@ class _HomeState extends State<Home> {
           MaterialPageRoute(builder: (_) => const Profile()),
         );
         break;
-      case 'security':
+      case 'subscription':
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => const Security()),
+          MaterialPageRoute(
+            settings: const RouteSettings(name: kManageSubscriptionRouteName),
+            builder: (_) => const ManageSubscriptionPage(),
+          ),
         );
         break;
       default:
