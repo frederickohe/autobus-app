@@ -559,6 +559,21 @@ class _ManageIntelligenceState extends State<ManageIntelligence> {
                             childAspectRatio: 1.0,
                             children: [
                               _IntelligenceCard(
+                                icon: Icons.auto_awesome_outlined,
+                                title: 'My AI',
+                                onTap: () {
+                                  Navigator.push<void>(
+                                    context,
+                                    MaterialPageRoute<void>(
+                                      builder: (_) => const AutoBus(
+                                        title: 'My Ai',
+                                        webhookContext: 'interactions_agent',
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                              _IntelligenceCard(
                                 icon: Icons.description_outlined,
                                 title: 'Upload Files',
                                 onTap: _handleUploadFiles,

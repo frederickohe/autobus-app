@@ -88,17 +88,6 @@ class _HomeState extends State<Home> {
   @override
   Widget build(BuildContext context) {
     final List<HomeMenuItem> menuItems = [
-      HomeMenuItem("My AI", Ph.sparkle, () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => const AutoBus(
-              title: 'My Ai',
-              webhookContext: 'interactions_agent',
-            ),
-          ),
-        );
-      }),
       HomeMenuItem("Intelligence", Fluent.brain_circuit_20_regular, () {
         Navigator.push(
           context,
