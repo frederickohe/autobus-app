@@ -16,7 +16,10 @@ class ManageCustomers extends StatelessWidget {
           SafeArea(
             child: Column(
               children: [
-                const ManageScreenHeader(title: 'Manage Customers'),
+                const ManageScreenHeader(
+                  title: 'Manage Customers',
+                  creditCategory: CreditCategory.server,
+                ),
                 Expanded(
                   child: SingleChildScrollView(
                     child: Padding(

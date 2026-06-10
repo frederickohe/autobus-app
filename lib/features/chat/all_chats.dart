@@ -110,17 +110,10 @@ class _AllChatsPageState extends State<AllChatsPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      const ManageScreenBackButton(),
-                      const SizedBox(width: 18),
-                      Expanded(
-                        child: Text(
-                          'All Chats',
-                          style: ManageScreenStyle.headerTitleStyle(),
-                        ),
-                      ),
-                    ],
+                  const ManageScreenHeader(
+                    title: 'All Chats',
+                    creditCategory: CreditCategory.llm,
+                    padding: EdgeInsets.zero,
                   ),
                   const SizedBox(height: 32),
                   Expanded(

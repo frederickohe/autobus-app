@@ -77,23 +77,24 @@ class _ManageChannelsState extends State<ManageChannels> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Row(
-                    children: [
-                      const ManageScreenBackButton(),
-                      const SizedBox(width: 18),
-                      Expanded(
-                        child: Text(
-                          'Manage Channels',
-                          style: ManageScreenStyle.headerTitleStyle(),
-                        ),
-                      ),
-                      if (!_loading)
-                        IconButton(
-                          onPressed: _refreshInboxes,
-                          icon: const Icon(Icons.refresh, color: Colors.white70),
-                          tooltip: 'Refresh',
-                        ),
-                    ],
+                  ManageScreenHeader(
+                    title: 'Manage Channels',
+                    padding: EdgeInsets.zero,
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (!_loading)
+                          IconButton(
+                            onPressed: _refreshInboxes,
+                            icon: const Icon(
+                              Icons.refresh,
+                              color: Colors.white70,
+                            ),
+                            tooltip: 'Refresh',
+                          ),
+                        const CreditAvatar(creditCategory: CreditCategory.llm),
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 24),
                   Expanded(

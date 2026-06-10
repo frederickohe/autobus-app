@@ -111,17 +111,10 @@ class _LiveChatsPageState extends State<LiveChatsPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      const ManageScreenBackButton(),
-                      const SizedBox(width: 18),
-                      Expanded(
-                        child: Text(
-                          'Live Chats',
-                          style: ManageScreenStyle.headerTitleStyle(),
-                        ),
-                      ),
-                    ],
+                  const ManageScreenHeader(
+                    title: 'Live Chats',
+                    creditCategory: CreditCategory.llm,
+                    padding: EdgeInsets.zero,
                   ),
                   const SizedBox(height: 32),
                   Expanded(

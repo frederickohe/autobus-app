@@ -130,17 +130,10 @@ class _SentSmsPageState extends State<SentSmsPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      const ManageScreenBackButton(),
-                      const SizedBox(width: 18),
-                      Expanded(
-                        child: Text(
-                          'Sent SMS',
-                          style: ManageScreenStyle.headerTitleStyle(),
-                        ),
-                      ),
-                    ],
+                  const ManageScreenHeader(
+                    title: 'Sent SMS',
+                    creditCategory: CreditCategory.sms,
+                    padding: EdgeInsets.zero,
                   ),
                   const SizedBox(height: 32),
                   Expanded(

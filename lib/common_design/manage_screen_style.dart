@@ -1,3 +1,4 @@
+import 'package:autobus/common_design/widgets/credit_avatar.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -37,6 +38,8 @@ class ManageScreenStyle {
 class ManageScreenHeader extends StatelessWidget {
   final String title;
   final Widget? trailing;
+  /// When set (and [trailing] is null), shows a credit chip for this category.
+  final String? creditCategory;
   final VoidCallback? onBackPressed;
   final EdgeInsetsGeometry padding;
 
@@ -44,6 +47,7 @@ class ManageScreenHeader extends StatelessWidget {
     super.key,
     required this.title,
     this.trailing,
+    this.creditCategory,
     this.onBackPressed,
     this.padding = const EdgeInsets.fromLTRB(24, 24, 24, 0),
   });
@@ -77,7 +81,11 @@ class ManageScreenHeader extends StatelessWidget {
             ),
             Align(
               alignment: Alignment.centerRight,
-              child: trailing ?? const SizedBox(width: 48, height: 48),
+              child:
+                  trailing ??
+                  (creditCategory != null
+                      ? CreditAvatar(creditCategory: creditCategory!)
+                      : const SizedBox(width: 48, height: 48)),
             ),
           ],
         ),

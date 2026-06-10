@@ -66,7 +66,10 @@ class _ManageProductsState extends State<ManageProducts> {
           SafeArea(
             child: Column(
               children: [
-                const ManageScreenHeader(title: 'Manage Products'),
+                const ManageScreenHeader(
+                  title: 'Manage Products',
+                  creditCategory: CreditCategory.storageMb,
+                ),
                 Expanded(
                   child: SingleChildScrollView(
                     child: Padding(

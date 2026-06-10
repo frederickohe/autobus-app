@@ -16,7 +16,10 @@ class ManageInteractions extends StatelessWidget {
           SafeArea(
             child: Column(
               children: [
-                const ManageScreenHeader(title: 'Manage Interactions'),
+                const ManageScreenHeader(
+                  title: 'Manage Interactions',
+                  creditCategory: CreditCategory.llm,
+                ),
                 Expanded(
                   child: SingleChildScrollView(
                     child: Padding(

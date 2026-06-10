@@ -131,17 +131,10 @@ class _SentEmailsPageState extends State<SentEmailsPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      const ManageScreenBackButton(),
-                      const SizedBox(width: 18),
-                      Expanded(
-                        child: Text(
-                          'Sent Emails',
-                          style: ManageScreenStyle.headerTitleStyle(),
-                        ),
-                      ),
-                    ],
+                  const ManageScreenHeader(
+                    title: 'Sent Emails',
+                    creditCategory: CreditCategory.email,
+                    padding: EdgeInsets.zero,
                   ),
                   const SizedBox(height: 32),
                   Expanded(
