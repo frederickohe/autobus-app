@@ -1,5 +1,6 @@
 import java.util.Properties
 import java.io.FileInputStream
+import java.io.FileOutputStream
 
 plugins {
     id("com.android.application")
@@ -14,8 +15,26 @@ if (keyPropertiesFile.exists()) {
     keyProperties.load(FileInputStream(keyPropertiesFile))
 }
 
+val versionPropertiesFile = rootProject.file("version.properties")
+val versionProperties = Properties()
+if (versionPropertiesFile.exists()) {
+    versionProperties.load(FileInputStream(versionPropertiesFile))
+}
+
+var appVersionCode = versionProperties
+    .getProperty("VERSION_CODE", flutter.versionCode.toString())
+    .toInt()
+
+val isReleaseBuild = gradle.startParameter.taskNames.any {
+    it.contains("release", ignoreCase = true)
+}
+if (isReleaseBuild) {
+    versionProperties.setProperty("VERSION_CODE", (appVersionCode + 1).toString())
+    versionProperties.store(FileOutputStream(versionPropertiesFile), null)
+}
+
 android {
-    namespace = "com.autobusiness.app"
+    namespace = "com.autobus.app"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -30,12 +49,12 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.autobusiness.app"
+        applicationId = "com.autobus.app"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
-        versionCode = flutter.versionCode
+        versionCode = appVersionCode
         versionName = flutter.versionName
     }
 
