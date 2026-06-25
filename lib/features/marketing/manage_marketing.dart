@@ -74,7 +74,7 @@ class ManageMarketing extends StatelessWidget {
                               ),
                               _MarketingHubCard(
                                 icon: Icons.link_outlined,
-                                title: 'Link Outlet',
+                                title: 'Link Social Media',
                                 onTap: () {
                                   Navigator.push<void>(
                                     context,

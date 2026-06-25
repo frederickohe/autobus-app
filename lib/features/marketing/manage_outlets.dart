@@ -92,14 +92,17 @@ class _ManageOutletsState extends State<ManageOutlets> {
                       const SizedBox(width: 18),
                       Expanded(
                         child: Text(
-                          'Link Outlet',
+                          'Link Social Media',
                           style: ManageScreenStyle.headerTitleStyle(),
                         ),
                       ),
                       if (!_loading)
                         IconButton(
                           onPressed: _refreshIntegrations,
-                          icon: const Icon(Icons.refresh, color: Colors.white70),
+                          icon: const Icon(
+                            Icons.refresh,
+                            color: Colors.white70,
+                          ),
                           tooltip: 'Refresh',
                         ),
                     ],
@@ -128,7 +131,7 @@ class _ManageOutletsState extends State<ManageOutlets> {
                                     const SizedBox(height: 16),
                                   ],
                                   Text(
-                                    'Linked Outlets',
+                                    'Linked Social Media',
                                     textAlign: TextAlign.center,
                                     style: GoogleFonts.montserrat(
                                       color: Colors.white,
@@ -144,7 +147,7 @@ class _ManageOutletsState extends State<ManageOutlets> {
                                         horizontal: 8,
                                       ),
                                       child: Text(
-                                        'No outlets linked yet. Connect a channel below.',
+                                        'No Social Media linked yet. Connect a channel below.',
                                         textAlign: TextAlign.center,
                                         style: GoogleFonts.montserrat(
                                           color: Colors.white.withValues(
@@ -166,16 +169,19 @@ class _ManageOutletsState extends State<ManageOutlets> {
                                             icon: FaIcon(item.outlet.icon),
                                             iconColor: item.outlet.iconColor,
                                             isLinked: true,
-                                            onTap: () => _linkOutlet(item.outlet),
+                                            onTap: () =>
+                                                _linkOutlet(item.outlet),
                                           ),
                                       ],
                                     ),
                                   const SizedBox(height: 28),
                                   Text(
-                                    'Select to Link Outlet',
+                                    'Select to Link Social Media',
                                     textAlign: TextAlign.center,
                                     style: GoogleFonts.montserrat(
-                                      color: Colors.white.withValues(alpha: 0.9),
+                                      color: Colors.white.withValues(
+                                        alpha: 0.9,
+                                      ),
                                       fontSize: 14,
                                       fontWeight: FontWeight.w400,
                                       height: 1.5,
@@ -186,7 +192,9 @@ class _ManageOutletsState extends State<ManageOutlets> {
                                     'Postiz opens in-app: you are signed in automatically, then you connect the social account on the integrations page.',
                                     textAlign: TextAlign.center,
                                     style: GoogleFonts.montserrat(
-                                      color: Colors.white.withValues(alpha: 0.65),
+                                      color: Colors.white.withValues(
+                                        alpha: 0.65,
+                                      ),
                                       fontSize: 12,
                                       fontWeight: FontWeight.w300,
                                       height: 1.45,

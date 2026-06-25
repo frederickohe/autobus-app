@@ -215,6 +215,12 @@ class _SigninState extends State<Signin> {
                                 contentPadding: const EdgeInsets.symmetric(
                                   vertical: 12,
                                 ),
+                                hintText: 'Enter email or username',
+                                hintStyle: GoogleFonts.montserrat(
+                                  color: Colors.black38,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w400,
+                                ),
                               ),
                             ),
                             const SizedBox(height: 20),

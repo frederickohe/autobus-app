@@ -40,12 +40,20 @@ class _SignupState extends State<Signup> {
     return GoogleFonts.montserrat(fontSize: 14, fontWeight: FontWeight.w400);
   }
 
+  static TextStyle _fieldHintStyle() {
+    return GoogleFonts.montserrat(
+      color: Colors.black38,
+      fontSize: 14,
+      fontWeight: FontWeight.w400,
+    );
+  }
+
   /// Width for the middle Ghana Card segment: grows with typed digits, capped at 10-wide sample.
   double _ghanaTenFieldWidth(BuildContext context) {
     final scaler = MediaQuery.textScalerOf(context);
     final style = _ghanaTenStyle();
     final digits = ghanaCardTenController.text;
-    final probe = digits.isEmpty ? '000' : digits;
+    final probe = digits.isEmpty ? 'XXXXXXXXXX' : digits;
     final painter = TextPainter(
       text: TextSpan(text: probe, style: style),
       textDirection: TextDirection.ltr,
@@ -244,8 +252,10 @@ class _SignupState extends State<Signup> {
                               ),
                               TextField(
                                 controller: usernameController,
-                                decoration: const InputDecoration(
-                                  border: UnderlineInputBorder(),
+                                decoration: InputDecoration(
+                                  border: const UnderlineInputBorder(),
+                                  hintText: 'Enter your full name',
+                                  hintStyle: _fieldHintStyle(),
                                 ),
                               ),
                               const SizedBox(height: 20),
@@ -259,8 +269,11 @@ class _SignupState extends State<Signup> {
                               ),
                               TextField(
                                 controller: phoneController,
-                                decoration: const InputDecoration(
-                                  border: UnderlineInputBorder(),
+                                keyboardType: TextInputType.phone,
+                                decoration: InputDecoration(
+                                  border: const UnderlineInputBorder(),
+                                  hintText: '0241234567',
+                                  hintStyle: _fieldHintStyle(),
                                 ),
                               ),
                               const SizedBox(height: 20),
@@ -274,8 +287,10 @@ class _SignupState extends State<Signup> {
                               ),
                               TextField(
                                 controller: companyController,
-                                decoration: const InputDecoration(
-                                  border: UnderlineInputBorder(),
+                                decoration: InputDecoration(
+                                  border: const UnderlineInputBorder(),
+                                  hintText: 'Enter your company name',
+                                  hintStyle: _fieldHintStyle(),
                                 ),
                               ),
                               const SizedBox(height: 20),
@@ -287,7 +302,8 @@ class _SignupState extends State<Signup> {
                                   fontWeight: FontWeight.w400,
                                 ),
                               ),
-                              Center(
+                              Align(
+                                alignment: Alignment.centerLeft,
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   crossAxisAlignment: CrossAxisAlignment.end,
@@ -344,13 +360,16 @@ class _SignupState extends State<Signup> {
                                           fontSize: 14,
                                           fontWeight: FontWeight.w400,
                                         ),
-                                        decoration: const InputDecoration(
-                                          border: UnderlineInputBorder(),
+                                        decoration: InputDecoration(
+                                          border: const UnderlineInputBorder(),
                                           counterText: '',
                                           isDense: true,
-                                          contentPadding: EdgeInsets.symmetric(
+                                          contentPadding:
+                                              const EdgeInsets.symmetric(
                                             vertical: 12,
                                           ),
+                                          hintText: 'XXXXXXXXXX',
+                                          hintStyle: _fieldHintStyle(),
                                         ),
                                         onChanged: (v) {
                                           if (v.length == 10) {
@@ -393,13 +412,16 @@ class _SignupState extends State<Signup> {
                                           fontSize: 14,
                                           fontWeight: FontWeight.w400,
                                         ),
-                                        decoration: const InputDecoration(
-                                          border: UnderlineInputBorder(),
+                                        decoration: InputDecoration(
+                                          border: const UnderlineInputBorder(),
                                           counterText: '',
                                           isDense: true,
-                                          contentPadding: EdgeInsets.symmetric(
+                                          contentPadding:
+                                              const EdgeInsets.symmetric(
                                             vertical: 12,
                                           ),
+                                          hintText: 'X',
+                                          hintStyle: _fieldHintStyle(),
                                         ),
                                       ),
                                     ),
@@ -417,8 +439,11 @@ class _SignupState extends State<Signup> {
                               ),
                               TextField(
                                 controller: emailController,
-                                decoration: const InputDecoration(
-                                  border: UnderlineInputBorder(),
+                                keyboardType: TextInputType.emailAddress,
+                                decoration: InputDecoration(
+                                  border: const UnderlineInputBorder(),
+                                  hintText: 'name@example.com',
+                                  hintStyle: _fieldHintStyle(),
                                 ),
                               ),
                               const SizedBox(height: 20),
@@ -485,9 +510,9 @@ class _SignupState extends State<Signup> {
                               PageTransition(
                                 type: PageTransitionType.leftToRightWithFade,
                                 childCurrent: widget,
-                                duration: const Duration(milliseconds: 1000),
+                                duration: const Duration(milliseconds: 350),
                                 reverseDuration: const Duration(
-                                  milliseconds: 1000,
+                                  milliseconds: 300,
                                 ),
                                 child: const Signin(),
                               ),

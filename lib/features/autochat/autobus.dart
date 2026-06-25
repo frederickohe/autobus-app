@@ -1,6 +1,7 @@
 import 'package:autobus/barrel.dart';
 import 'package:autobus/features/products/product_requirements_sheet.dart';
 import 'package:autobus/features/products/product_chat_image_attachments.dart';
+import 'package:autobus/features/products/product_form_images.dart';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:file_picker/file_picker.dart';
@@ -227,16 +228,11 @@ class _AutoBusChatUIState extends State<_AutoBusChatUI> {
       ..add(ProductStagingSlot());
   }
 
-  void _addProductImageSlot() {
-    if (!_isProductsAgent || _productSlots.length >= 8) return;
-    setState(() => _productSlots.add(ProductStagingSlot()));
-  }
-
   Future<void> _onProductImageSlotTap(int index) async {
     if (!_isProductsAgent || _productImageBusy) return;
     final slot = _productSlots[index];
     if (slot.isEmpty) {
-      await pickProductImageForSlot(context, _productSlots, index, setState);
+      await pickMultipleProductImages(context, _productSlots, setState);
       return;
     }
     await showProductSlotActionsSheet(
@@ -964,7 +960,11 @@ class _AutoBusChatUIState extends State<_AutoBusChatUI> {
                     ProductChatImageStrip(
                       slots: _productSlots,
                       onSlotTap: _onProductImageSlotTap,
-                      onAddSlot: _addProductImageSlot,
+                      onAddSlot: () => pickMultipleProductImages(
+                        context,
+                        _productSlots,
+                        setState,
+                      ),
                       busy: _productImageBusy,
                     ),
                     const SizedBox(height: 12),

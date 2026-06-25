@@ -171,8 +171,8 @@ class SubscriptionGuard extends StatelessWidget {
         final subscribed = data?.subscribed == true;
         print('Subscribed: $subscribed, Email: ${data?.email}');
         if (subscribed) {
-          print('✓ Showing Welcome Screen');
-          return const Welcome();
+          print('✓ Showing Home Screen');
+          return const Home();
         }
 
         print('✗ Showing SelectPlan Screen');

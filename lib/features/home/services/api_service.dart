@@ -67,9 +67,7 @@ class ApiService {
   /// GET /api/v1/credits/me — JWT; per-category credit balances.
   Future<Map<String, dynamic>?> getMyCredits() async {
     try {
-      final response = await httpClient.get(
-        Uri.parse('$baseUrl/credits/me'),
-      );
+      final response = await httpClient.get(Uri.parse('$baseUrl/credits/me'));
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data is Map<String, dynamic>) return data;
@@ -532,11 +530,7 @@ class ApiService {
     }
     final request = http.MultipartRequest('POST', uri);
     request.files.add(
-      http.MultipartFile.fromBytes(
-        fieldName,
-        fileBytes,
-        filename: filename,
-      ),
+      http.MultipartFile.fromBytes(fieldName, fileBytes, filename: filename),
     );
 
     final streamed = await httpClient.send(request);
@@ -733,9 +727,7 @@ class ApiService {
     }
 
     final normalizedFolder = folder.trim().replaceAll('\\', '/');
-    final uri = Uri.parse(
-      '$baseUrl/storage/me/upload-rag-document',
-    ).replace(
+    final uri = Uri.parse('$baseUrl/storage/me/upload-rag-document').replace(
       queryParameters: {
         'folder': normalizedFolder,
         if (asyncMode) 'async_mode': 'true',
@@ -786,9 +778,9 @@ class ApiService {
     }
 
     final normalizedFolder = folder.trim().replaceAll('\\', '/');
-    final uri = Uri.parse('$baseUrl/storage/me/upload-rag-url').replace(
-      queryParameters: {'folder': normalizedFolder},
-    );
+    final uri = Uri.parse(
+      '$baseUrl/storage/me/upload-rag-url',
+    ).replace(queryParameters: {'folder': normalizedFolder});
 
     final response = await httpClient.post(
       uri,
@@ -1211,9 +1203,9 @@ class ApiService {
     bool store = false,
     Duration timeout = const Duration(minutes: 11),
   }) async {
-    final uri = Uri.parse('$baseUrl/media/generate-video').replace(
-      queryParameters: {'store': store.toString()},
-    );
+    final uri = Uri.parse(
+      '$baseUrl/media/generate-video',
+    ).replace(queryParameters: {'store': store.toString()});
     final response = await httpClient
         .post(
           uri,
@@ -1372,7 +1364,7 @@ class ApiService {
     }
     throw Exception(
       _httpDetailMessage(response.body) ??
-          'Could not load linked outlets (${response.statusCode})',
+          'Could not load linked social media (${response.statusCode})',
     );
   }
 
@@ -1490,7 +1482,9 @@ class ApiService {
         return PlatformEmbedSession.fromChatwoot(data);
       }
       if (data is Map) {
-        return PlatformEmbedSession.fromChatwoot(Map<String, dynamic>.from(data));
+        return PlatformEmbedSession.fromChatwoot(
+          Map<String, dynamic>.from(data),
+        );
       }
       throw Exception('Invalid Chatwoot session response');
     }
@@ -1521,7 +1515,9 @@ class ApiService {
         return PlatformEmbedSession.fromChatwoot(data);
       }
       if (data is Map) {
-        return PlatformEmbedSession.fromChatwoot(Map<String, dynamic>.from(data));
+        return PlatformEmbedSession.fromChatwoot(
+          Map<String, dynamic>.from(data),
+        );
       }
       throw Exception('Invalid Chatwoot channel link response');
     }
@@ -1772,6 +1768,128 @@ class ApiService {
     );
   }
 
+  /// GET /api/v1/products/{productId}/photos
+  Future<List<Map<String, dynamic>>> listProductPhotos(
+    String productId,
+  ) async {
+    final uri = Uri.parse(
+      '$baseUrl/products/${Uri.encodeComponent(productId)}/photos',
+    );
+    final response = await httpClient.get(uri);
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data is List) {
+        return data
+            .whereType<Map>()
+            .map((e) => Map<String, dynamic>.from(e))
+            .toList();
+      }
+    }
+    if (response.statusCode == 401) {
+      throw Exception('Session expired');
+    }
+    if (response.statusCode == 404) {
+      throw Exception('Product not found');
+    }
+    throw Exception(
+      _httpDetailMessage(response.body) ??
+          'Failed to load product photos (${response.statusCode})',
+    );
+  }
+
+  /// POST /api/v1/products/{productId}/photos — upload multiple image files.
+  Future<Map<String, dynamic>> uploadProductPhotos(
+    String productId, {
+    List<File>? files,
+    List<({List<int> bytes, String filename})>? fileBytes,
+  }) async {
+    final fileList = files ?? const <File>[];
+    final bytesList = fileBytes ?? const <({List<int> bytes, String filename})>[];
+    if (fileList.isEmpty && bytesList.isEmpty) {
+      throw ArgumentError('At least one image file is required');
+    }
+
+    final uri = Uri.parse(
+      '$baseUrl/products/${Uri.encodeComponent(productId)}/photos',
+    );
+    final request = http.MultipartRequest('POST', uri);
+    for (final file in fileList) {
+      request.files.add(
+        await http.MultipartFile.fromPath('files', file.path),
+      );
+    }
+    for (final entry in bytesList) {
+      request.files.add(
+        http.MultipartFile.fromBytes(
+          'files',
+          entry.bytes,
+          filename: entry.filename,
+        ),
+      );
+    }
+
+    final streamed = await httpClient.send(request);
+    final response = await http.Response.fromStream(streamed);
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final data = jsonDecode(response.body);
+      if (data is Map<String, dynamic>) return data;
+      if (data is Map) return Map<String, dynamic>.from(data);
+    }
+    if (response.statusCode == 401) {
+      throw Exception('Session expired');
+    }
+    throw Exception(
+      _httpDetailMessage(response.body) ??
+          'Failed to upload product photos (${response.statusCode})',
+    );
+  }
+
+  /// DELETE /api/v1/products/{productId}/photos/{imageId}
+  Future<Map<String, dynamic>> deleteProductPhoto(
+    String productId,
+    String imageId,
+  ) async {
+    final uri = Uri.parse(
+      '$baseUrl/products/${Uri.encodeComponent(productId)}/photos/${Uri.encodeComponent(imageId)}',
+    );
+    final response = await httpClient.delete(uri);
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data is Map<String, dynamic>) return data;
+      if (data is Map) return Map<String, dynamic>.from(data);
+    }
+    if (response.statusCode == 401) {
+      throw Exception('Session expired');
+    }
+    throw Exception(
+      _httpDetailMessage(response.body) ??
+          'Failed to delete product photo (${response.statusCode})',
+    );
+  }
+
+  /// PATCH /api/v1/products/{productId}/photos/{imageId}/primary
+  Future<Map<String, dynamic>> setPrimaryProductPhoto(
+    String productId,
+    String imageId,
+  ) async {
+    final uri = Uri.parse(
+      '$baseUrl/products/${Uri.encodeComponent(productId)}/photos/${Uri.encodeComponent(imageId)}/primary',
+    );
+    final response = await httpClient.patch(uri);
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data is Map<String, dynamic>) return data;
+      if (data is Map) return Map<String, dynamic>.from(data);
+    }
+    if (response.statusCode == 401) {
+      throw Exception('Session expired');
+    }
+    throw Exception(
+      _httpDetailMessage(response.body) ??
+          'Failed to set cover photo (${response.statusCode})',
+    );
+  }
+
   /// GET /api/v1/conversations/session/{sessionId} — full session with history.
   Future<Map<String, dynamic>> getConversationSession(int sessionId) async {
     final uri = Uri.parse('$baseUrl/conversations/session/$sessionId');
@@ -1878,9 +1996,7 @@ class ApiService {
 
   /// GET /api/v1/orders/{orderId}
   Future<Map<String, dynamic>> getOrder(String orderId) async {
-    final uri = Uri.parse(
-      '$baseUrl/orders/${Uri.encodeComponent(orderId)}',
-    );
+    final uri = Uri.parse('$baseUrl/orders/${Uri.encodeComponent(orderId)}');
     final response = await httpClient.get(uri);
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
@@ -1916,9 +2032,7 @@ class ApiService {
     if (fulfillmentStatus != null && fulfillmentStatus.trim().isNotEmpty) {
       body['fulfillment_status'] = fulfillmentStatus.trim();
     }
-    final uri = Uri.parse(
-      '$baseUrl/orders/${Uri.encodeComponent(orderId)}',
-    );
+    final uri = Uri.parse('$baseUrl/orders/${Uri.encodeComponent(orderId)}');
     final response = await httpClient.put(
       uri,
       headers: {'Content-Type': 'application/json'},
@@ -2032,9 +2146,9 @@ class ApiService {
 
   /// Notifications where `sms_sent` is true (`GET /api/v1/user/me/notifications`).
   Future<List<Map<String, dynamic>>> getMySentSms({int size = 100}) async {
-    final uri = Uri.parse('$baseUrl/user/me/notifications').replace(
-      queryParameters: {'page': '1', 'size': '${size.clamp(1, 100)}'},
-    );
+    final uri = Uri.parse(
+      '$baseUrl/user/me/notifications',
+    ).replace(queryParameters: {'page': '1', 'size': '${size.clamp(1, 100)}'});
     final response = await httpClient.get(uri);
     if (response.statusCode == 401) {
       throw Exception('Session expired');
@@ -2065,18 +2179,22 @@ class ApiService {
       if (!_jsonTruthy(raw['sms_sent'])) continue;
 
       final nested = raw['data'];
-      final map = nested is Map ? Map<String, dynamic>.from(nested) : <String, dynamic>{};
+      final map = nested is Map
+          ? Map<String, dynamic>.from(nested)
+          : <String, dynamic>{};
       sent.add({
-        'phone': (raw['sms_phone'] ?? map['phone'] ?? map['to'] ?? '').toString(),
-        'message': (map['message'] ??
-                map['body'] ??
-                map['content'] ??
-                map['description'] ??
-                '')
+        'phone': (raw['sms_phone'] ?? map['phone'] ?? map['to'] ?? '')
             .toString(),
+        'message':
+            (map['message'] ??
+                    map['body'] ??
+                    map['content'] ??
+                    map['description'] ??
+                    '')
+                .toString(),
         'sent_at': (raw['sms_sent_at'] ?? raw['created_at'] ?? '').toString(),
-        'status':
-            (raw['sms_status'] ?? raw['sms_delivery_status'] ?? '').toString(),
+        'status': (raw['sms_status'] ?? raw['sms_delivery_status'] ?? '')
+            .toString(),
       });
     }
     return sent;

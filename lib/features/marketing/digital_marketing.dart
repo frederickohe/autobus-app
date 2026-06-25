@@ -140,7 +140,9 @@ class _MarketingScaffold extends StatelessWidget {
             const SizedBox(height: 26),
             Expanded(
               child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: contentHorizontalPadding),
+                padding: EdgeInsets.symmetric(
+                  horizontal: contentHorizontalPadding,
+                ),
                 child: child,
               ),
             ),
@@ -154,14 +156,11 @@ class _MarketingScaffold extends StatelessWidget {
 class _DarkButton extends StatelessWidget {
   final String label;
   final VoidCallback? onTap;
+
   /// Narrower pill used on the generate-media step.
   final bool compact;
 
-  const _DarkButton({
-    required this.label,
-    this.onTap,
-    this.compact = false,
-  });
+  const _DarkButton({required this.label, this.onTap, this.compact = false});
 
   @override
   Widget build(BuildContext context) {
@@ -313,7 +312,9 @@ class _PromptBar extends StatelessWidget {
                   ),
                   child: Icon(
                     generateIcon,
-                    color: onGenerate != null ? CustColors.logodeep : Colors.black38,
+                    color: onGenerate != null
+                        ? CustColors.logodeep
+                        : Colors.black38,
                     size: 20,
                   ),
                 ),
@@ -435,6 +436,7 @@ class _TypeCard extends StatelessWidget {
 
 class _GenerateMediaPage extends StatefulWidget {
   final DigitalMarketingCampaign campaign;
+
   /// Index of the first item in this step’s contiguous block (pictures, videos, or text).
   final int segmentStartIndex;
 
@@ -468,10 +470,12 @@ class _GenerateMediaPageState extends State<_GenerateMediaPage> {
   List<int> _segmentIndices() {
     final t = _segmentType;
     final out = <int>[];
-    for (var i = widget.segmentStartIndex;
-        i < widget.campaign.contents.length &&
-            widget.campaign.contents[i].type == t;
-        i++) {
+    for (
+      var i = widget.segmentStartIndex;
+      i < widget.campaign.contents.length &&
+          widget.campaign.contents[i].type == t;
+      i++
+    ) {
       out.add(i);
     }
     return out;
@@ -493,8 +497,7 @@ class _GenerateMediaPageState extends State<_GenerateMediaPage> {
     if (_isText) return true;
     final indices = _segmentIndices();
     final anyGenerating = indices.any(
-      (i) =>
-          widget.campaign.contents[i].genState == MediaGenState.generating,
+      (i) => widget.campaign.contents[i].genState == MediaGenState.generating,
     );
     if (anyGenerating) return false;
     for (final i in indices) {
@@ -515,7 +518,8 @@ class _GenerateMediaPageState extends State<_GenerateMediaPage> {
     if (_activeContent.manualText != null) {
       _textBodyCtrl.text = _activeContent.manualText!;
     }
-    if (_promptCtrl.text.isEmpty && (_activeContent.prompt?.isNotEmpty ?? false)) {
+    if (_promptCtrl.text.isEmpty &&
+        (_activeContent.prompt?.isNotEmpty ?? false)) {
       _promptCtrl.text = _activeContent.prompt!;
     }
   }
@@ -625,7 +629,8 @@ class _GenerateMediaPageState extends State<_GenerateMediaPage> {
   Future<void> _pickAndAttachMedia() async {
     if (_isText) return;
 
-    final allowedExtensions = _activeContent.type == MarketingContentType.pictures
+    final allowedExtensions =
+        _activeContent.type == MarketingContentType.pictures
         ? <String>['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp']
         : <String>['mp4', 'mov', 'avi', 'mkv', 'webm', 'm4v'];
 
@@ -695,8 +700,7 @@ class _GenerateMediaPageState extends State<_GenerateMediaPage> {
   void _selectSlot(int index) {
     if (!_isMultiSlotMedia) return;
     final busy = _segmentIndices().any(
-      (i) =>
-          widget.campaign.contents[i].genState == MediaGenState.generating,
+      (i) => widget.campaign.contents[i].genState == MediaGenState.generating,
     );
     if (busy) return;
     setState(() {
@@ -707,7 +711,8 @@ class _GenerateMediaPageState extends State<_GenerateMediaPage> {
 
   bool _isSlotEmpty(MarketingContent content) {
     if (content.genState == MediaGenState.idle) return true;
-    if (content.genState == MediaGenState.ready && !_slotHasViewableMedia(content)) {
+    if (content.genState == MediaGenState.ready &&
+        !_slotHasViewableMedia(content)) {
       return true;
     }
     return false;
@@ -723,8 +728,7 @@ class _GenerateMediaPageState extends State<_GenerateMediaPage> {
   void _addAnotherMediaSlot() {
     if (!_isMultiSlotMedia) return;
     final busy = _segmentIndices().any(
-      (i) =>
-          widget.campaign.contents[i].genState == MediaGenState.generating,
+      (i) => widget.campaign.contents[i].genState == MediaGenState.generating,
     );
     if (busy) return;
 
@@ -739,10 +743,7 @@ class _GenerateMediaPageState extends State<_GenerateMediaPage> {
 
     setState(() {
       final insertAt = _segmentEndExclusive();
-      widget.campaign.contents.insert(
-        insertAt,
-        MarketingContent(_segmentType),
-      );
+      widget.campaign.contents.insert(insertAt, MarketingContent(_segmentType));
       _selectedSlotIndex = insertAt;
       _promptCtrl.clear();
     });
@@ -753,7 +754,8 @@ class _GenerateMediaPageState extends State<_GenerateMediaPage> {
     if (content.type == MarketingContentType.pictures) {
       final hasBytes = content.generatedBytes != null;
       final localPath = content.localFilePath;
-      final hasLocalFile = !kIsWeb &&
+      final hasLocalFile =
+          !kIsWeb &&
           localPath != null &&
           localPath.isNotEmpty &&
           File(localPath).existsSync();
@@ -762,7 +764,8 @@ class _GenerateMediaPageState extends State<_GenerateMediaPage> {
     if (content.type == MarketingContentType.videos) {
       final hasRemote = content.generatedResult?.isNotEmpty ?? false;
       final localPath = content.localFilePath;
-      final hasLocalFile = !kIsWeb &&
+      final hasLocalFile =
+          !kIsWeb &&
           localPath != null &&
           localPath.isNotEmpty &&
           File(localPath).existsSync();
@@ -804,8 +807,7 @@ class _GenerateMediaPageState extends State<_GenerateMediaPage> {
   void _deleteSlot(int index) {
     if (!_isMultiSlotMedia) return;
     final busy = _segmentIndices().any(
-      (i) =>
-          widget.campaign.contents[i].genState == MediaGenState.generating,
+      (i) => widget.campaign.contents[i].genState == MediaGenState.generating,
     );
     if (busy) return;
 
@@ -830,8 +832,9 @@ class _GenerateMediaPageState extends State<_GenerateMediaPage> {
         final fallback = index < _selectedSlotIndex
             ? _selectedSlotIndex - 1
             : newIndices.last;
-        _selectedSlotIndex =
-            newIndices.contains(fallback) ? fallback : newIndices.first;
+        _selectedSlotIndex = newIndices.contains(fallback)
+            ? fallback
+            : newIndices.first;
       }
       _promptCtrl.text = _activeContent.prompt ?? '';
     });
@@ -942,10 +945,7 @@ class _GenerateMediaPageState extends State<_GenerateMediaPage> {
             controller: _textBodyCtrl,
             maxLines: null,
             expands: true,
-            style: GoogleFonts.montserrat(
-              fontSize: 14,
-              color: Colors.black87,
-            ),
+            style: GoogleFonts.montserrat(fontSize: 14, color: Colors.black87),
             decoration: InputDecoration(
               hintText: 'Type Text Here...',
               hintStyle: GoogleFonts.montserrat(
@@ -1036,12 +1036,16 @@ class _MediaSlotThumbCard extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: selected ? _kHeaderBorder : CustColors.mainCol.withValues(alpha: 0.2),
+            color: selected
+                ? _kHeaderBorder
+                : CustColors.mainCol.withValues(alpha: 0.2),
             width: selected ? 2 : 1,
           ),
           boxShadow: [
             BoxShadow(
-              color: CustColors.mainCol.withValues(alpha: selected ? 0.12 : 0.06),
+              color: CustColors.mainCol.withValues(
+                alpha: selected ? 0.12 : 0.06,
+              ),
               blurRadius: 6,
               offset: const Offset(0, 2),
             ),
@@ -1072,9 +1076,7 @@ class _MediaSlotThumbCard extends StatelessWidget {
       case MediaGenState.generating:
         return ColoredBox(
           color: CustColors.mainCol.withValues(alpha: 0.08),
-          child: Center(
-            child: const AutobusLoadingIndicator(size: 26),
-          ),
+          child: Center(child: const AutobusLoadingIndicator(size: 26)),
         );
       case MediaGenState.ready:
         if (isPicture) {
@@ -1136,7 +1138,8 @@ class _MarketingInlineVideoPlayer extends StatefulWidget {
       _MarketingInlineVideoPlayerState();
 }
 
-class _MarketingInlineVideoPlayerState extends State<_MarketingInlineVideoPlayer> {
+class _MarketingInlineVideoPlayerState
+    extends State<_MarketingInlineVideoPlayer> {
   VideoPlayerController? _controller;
   bool _failed = false;
   String _errorDetail = '';
@@ -1159,8 +1162,7 @@ class _MarketingInlineVideoPlayerState extends State<_MarketingInlineVideoPlayer
       return;
     }
 
-    final isNetwork =
-        ref.startsWith('http://') || ref.startsWith('https://');
+    final isNetwork = ref.startsWith('http://') || ref.startsWith('https://');
 
     late final VideoPlayerController c;
     if (isNetwork) {
@@ -1218,10 +1220,7 @@ class _MarketingInlineVideoPlayerState extends State<_MarketingInlineVideoPlayer
           child: Text(
             'Could not load video.\n$_errorDetail',
             textAlign: TextAlign.center,
-            style: GoogleFonts.montserrat(
-              color: Colors.white70,
-              fontSize: 13,
-            ),
+            style: GoogleFonts.montserrat(color: Colors.white70, fontSize: 13),
           ),
         ),
       );
@@ -1285,8 +1284,12 @@ class _MarketingInlineVideoPlayerState extends State<_MarketingInlineVideoPlayer
                             begin: Alignment.topCenter,
                             end: Alignment.bottomCenter,
                             colors: [
-                              Colors.black.withValues(alpha: value.isPlaying ? 0.0 : 0.35),
-                              Colors.black.withValues(alpha: value.isPlaying ? 0.0 : 0.45),
+                              Colors.black.withValues(
+                                alpha: value.isPlaying ? 0.0 : 0.35,
+                              ),
+                              Colors.black.withValues(
+                                alpha: value.isPlaying ? 0.0 : 0.45,
+                              ),
                             ],
                           ),
                         ),
@@ -1345,7 +1348,9 @@ class _MediaSlotPreviewDialog extends StatelessWidget {
               borderRadius: BorderRadius.circular(16),
               child: Material(
                 color: Colors.black,
-                child: isPicture ? _buildImagePreview() : _buildVideoPreview(context),
+                child: isPicture
+                    ? _buildImagePreview()
+                    : _buildVideoPreview(context),
               ),
             ),
           ),
@@ -1354,7 +1359,10 @@ class _MediaSlotPreviewDialog extends StatelessWidget {
             width: double.infinity,
             child: OutlinedButton.icon(
               onPressed: onDelete,
-              icon: const Icon(Icons.delete_outline, color: CustColors.accentRed),
+              icon: const Icon(
+                Icons.delete_outline,
+                color: CustColors.accentRed,
+              ),
               label: Text(
                 deleteLabel,
                 style: GoogleFonts.montserrat(
@@ -1380,7 +1388,8 @@ class _MediaSlotPreviewDialog extends StatelessWidget {
   Widget _buildImagePreview() {
     final hasBytes = content.generatedBytes != null;
     final localPath = content.localFilePath;
-    final hasLocalFile = !kIsWeb &&
+    final hasLocalFile =
+        !kIsWeb &&
         localPath != null &&
         localPath.isNotEmpty &&
         File(localPath).existsSync();
@@ -1397,7 +1406,11 @@ class _MediaSlotPreviewDialog extends StatelessWidget {
         child: hasBytes || hasLocalFile
             ? image
             : const Center(
-                child: Icon(Icons.broken_image_outlined, color: Colors.white54, size: 48),
+                child: Icon(
+                  Icons.broken_image_outlined,
+                  color: Colors.white54,
+                  size: 48,
+                ),
               ),
       ),
     );
@@ -1416,10 +1429,7 @@ class _AddAnotherMediaSlotCard extends StatelessWidget {
   final MarketingContentType type;
   final VoidCallback onTap;
 
-  const _AddAnotherMediaSlotCard({
-    required this.type,
-    required this.onTap,
-  });
+  const _AddAnotherMediaSlotCard({required this.type, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -1499,7 +1509,9 @@ class _IdlePreview extends StatelessWidget {
           if (onUpload != null) ...[
             SizedBox(height: compact ? 6 : 10),
             Text(
-              isPicture ? 'Tap to upload your image' : 'Tap to upload your video',
+              isPicture
+                  ? 'Tap to upload your image'
+                  : 'Tap to upload your video',
               style: GoogleFonts.montserrat(
                 fontSize: compact ? 11 : 12,
                 color: Colors.black45,
@@ -1509,7 +1521,10 @@ class _IdlePreview extends StatelessWidget {
               const SizedBox(height: 4),
               Text(
                 'or use + below',
-                style: GoogleFonts.montserrat(fontSize: 11, color: Colors.black26),
+                style: GoogleFonts.montserrat(
+                  fontSize: 11,
+                  color: Colors.black26,
+                ),
               ),
             ],
           ],
@@ -1523,10 +1538,7 @@ class _GeneratingOverlay extends StatefulWidget {
   final String label;
   final bool compact;
 
-  const _GeneratingOverlay({
-    required this.label,
-    this.compact = false,
-  });
+  const _GeneratingOverlay({required this.label, this.compact = false});
 
   @override
   State<_GeneratingOverlay> createState() => _GeneratingOverlayState();
@@ -1605,10 +1617,7 @@ class _ReadyPreview extends StatelessWidget {
   final MarketingContent content;
   final bool compact;
 
-  const _ReadyPreview({
-    required this.content,
-    this.compact = false,
-  });
+  const _ReadyPreview({required this.content, this.compact = false});
 
   @override
   Widget build(BuildContext context) {
@@ -1616,7 +1625,10 @@ class _ReadyPreview extends StatelessWidget {
       final hasBytes = content.generatedBytes != null;
       final localPath = content.localFilePath;
       final hasLocalFile =
-          !kIsWeb && localPath != null && localPath.isNotEmpty && File(localPath).existsSync();
+          !kIsWeb &&
+          localPath != null &&
+          localPath.isNotEmpty &&
+          File(localPath).existsSync();
 
       if (hasBytes || hasLocalFile) {
         final caption = (content.prompt?.trim().isNotEmpty ?? false)
@@ -1807,7 +1819,10 @@ class _ReadyPreview extends StatelessWidget {
             child: Text(
               content.prompt ?? '',
               textAlign: TextAlign.center,
-              style: GoogleFonts.montserrat(fontSize: 11, color: Colors.black45),
+              style: GoogleFonts.montserrat(
+                fontSize: 11,
+                color: Colors.black45,
+              ),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
@@ -2143,10 +2158,11 @@ class _SelectOutletPageState extends State<_SelectOutletPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Prefer Postiz-linked channels (same flow as Link Outlet), then Blotato accounts.
+    // Prefer Postiz-linked channels (same flow as Link Social Media), then Blotato accounts.
     final useConnected = !_loadingAccounts && (_usePostiz || _useBlotato);
-    final gridCount =
-        _usePostiz ? _postizIntegrations.length : _blotatoAccounts.length;
+    final gridCount = _usePostiz
+        ? _postizIntegrations.length
+        : _blotatoAccounts.length;
 
     return _MarketingScaffold(
       child: Column(
@@ -2167,10 +2183,14 @@ class _SelectOutletPageState extends State<_SelectOutletPage> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.link_off, size: 48, color: Colors.grey.shade400),
+                      Icon(
+                        Icons.link_off,
+                        size: 48,
+                        color: Colors.grey.shade400,
+                      ),
                       const SizedBox(height: 16),
                       Text(
-                        'No outlets linked yet. Use Link Outlet to connect your social channels in Postiz; they will appear here for publishing.',
+                        'No Social Media linked yet. Use Link Social Media to connect your social channels in Postiz; they will appear here for publishing.',
                         textAlign: TextAlign.center,
                         style: GoogleFonts.montserrat(
                           fontSize: 13,
@@ -2180,7 +2200,7 @@ class _SelectOutletPageState extends State<_SelectOutletPage> {
                       ),
                       const SizedBox(height: 24),
                       _DarkButton(
-                        label: 'Open Link Outlet',
+                        label: 'Open Link Social Media',
                         onTap: () {
                           Navigator.of(context).push(
                             MaterialPageRoute<void>(
@@ -2218,8 +2238,10 @@ class _SelectOutletPageState extends State<_SelectOutletPage> {
                     icon = Icons.public;
                     color = _kPurple;
                     final pic = p.picture?.trim();
-                    avatar = pic != null &&
-                            (pic.startsWith('http://') || pic.startsWith('https://'))
+                    avatar =
+                        pic != null &&
+                            (pic.startsWith('http://') ||
+                                pic.startsWith('https://'))
                         ? CircleAvatar(
                             radius: 18,
                             backgroundImage: NetworkImage(pic),
@@ -2374,7 +2396,7 @@ class _SelectOutletPageState extends State<_SelectOutletPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Connect an outlet in Marketing → Link Outlet (Postiz) or link a social account, then try again.',
+              'Connect an outlet in Marketing → Link Social Media (Postiz) or link a social account, then try again.',
               style: GoogleFonts.montserrat(color: Colors.white, fontSize: 13),
             ),
             backgroundColor: Colors.orange.shade800,
@@ -2390,8 +2412,8 @@ class _SelectOutletPageState extends State<_SelectOutletPage> {
           content: Text(
             canPostiz
                 ? (widget.campaign.postRightAway
-                    ? 'Posted via Postiz to ${selectedIds.length} channel(s)'
-                    : 'Scheduled in Postiz for ${selectedIds.length} channel(s)')
+                      ? 'Posted via Postiz to ${selectedIds.length} channel(s)'
+                      : 'Scheduled in Postiz for ${selectedIds.length} channel(s)')
                 : 'Published successfully to ${selectedIds.length} account(s)',
             style: GoogleFonts.montserrat(color: Colors.white),
           ),

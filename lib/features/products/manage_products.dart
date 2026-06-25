@@ -170,15 +170,17 @@ class _ManageProductsState extends State<ManageProducts> {
                                 icon: Icons.add_box_outlined,
                                 title: 'Add Product',
                                 onTap: () {
-                                  Navigator.push<void>(
+                                  Navigator.push<bool?>(
                                     context,
-                                    MaterialPageRoute<void>(
-                                      builder: (context) => const AutoBus(
-                                        title: 'Products',
-                                        webhookContext: 'products_agent',
-                                      ),
+                                    MaterialPageRoute<bool?>(
+                                      builder: (context) =>
+                                          const AddProductScreen(),
                                     ),
-                                  );
+                                  ).then((created) {
+                                    if (created == true && mounted) {
+                                      _loadCataloguePresence();
+                                    }
+                                  });
                                 },
                               ),
                               _ProductHubCard(
