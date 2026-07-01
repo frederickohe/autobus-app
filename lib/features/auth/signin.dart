@@ -98,7 +98,7 @@ class _SigninState extends State<Signin> {
     }
 
     context.read<AuthBloc>().add(
-      LoginEvent(email: emailController.text, password: _pin),
+      LoginEvent(identifier: emailController.text.trim(), password: _pin),
     );
   }
 
