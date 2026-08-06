@@ -27,12 +27,18 @@ class _ManageProductsState extends State<ManageProducts> {
     });
     try {
       final api = context.read<ApiService>();
-      final files = await api.listMyStorageFiles(
-        folder: ApiService.productCatalogStorageFolder,
-      );
+      // Prefer listed storefront products; fall back to uploaded catalogue docs.
+      final products = await api.listProducts(skip: 0, limit: 1);
+      var hasCatalogue = products.isNotEmpty;
+      if (!hasCatalogue) {
+        final files = await api.listMyStorageFiles(
+          folder: ApiService.productCatalogStorageFolder,
+        );
+        hasCatalogue = files.isNotEmpty;
+      }
       if (!mounted) return;
       setState(() {
-        _hasCatalogueFiles = files.isNotEmpty;
+        _hasCatalogueFiles = hasCatalogue;
         _loading = false;
       });
     } catch (e) {
