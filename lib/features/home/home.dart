@@ -45,44 +45,19 @@ class Home extends StatefulWidget {
 
 class _HomeState extends State<Home> {
   Future<int>? _unreadCountFuture;
-  Future<List<AppNotification>>? _alertsFuture;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     final api = context.read<ApiService>();
     _unreadCountFuture ??= api.getUnreadNotificationCount();
-    _alertsFuture ??= api.getUnreadNotifications();
   }
 
   Future<void> _refreshNotifications() async {
     final api = context.read<ApiService>();
     setState(() {
       _unreadCountFuture = api.getUnreadNotificationCount();
-      _alertsFuture = api.getUnreadNotifications();
     });
-  }
-
-  void _openNotificationTarget(AppNotification notification) {
-    switch (notification.flutterPage?.toLowerCase()) {
-      case 'profile':
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const Profile()),
-        );
-        break;
-      case 'subscription':
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            settings: const RouteSettings(name: kManageSubscriptionRouteName),
-            builder: (_) => const ManageSubscriptionPage(),
-          ),
-        );
-        break;
-      default:
-        break;
-    }
   }
 
   @override
@@ -228,32 +203,6 @@ class _HomeState extends State<Home> {
                     },
                   ),
                   const SizedBox(height: 32),
-                  FutureBuilder<List<AppNotification>>(
-                    future: _alertsFuture,
-                    builder: (context, snap) {
-                      if (snap.connectionState != ConnectionState.done) {
-                        return const SizedBox(height: 36);
-                      }
-                      final alerts = snap.data ?? const [];
-                      if (alerts.isEmpty) {
-                        return const SizedBox(height: 36);
-                      }
-                      return Column(
-                        children: [
-                          for (var i = 0; i < alerts.length; i++) ...[
-                            if (i > 0) const SizedBox(height: 12),
-                            _AlertBox(
-                              text: alerts[i].displayText.isNotEmpty
-                                  ? alerts[i].displayText
-                                  : alerts[i].title,
-                              onTap: () => _openNotificationTarget(alerts[i]),
-                            ),
-                          ],
-                          const SizedBox(height: 36),
-                        ],
-                      );
-                    },
-                  ),
                   GridView.builder(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
@@ -425,58 +374,4 @@ class HomeMenuItem {
   final VoidCallback onTap;
 
   HomeMenuItem(this.title, this.icon, this.onTap);
-}
-
-class _AlertBox extends StatelessWidget {
-  final String text;
-  final VoidCallback onTap;
-
-  const _AlertBox({required this.text, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        height: 46,
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: const Color(0xFF3F1163), width: 1.5),
-        ),
-        child: Row(
-          children: [
-            const Icon(
-              Icons.warning_outlined,
-              color: Color(0xFFEF4444),
-              size: 20,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                text,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.montserrat(
-                  color: Colors.white.withValues(alpha: 0.8),
-                  fontSize: 12,
-                  fontWeight: FontWeight.w400,
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Transform.rotate(
-              angle: -0.785,
-              child: const Icon(
-                Icons.arrow_outward,
-                color: Color(0xFFEF4444),
-                size: 16,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }

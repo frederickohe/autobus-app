@@ -54,39 +54,31 @@ class ManageScreenHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final trailingWidget =
+        trailing ??
+        (creditCategory != null
+            ? CreditAvatar(creditCategory: creditCategory!)
+            : const SizedBox(width: 48, height: 48));
+
     return Padding(
       padding: padding,
       child: SizedBox(
         height: 54,
-        child: Stack(
-          alignment: Alignment.center,
+        child: Row(
           children: [
-            Align(
-              alignment: Alignment.centerLeft,
-              child: ManageScreenBackButton(onPressed: onBackPressed),
-            ),
-            Positioned.fill(
-              child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 72),
-                  child: Text(
-                    title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.center,
-                    style: ManageScreenStyle.headerTitleStyle(),
-                  ),
-                ),
+            ManageScreenBackButton(onPressed: onBackPressed),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: ManageScreenStyle.headerTitleStyle(),
               ),
             ),
-            Align(
-              alignment: Alignment.centerRight,
-              child:
-                  trailing ??
-                  (creditCategory != null
-                      ? CreditAvatar(creditCategory: creditCategory!)
-                      : const SizedBox(width: 48, height: 48)),
-            ),
+            const SizedBox(width: 8),
+            trailingWidget,
           ],
         ),
       ),
