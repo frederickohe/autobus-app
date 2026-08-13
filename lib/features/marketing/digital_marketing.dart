@@ -3,8 +3,10 @@ import 'dart:typed_data';
 
 import 'package:autobus/barrel.dart';
 import 'package:autobus/features/marketing/marketing_media_download.dart';
+import 'package:autobus/features/marketing/platform_post_details.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:video_player/video_player.dart';
 
@@ -13,7 +15,8 @@ const _kHeaderPurple = Color(0xFF2A1447);
 const _kHeaderBorder = Color(0xFFA92FEB);
 const _kNextButtonPurple = Color(0xFF2A1447);
 const _kPurple = Color(0xFF6C63FF);
-const _kRed = Color(0xFFE63946);
+const _kSelectGreen = Color(0xFF22C55E);
+const _kAutobusIgPrefix = 'autobus-ig-';
 
 enum MarketingContentType { pictures, videos, text }
 
@@ -70,7 +73,18 @@ class DigitalMarketingCampaign {
   bool postRightAway = false;
   final Set<String> selectedOutlets = {};
 
+  /// Per-outlet supporting details (title, privacy, tags, …), keyed by integration id.
+  final Map<String, PlatformPostDetails> outletDetails = {};
+
   DigitalMarketingCampaign(this.contents);
+
+  String get campaignCaption {
+    return contents
+        .where((c) => c.type == MarketingContentType.text)
+        .map((c) => c.manualText ?? c.generatedResult ?? '')
+        .where((s) => s.isNotEmpty)
+        .join('\n\n');
+  }
 }
 
 class _MarketingScaffold extends StatelessWidget {
@@ -2254,10 +2268,58 @@ class _SchedulePage extends StatefulWidget {
 class _SchedulePageState extends State<_SchedulePage> {
   DateTime _focusedMonth = DateTime(DateTime.now().year, DateTime.now().month);
   DateTime? _selectedDay;
+  TimeOfDay _selectedTime = TimeOfDay.now();
+
+  DateTime? get _combinedSchedule {
+    final day = _selectedDay;
+    if (day == null) return null;
+    return DateTime(
+      day.year,
+      day.month,
+      day.day,
+      _selectedTime.hour,
+      _selectedTime.minute,
+    );
+  }
+
+  Future<void> _pickTime() async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: _selectedTime,
+      builder: (ctx, child) {
+        return Theme(
+          data: Theme.of(ctx).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: _kHeaderPurple,
+              onPrimary: Colors.white,
+              surface: Colors.white,
+              onSurface: Colors.black87,
+            ),
+          ),
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
+    );
+    if (picked != null && mounted) {
+      setState(() => _selectedTime = picked);
+    }
+  }
 
   void _proceed({bool rightAway = false}) {
+    if (!rightAway && _selectedDay == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Pick a date first, or choose Post Right Away',
+            style: GoogleFonts.montserrat(fontSize: 13),
+          ),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
     widget.campaign.postRightAway = rightAway;
-    widget.campaign.scheduledDate = rightAway ? null : _selectedDay;
+    widget.campaign.scheduledDate = rightAway ? null : _combinedSchedule;
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -2268,68 +2330,122 @@ class _SchedulePageState extends State<_SchedulePage> {
 
   @override
   Widget build(BuildContext context) {
+    final timeLabel = _selectedTime.format(context);
     return _MarketingScaffold(
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Center(
-            child: Text(
-              'Schedule Your Post',
-              style: GoogleFonts.montserrat(
-                fontSize: 16,
-                color: Colors.black87,
-              ),
+          Text(
+            'Schedule Your Post',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.montserrat(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Colors.black87,
             ),
           ),
-          const SizedBox(height: 20),
-
-          _InlineCalendar(
+          const SizedBox(height: 6),
+          Text(
+            'Pick a day and time, or publish immediately',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.montserrat(
+              fontSize: 12,
+              color: Colors.black45,
+            ),
+          ),
+          const SizedBox(height: 16),
+          _CompactCalendar(
             focusedMonth: _focusedMonth,
             selectedDay: _selectedDay,
             onDaySelected: (d) => setState(() => _selectedDay = d),
             onMonthChanged: (m) => setState(() => _focusedMonth = m),
           ),
-
-          const Spacer(),
-
-          GestureDetector(
-            onTap: () => _proceed(rightAway: true),
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              decoration: BoxDecoration(
-                color: _kPrimary,
-                borderRadius: BorderRadius.circular(30),
-              ),
-              child: Center(
-                child: Text(
-                  'Post Right Away',
-                  style: GoogleFonts.montserrat(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.white,
-                  ),
+          const SizedBox(height: 12),
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: _pickTime,
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                height: 44,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF7F5FB),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFE8E0F0)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.schedule_rounded,
+                      size: 18,
+                      color: _kHeaderPurple,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'Time  ·  $timeLabel',
+                        style: GoogleFonts.montserrat(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      'Change',
+                      style: GoogleFonts.montserrat(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: _kHeaderPurple,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
           ),
+          const Spacer(),
+          SizedBox(
+            height: 44,
+            child: OutlinedButton(
+              onPressed: () => _proceed(rightAway: true),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: _kHeaderPurple,
+                side: const BorderSide(color: _kHeaderPurple, width: 1.2),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(28),
+                ),
+              ),
+              child: Text(
+                'Post Right Away',
+                style: GoogleFonts.montserrat(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          _DarkButton(
+            label: 'Next',
+            compact: true,
+            onTap: () => _proceed(),
+          ),
           const SizedBox(height: 12),
-
-          _DarkButton(label: 'Next', onTap: () => _proceed()),
-          const SizedBox(height: 20),
         ],
       ),
     );
   }
 }
 
-class _InlineCalendar extends StatelessWidget {
+class _CompactCalendar extends StatelessWidget {
   final DateTime focusedMonth;
   final DateTime? selectedDay;
   final ValueChanged<DateTime> onDaySelected;
   final ValueChanged<DateTime> onMonthChanged;
 
-  const _InlineCalendar({
+  const _CompactCalendar({
     required this.focusedMonth,
     required this.selectedDay,
     required this.onDaySelected,
@@ -2338,20 +2454,20 @@ class _InlineCalendar extends StatelessWidget {
 
   static const _months = [
     '',
-    'January',
-    'February',
-    'March',
-    'April',
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
     'May',
-    'June',
-    'July',
-    'August',
-    'September',
-    'October',
-    'November',
-    'December',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
   ];
-  static const _days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+  static const _days = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
   @override
   Widget build(BuildContext context) {
@@ -2360,117 +2476,134 @@ class _InlineCalendar extends StatelessWidget {
     final daysInMonth = DateUtils.getDaysInMonth(y, m);
     final firstWeekday = DateTime(y, m, 1).weekday % 7;
     final today = DateTime.now();
+    final todayDate = DateTime(today.year, today.month, today.day);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            RichText(
-              text: TextSpan(
-                children: [
-                  TextSpan(
-                    text: '${_months[m]} $y',
-                    style: GoogleFonts.montserrat(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  const TextSpan(
-                    text: '  ›',
-                    style: TextStyle(
-                      color: _kRed,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
+    return Container(
+      padding: const EdgeInsets.fromLTRB(10, 10, 10, 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF7F5FB),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFE8E0F0)),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Text(
+                '${_months[m]} $y',
+                style: GoogleFonts.montserrat(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.black87,
+                ),
               ),
-            ),
-            const Spacer(),
-            GestureDetector(
-              onTap: () => onMonthChanged(DateTime(y, m - 1)),
-              child: const Icon(Icons.chevron_left, color: _kRed, size: 28),
-            ),
-            const SizedBox(width: 4),
-            GestureDetector(
-              onTap: () => onMonthChanged(DateTime(y, m + 1)),
-              child: const Icon(Icons.chevron_right, color: _kRed, size: 28),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: _days
-              .map(
-                (d) => SizedBox(
-                  width: 36,
+              const Spacer(),
+              _CalNavBtn(
+                icon: Icons.chevron_left_rounded,
+                onTap: () => onMonthChanged(DateTime(y, m - 1)),
+              ),
+              const SizedBox(width: 4),
+              _CalNavBtn(
+                icon: Icons.chevron_right_rounded,
+                onTap: () => onMonthChanged(DateTime(y, m + 1)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              for (final d in _days)
+                Expanded(
                   child: Text(
                     d,
                     textAlign: TextAlign.center,
                     style: GoogleFonts.montserrat(
-                      fontSize: 11,
+                      fontSize: 10,
                       fontWeight: FontWeight.w600,
                       color: Colors.black38,
                     ),
                   ),
                 ),
-              )
-              .toList(),
-        ),
-        const SizedBox(height: 8),
-
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 7,
-            childAspectRatio: 1.0,
+            ],
           ),
-          itemCount: firstWeekday + daysInMonth,
-          itemBuilder: (_, i) {
-            if (i < firstWeekday) return const SizedBox();
-            final day = i - firstWeekday + 1;
-            final date = DateTime(y, m, day);
-            final isToday = DateUtils.isSameDay(date, today);
-            final isSel =
-                selectedDay != null && DateUtils.isSameDay(date, selectedDay!);
+          const SizedBox(height: 4),
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 7,
+              childAspectRatio: 1.15,
+              mainAxisSpacing: 2,
+              crossAxisSpacing: 2,
+            ),
+            itemCount: firstWeekday + daysInMonth,
+            itemBuilder: (_, i) {
+              if (i < firstWeekday) return const SizedBox.shrink();
+              final day = i - firstWeekday + 1;
+              final date = DateTime(y, m, day);
+              final isPast = date.isBefore(todayDate);
+              final isToday = DateUtils.isSameDay(date, today);
+              final isSel = selectedDay != null &&
+                  DateUtils.isSameDay(date, selectedDay!);
 
-            return GestureDetector(
-              onTap: () => onDaySelected(date),
-              child: Container(
-                margin: const EdgeInsets.all(2),
-                decoration: BoxDecoration(
-                  color: isSel
-                      ? _kRed
-                      : isToday
-                      ? _kRed.withOpacity(0.12)
-                      : null,
-                  shape: BoxShape.circle,
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  '$day',
-                  style: GoogleFonts.montserrat(
-                    fontSize: 13,
-                    fontWeight: isToday || isSel
-                        ? FontWeight.w700
-                        : FontWeight.w400,
+              return GestureDetector(
+                onTap: isPast ? null : () => onDaySelected(date),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  decoration: BoxDecoration(
                     color: isSel
-                        ? Colors.white
+                        ? _kSelectGreen
                         : isToday
-                        ? _kRed
-                        : Colors.black87,
+                            ? _kSelectGreen.withValues(alpha: 0.12)
+                            : null,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    '$day',
+                    style: GoogleFonts.montserrat(
+                      fontSize: 12,
+                      fontWeight:
+                          isToday || isSel ? FontWeight.w700 : FontWeight.w500,
+                      color: isSel
+                          ? Colors.white
+                          : isPast
+                              ? Colors.black26
+                              : isToday
+                                  ? _kSelectGreen
+                                  : Colors.black87,
+                    ),
                   ),
                 ),
-              ),
-            );
-          },
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CalNavBtn extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _CalNavBtn({required this.icon, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(8),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: SizedBox(
+          width: 28,
+          height: 28,
+          child: Icon(icon, size: 18, color: _kHeaderPurple),
         ),
-      ],
+      ),
     );
   }
 }
@@ -2491,7 +2624,7 @@ class _SelectOutletPageState extends State<_SelectOutletPage> {
   /// Blotato-backed accounts from `GET /social/accounts`.
   List<Map<String, dynamic>> _blotatoAccounts = [];
 
-  /// Postiz channels from `GET /social/postiz/integrations`.
+  /// Postiz channels + Autobus Instagram (merged for selection).
   List<PostizIntegration> _postizIntegrations = [];
   bool _loadingAccounts = true;
 
@@ -2505,9 +2638,37 @@ class _SelectOutletPageState extends State<_SelectOutletPage> {
     List<PostizIntegration> postiz = [];
     List<Map<String, dynamic>> blotato = [];
     try {
-      postiz = await _apiService.listPostizIntegrations();
+      postiz = List<PostizIntegration>.from(
+        await _apiService.listPostizIntegrations(),
+      );
     } catch (_) {
       // Postiz-only flow: do not fail the whole screen if this call errors.
+    }
+    try {
+      final igAccounts = await _apiService.listInstagramAccounts();
+      for (final row in igAccounts) {
+        final username = (row['username'] ?? '').toString().trim();
+        final name = (row['name'] ?? '').toString().trim();
+        final dbId = (row['id'] ?? '').toString().trim();
+        final igId = (row['ig_user_id'] ?? dbId).toString();
+        final label = username.isNotEmpty
+            ? '@$username'
+            : (name.isNotEmpty ? name : igId);
+        final unlinkId = dbId.isNotEmpty ? dbId : igId;
+        if (unlinkId.isEmpty) continue;
+        postiz.add(
+          PostizIntegration(
+            id: '$_kAutobusIgPrefix$unlinkId',
+            name: label.isNotEmpty ? label : 'Instagram',
+            identifier: 'instagram',
+            picture: (row['profile_picture_url'] ?? '').toString(),
+            disabled: false,
+            profile: username.isNotEmpty ? username : null,
+          ),
+        );
+      }
+    } catch (_) {
+      // Autobus Instagram accounts are optional alongside Postiz.
     }
     try {
       blotato = await _apiService.getSocialAccounts();
@@ -2516,7 +2677,7 @@ class _SelectOutletPageState extends State<_SelectOutletPage> {
     }
     if (mounted) {
       setState(() {
-        _postizIntegrations = postiz;
+        _postizIntegrations = postiz.where((p) => p.isActive).toList();
         _blotatoAccounts = blotato;
         _loadingAccounts = false;
       });
@@ -2527,23 +2688,64 @@ class _SelectOutletPageState extends State<_SelectOutletPage> {
 
   bool get _useBlotato => !_usePostiz && _blotatoAccounts.isNotEmpty;
 
+  OutletOption? _outletFor(PostizIntegration p) {
+    for (final o in OutletCatalog.all) {
+      if (o.matchesIntegration(p)) return o;
+    }
+    return null;
+  }
+
+  void _goToPostDetails() {
+    if (widget.campaign.selectedOutlets.isEmpty) return;
+    final caption = widget.campaign.campaignCaption;
+    for (final id in widget.campaign.selectedOutlets) {
+      widget.campaign.outletDetails.putIfAbsent(
+        id,
+        () => PlatformPostDetails.fromCampaignCaption(caption),
+      );
+    }
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => _PostDetailsPage(
+          campaign: widget.campaign,
+          postizIntegrations: _postizIntegrations,
+          blotatoAccounts: _blotatoAccounts,
+          usePostiz: _usePostiz,
+          useBlotato: _useBlotato,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Prefer Postiz-linked channels (same flow as Link Social Media), then Blotato accounts.
     final useConnected = !_loadingAccounts && (_usePostiz || _useBlotato);
-    final gridCount = _usePostiz
-        ? _postizIntegrations.length
-        : _blotatoAccounts.length;
+    final gridCount =
+        _usePostiz ? _postizIntegrations.length : _blotatoAccounts.length;
 
     return _MarketingScaffold(
       child: Column(
         children: [
           Text(
             'Select Your Digital Outlet',
-            style: GoogleFonts.montserrat(fontSize: 16, color: Colors.black87),
+            style: GoogleFonts.montserrat(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Colors.black87,
+            ),
           ),
-          const SizedBox(height: 24),
-
+          const SizedBox(height: 6),
+          Text(
+            'Choose where to publish. Linked Instagram, TikTok, and YouTube appear here.',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.montserrat(
+              fontSize: 12,
+              color: Colors.black45,
+              height: 1.35,
+            ),
+          ),
+          const SizedBox(height: 18),
           if (_loadingAccounts)
             const Expanded(child: Center(child: AutobusLoadingIndicator()))
           else if (!useConnected)
@@ -2561,7 +2763,7 @@ class _SelectOutletPageState extends State<_SelectOutletPage> {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        'No Social Media linked yet. Use Link Social Media to connect your social channels in Postiz; they will appear here for publishing.',
+                        'No Social Media linked yet. Use Link Social Media to connect your channels; they will appear here for publishing.',
                         textAlign: TextAlign.center,
                         style: GoogleFonts.montserrat(
                           fontSize: 13,
@@ -2572,12 +2774,17 @@ class _SelectOutletPageState extends State<_SelectOutletPage> {
                       const SizedBox(height: 24),
                       _DarkButton(
                         label: 'Open Link Social Media',
-                        onTap: () {
-                          Navigator.of(context).push(
+                        compact: true,
+                        onTap: () async {
+                          await Navigator.of(context).push(
                             MaterialPageRoute<void>(
                               builder: (_) => const ManageOutlets(),
                             ),
                           );
+                          if (mounted) {
+                            setState(() => _loadingAccounts = true);
+                            await _loadAccounts();
+                          }
                         },
                       ),
                     ],
@@ -2587,34 +2794,38 @@ class _SelectOutletPageState extends State<_SelectOutletPage> {
             )
           else
             Expanded(
-              child: GridView.builder(
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  childAspectRatio: 1.5,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                ),
+              child: ListView.separated(
                 itemCount: gridCount,
+                separatorBuilder: (_, __) => const SizedBox(height: 10),
                 itemBuilder: (_, i) {
                   final String id;
                   final String label;
-                  final IconData icon;
+                  final String? subtitle;
                   final Color color;
+                  final IconData icon;
                   final Widget? avatar;
 
                   if (_usePostiz) {
                     final p = _postizIntegrations[i];
+                    final outlet = _outletFor(p);
                     id = p.id;
-                    label = p.name.trim().isNotEmpty ? p.name : p.identifier;
-                    icon = Icons.public;
-                    color = _kPurple;
+                    label = outlet?.label ??
+                        (p.identifier.isNotEmpty
+                            ? p.identifier
+                            : 'Channel');
+                    final accountName = p.name.trim().isNotEmpty
+                        ? p.name.trim()
+                        : (p.profile?.trim() ?? '');
+                    subtitle =
+                        accountName.isNotEmpty ? accountName : null;
+                    icon = outlet?.icon ?? FontAwesomeIcons.globe;
+                    color = outlet?.iconColor ?? _kPurple;
                     final pic = p.picture?.trim();
-                    avatar =
-                        pic != null &&
+                    avatar = pic != null &&
                             (pic.startsWith('http://') ||
                                 pic.startsWith('https://'))
                         ? CircleAvatar(
-                            radius: 18,
+                            radius: 16,
                             backgroundImage: NetworkImage(pic),
                             onBackgroundImageError: (_, __) {},
                           )
@@ -2622,116 +2833,696 @@ class _SelectOutletPageState extends State<_SelectOutletPage> {
                   } else {
                     final acct = _blotatoAccounts[i];
                     id = acct['id'] as String? ?? '';
-                    label =
-                        (acct['account_name'] ?? acct['platform'] ?? 'Account')
-                            .toString();
+                    label = (acct['platform'] ?? 'Account').toString();
+                    subtitle =
+                        (acct['account_name'] ?? '').toString().trim();
                     icon = Icons.link;
                     color = _kPurple;
                     avatar = null;
                   }
 
-                  final sel = widget.campaign.selectedOutlets.contains(id);
+                  final sel =
+                      widget.campaign.selectedOutlets.contains(id);
 
-                  return GestureDetector(
-                    onTap: () => setState(
-                      () => sel
-                          ? widget.campaign.selectedOutlets.remove(id)
-                          : widget.campaign.selectedOutlets.add(id),
-                    ),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                          color: sel ? _kPrimary : Colors.grey.shade200,
-                          width: sel ? 2 : 1,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.04),
-                            blurRadius: 6,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
+                  return Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () => setState(
+                        () => sel
+                            ? widget.campaign.selectedOutlets.remove(id)
+                            : widget.campaign.selectedOutlets.add(id),
                       ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          avatar ?? Icon(icon, size: 30, color: color),
-                          const SizedBox(height: 6),
-                          Text(
-                            label,
-                            style: GoogleFonts.montserrat(
-                              fontSize: 11,
-                              color: Colors.black54,
-                            ),
-                            textAlign: TextAlign.center,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
+                      borderRadius: BorderRadius.circular(12),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 180),
+                        height: 64,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                        ),
+                        decoration: BoxDecoration(
+                          color: sel
+                              ? _kSelectGreen.withValues(alpha: 0.06)
+                              : Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: sel
+                                ? _kSelectGreen
+                                : Colors.grey.shade200,
+                            width: sel ? 2 : 1,
                           ),
-                        ],
+                        ),
+                        child: Row(
+                          children: [
+                            avatar ??
+                                SizedBox(
+                                  width: 36,
+                                  height: 36,
+                                  child: Center(
+                                    child: Icon(
+                                      icon,
+                                      size: 20,
+                                      color: color,
+                                    ),
+                                  ),
+                                ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment:
+                                    CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    label,
+                                    style: GoogleFonts.montserrat(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.black87,
+                                    ),
+                                  ),
+                                  if (subtitle != null &&
+                                      subtitle.isNotEmpty) ...[
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      subtitle,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: GoogleFonts.montserrat(
+                                        fontSize: 11,
+                                        color: Colors.black45,
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                            AnimatedOpacity(
+                              duration: const Duration(milliseconds: 150),
+                              opacity: sel ? 1 : 0,
+                              child: const Icon(
+                                Icons.check_circle_rounded,
+                                color: _kSelectGreen,
+                                size: 22,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   );
                 },
               ),
             ),
-
-          const SizedBox(height: 16),
-
+          const SizedBox(height: 12),
           _DarkButton(
-            label: 'Publish',
-            onTap: widget.campaign.selectedOutlets.isNotEmpty ? _publish : null,
+            label: 'Next',
+            compact: true,
+            onTap: widget.campaign.selectedOutlets.isNotEmpty
+                ? _goToPostDetails
+                : null,
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 12),
+        ],
+      ),
+    );
+  }
+}
+
+/// Collect platform-specific supporting info, then publish.
+class _PostDetailsPage extends StatefulWidget {
+  final DigitalMarketingCampaign campaign;
+  final List<PostizIntegration> postizIntegrations;
+  final List<Map<String, dynamic>> blotatoAccounts;
+  final bool usePostiz;
+  final bool useBlotato;
+
+  const _PostDetailsPage({
+    required this.campaign,
+    required this.postizIntegrations,
+    required this.blotatoAccounts,
+    required this.usePostiz,
+    required this.useBlotato,
+  });
+
+  @override
+  State<_PostDetailsPage> createState() => _PostDetailsPageState();
+}
+
+class _PostDetailsPageState extends State<_PostDetailsPage> {
+  final ApiService _apiService = ApiService(
+    httpClient: SessionAwareHttpClient(tokenService: TokenService()),
+  );
+
+  bool _publishing = false;
+  String _publishStatus = '';
+  final Map<String, bool> _expanded = {};
+
+  List<PostizIntegration> get _selectedPostiz {
+    final ids = widget.campaign.selectedOutlets;
+    return widget.postizIntegrations.where((p) => ids.contains(p.id)).toList();
+  }
+
+  List<Map<String, dynamic>> get _selectedBlotato {
+    final ids = widget.campaign.selectedOutlets;
+    return widget.blotatoAccounts
+        .where((a) => ids.contains((a['id'] ?? '').toString()))
+        .toList();
+  }
+
+  OutletOption? _outletFor(PostizIntegration p) {
+    for (final o in OutletCatalog.all) {
+      if (o.matchesIntegration(p)) return o;
+    }
+    return null;
+  }
+
+  PlatformPostDetails _detailsFor(String id) {
+    return widget.campaign.outletDetails.putIfAbsent(
+      id,
+      () => PlatformPostDetails.fromCampaignCaption(
+        widget.campaign.campaignCaption,
+      ),
+    );
+  }
+
+  InputDecoration _fieldDecoration(String label, {String? hint}) {
+    return InputDecoration(
+      labelText: label,
+      hintText: hint,
+      labelStyle: GoogleFonts.montserrat(fontSize: 12, color: Colors.black54),
+      hintStyle: GoogleFonts.montserrat(fontSize: 12, color: Colors.black38),
+      filled: true,
+      fillColor: const Color(0xFFF7F5FB),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Color(0xFFE8E0F0)),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Color(0xFFE8E0F0)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: _kHeaderPurple, width: 1.4),
+      ),
+    );
+  }
+
+  Widget _captionField(PlatformPostDetails d) {
+    return TextFormField(
+      initialValue: d.caption,
+      minLines: 3,
+      maxLines: 6,
+      style: GoogleFonts.montserrat(fontSize: 13, height: 1.4),
+      decoration: _fieldDecoration(
+        'Caption',
+        hint: 'Post caption / description',
+      ),
+      onChanged: (v) => d.caption = v,
+    );
+  }
+
+  Widget _youtubeFields(PlatformPostDetails d) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        TextFormField(
+          initialValue: d.youtubeTitle,
+          style: GoogleFonts.montserrat(fontSize: 13),
+          decoration: _fieldDecoration('Title', hint: '2–100 characters'),
+          onChanged: (v) => d.youtubeTitle = v,
+        ),
+        const SizedBox(height: 10),
+        _captionField(d),
+        const SizedBox(height: 10),
+        DropdownButtonFormField<String>(
+          value: d.youtubeVisibility,
+          decoration: _fieldDecoration('Visibility'),
+          style: GoogleFonts.montserrat(fontSize: 13, color: Colors.black87),
+          items: const [
+            DropdownMenuItem(value: 'public', child: Text('Public')),
+            DropdownMenuItem(value: 'unlisted', child: Text('Unlisted')),
+            DropdownMenuItem(value: 'private', child: Text('Private')),
+          ],
+          onChanged: (v) {
+            if (v != null) setState(() => d.youtubeVisibility = v);
+          },
+        ),
+        const SizedBox(height: 10),
+        TextFormField(
+          initialValue: d.youtubeTagsCsv,
+          style: GoogleFonts.montserrat(fontSize: 13),
+          decoration: _fieldDecoration(
+            'Tags',
+            hint: 'Comma-separated, e.g. marketing, tips',
+          ),
+          onChanged: (v) => d.youtubeTagsCsv = v,
+        ),
+        const SizedBox(height: 10),
+        DropdownButtonFormField<String>(
+          value: d.madeForKids,
+          decoration: _fieldDecoration('Made for kids'),
+          style: GoogleFonts.montserrat(fontSize: 13, color: Colors.black87),
+          items: const [
+            DropdownMenuItem(value: 'no', child: Text('No')),
+            DropdownMenuItem(value: 'yes', child: Text('Yes')),
+          ],
+          onChanged: (v) {
+            if (v != null) setState(() => d.madeForKids = v);
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _tiktokFields(PlatformPostDetails d) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        TextFormField(
+          initialValue: d.tiktokTitle,
+          style: GoogleFonts.montserrat(fontSize: 13),
+          decoration: _fieldDecoration('Title', hint: 'Max 90 characters'),
+          onChanged: (v) => d.tiktokTitle = v,
+        ),
+        const SizedBox(height: 10),
+        _captionField(d),
+        const SizedBox(height: 10),
+        DropdownButtonFormField<String>(
+          value: d.tiktokPrivacy,
+          decoration: _fieldDecoration('Who can view'),
+          style: GoogleFonts.montserrat(fontSize: 13, color: Colors.black87),
+          items: const [
+            DropdownMenuItem(
+              value: 'PUBLIC_TO_EVERYONE',
+              child: Text('Everyone'),
+            ),
+            DropdownMenuItem(
+              value: 'FOLLOWER_OF_CREATOR',
+              child: Text('Followers'),
+            ),
+            DropdownMenuItem(
+              value: 'MUTUAL_FOLLOW_FRIENDS',
+              child: Text('Friends'),
+            ),
+            DropdownMenuItem(
+              value: 'SELF_ONLY',
+              child: Text('Only me'),
+            ),
+          ],
+          onChanged: (v) {
+            if (v != null) setState(() => d.tiktokPrivacy = v);
+          },
+        ),
+        SwitchListTile.adaptive(
+          contentPadding: EdgeInsets.zero,
+          title: Text('Allow comments', style: GoogleFonts.montserrat(fontSize: 13)),
+          value: d.tiktokComment,
+          activeColor: _kHeaderPurple,
+          onChanged: (v) => setState(() => d.tiktokComment = v),
+        ),
+        SwitchListTile.adaptive(
+          contentPadding: EdgeInsets.zero,
+          title: Text('Allow duet', style: GoogleFonts.montserrat(fontSize: 13)),
+          value: d.tiktokDuet,
+          activeColor: _kHeaderPurple,
+          onChanged: (v) => setState(() => d.tiktokDuet = v),
+        ),
+        SwitchListTile.adaptive(
+          contentPadding: EdgeInsets.zero,
+          title: Text('Allow stitch', style: GoogleFonts.montserrat(fontSize: 13)),
+          value: d.tiktokStitch,
+          activeColor: _kHeaderPurple,
+          onChanged: (v) => setState(() => d.tiktokStitch = v),
+        ),
+        SwitchListTile.adaptive(
+          contentPadding: EdgeInsets.zero,
+          title: Text(
+            'Branded content',
+            style: GoogleFonts.montserrat(fontSize: 13),
+          ),
+          value: d.tiktokBrandContent,
+          activeColor: _kHeaderPurple,
+          onChanged: (v) => setState(() => d.tiktokBrandContent = v),
+        ),
+        SwitchListTile.adaptive(
+          contentPadding: EdgeInsets.zero,
+          title: Text(
+            'Your brand',
+            style: GoogleFonts.montserrat(fontSize: 13),
+          ),
+          value: d.tiktokBrandOrganic,
+          activeColor: _kHeaderPurple,
+          onChanged: (v) => setState(() => d.tiktokBrandOrganic = v),
+        ),
+        SwitchListTile.adaptive(
+          contentPadding: EdgeInsets.zero,
+          title: Text(
+            'Made with AI',
+            style: GoogleFonts.montserrat(fontSize: 13),
+          ),
+          value: d.tiktokMadeWithAi,
+          activeColor: _kHeaderPurple,
+          onChanged: (v) => setState(() => d.tiktokMadeWithAi = v),
+        ),
+      ],
+    );
+  }
+
+  Widget _instagramFields(PlatformPostDetails d, {required bool autobusOnly}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _captionField(d),
+        if (!autobusOnly) ...[
+          const SizedBox(height: 10),
+          DropdownButtonFormField<String>(
+            value: d.instagramPostType,
+            decoration: _fieldDecoration('Post type'),
+            style: GoogleFonts.montserrat(fontSize: 13, color: Colors.black87),
+            items: const [
+              DropdownMenuItem(value: 'post', child: Text('Feed / Reel')),
+              DropdownMenuItem(value: 'story', child: Text('Story')),
+            ],
+            onChanged: (v) {
+              if (v != null) setState(() => d.instagramPostType = v);
+            },
+          ),
+          const SizedBox(height: 10),
+          TextFormField(
+            initialValue: d.instagramCollaboratorsCsv,
+            style: GoogleFonts.montserrat(fontSize: 13),
+            decoration: _fieldDecoration(
+              'Collaborators',
+              hint: 'Usernames, comma-separated',
+            ),
+            onChanged: (v) => d.instagramCollaboratorsCsv = v,
+          ),
+        ] else ...[
+          const SizedBox(height: 8),
+          Text(
+            'Autobus Instagram publishes caption + media only.',
+            style: GoogleFonts.montserrat(fontSize: 11, color: Colors.black45),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _genericFields(PlatformPostDetails d) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _captionField(d),
+        const SizedBox(height: 8),
+        Text(
+          'This channel uses caption and media. Extra options are not required.',
+          style: GoogleFonts.montserrat(fontSize: 11, color: Colors.black45),
+        ),
+      ],
+    );
+  }
+
+  Widget _outletCard({
+    required String id,
+    required String label,
+    required String? subtitle,
+    required IconData icon,
+    required Color color,
+    required PlatformDetailsKind kind,
+    required bool autobusIg,
+  }) {
+    final expanded = _expanded[id] ?? true;
+    final d = _detailsFor(id);
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        children: [
+          InkWell(
+            onTap: () => setState(() => _expanded[id] = !expanded),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+              child: Row(
+                children: [
+                  Icon(icon, size: 18, color: color),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          label,
+                          style: GoogleFonts.montserrat(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        if (subtitle != null && subtitle.isNotEmpty)
+                          Text(
+                            subtitle,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.montserrat(
+                              fontSize: 11,
+                              color: Colors.black45,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  Icon(
+                    expanded
+                        ? Icons.keyboard_arrow_up_rounded
+                        : Icons.keyboard_arrow_down_rounded,
+                    color: Colors.black45,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          if (expanded)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 0, 12, 14),
+              child: kind == PlatformDetailsKind.youtube
+                  ? _youtubeFields(d)
+                  : kind == PlatformDetailsKind.tiktok
+                      ? _tiktokFields(d)
+                      : kind == PlatformDetailsKind.instagram
+                          ? _instagramFields(d, autobusOnly: autobusIg)
+                          : _genericFields(d),
+            ),
         ],
       ),
     );
   }
 
+  @override
+  Widget build(BuildContext context) {
+    final postizCards = <Widget>[];
+    for (final p in _selectedPostiz) {
+      final outlet = _outletFor(p);
+      final label = outlet?.label ??
+          (p.identifier.isNotEmpty ? p.identifier : 'Channel');
+      final accountName = p.name.trim().isNotEmpty
+          ? p.name.trim()
+          : (p.profile?.trim() ?? '');
+      final autobusIg = p.id.startsWith(_kAutobusIgPrefix);
+      postizCards.add(
+        _outletCard(
+          id: p.id,
+          label: label,
+          subtitle: accountName.isNotEmpty ? accountName : null,
+          icon: outlet?.icon ?? FontAwesomeIcons.globe,
+          color: outlet?.iconColor ?? _kPurple,
+          kind: platformDetailsKindFor(p.identifier),
+          autobusIg: autobusIg,
+        ),
+      );
+    }
+
+    final blotatoCards = <Widget>[];
+    if (!widget.usePostiz) {
+      for (final acct in _selectedBlotato) {
+        final id = (acct['id'] ?? '').toString();
+        if (id.isEmpty) continue;
+        blotatoCards.add(
+          _outletCard(
+            id: id,
+            label: (acct['platform'] ?? 'Account').toString(),
+            subtitle: (acct['account_name'] ?? '').toString().trim(),
+            icon: Icons.link,
+            color: _kPurple,
+            kind: PlatformDetailsKind.generic,
+            autobusIg: false,
+          ),
+        );
+      }
+    }
+
+    final cards = [...postizCards, ...blotatoCards];
+
+    return _MarketingScaffold(
+      child: Stack(
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'Post Details',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.montserrat(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Add titles, captions, and privacy settings for each platform',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.montserrat(
+                  fontSize: 12,
+                  color: Colors.black45,
+                  height: 1.35,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Expanded(
+                child: ListView.separated(
+                  itemCount: cards.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 12),
+                  itemBuilder: (_, i) => cards[i],
+                ),
+              ),
+              const SizedBox(height: 12),
+              _DarkButton(
+                label: 'Publish',
+                compact: true,
+                onTap: _publishing ? null : _publish,
+              ),
+              const SizedBox(height: 12),
+            ],
+          ),
+          if (_publishing)
+            Positioned.fill(
+              child: ColoredBox(
+                color: Colors.white.withValues(alpha: 0.88),
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const AutobusLoadingIndicator(size: 36),
+                      const SizedBox(height: 16),
+                      Text(
+                        _publishStatus.isEmpty
+                            ? 'Publishing…'
+                            : _publishStatus,
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.montserrat(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  void _setStatus(String status) {
+    if (!mounted) return;
+    setState(() => _publishStatus = status);
+  }
+
+  String _captionForOutlet(String id, String fallback) {
+    final d = widget.campaign.outletDetails[id];
+    final c = d?.caption.trim();
+    if (c != null && c.isNotEmpty) return c;
+    return fallback;
+  }
+
   Future<void> _publish() async {
     final selectedIds = widget.campaign.selectedOutlets.toList();
-    final textContent = widget.campaign.contents
-        .where((c) => c.type == MarketingContentType.text)
-        .map((c) => c.manualText ?? c.generatedResult ?? '')
-        .where((s) => s.isNotEmpty)
-        .join('\n\n');
+    if (selectedIds.isEmpty || _publishing) return;
 
-    final mediaUrls = <String>[];
-    for (final c in widget.campaign.contents) {
-      if (c.type == MarketingContentType.text) continue;
-
-      final existing = c.generatedResult?.trim();
-      if (existing != null &&
-          existing.isNotEmpty &&
-          (existing.startsWith('http://') || existing.startsWith('https://'))) {
-        mediaUrls.add(existing);
-        continue;
+    // YouTube requires a title (2–100 chars).
+    for (final p in _selectedPostiz) {
+      if (p.identifier.toLowerCase() != 'youtube') continue;
+      if (p.id.startsWith(_kAutobusIgPrefix)) continue;
+      final d = _detailsFor(p.id);
+      final title = d.youtubeTitle.trim().isNotEmpty
+          ? d.youtubeTitle.trim()
+          : PlatformPostDetails.fromCampaignCaption(d.caption).youtubeTitle;
+      if (title.trim().length < 2) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'YouTube needs a title (at least 2 characters).',
+              style: GoogleFonts.montserrat(fontSize: 13),
+            ),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        return;
       }
+      d.youtubeTitle = title;
+    }
 
-      final localPath = c.localFilePath?.trim();
-      if (!kIsWeb && localPath != null && localPath.isNotEmpty) {
-        try {
-          final file = File(localPath);
-          if (await file.exists() && await file.length() > 0) {
-            final url = await _apiService.uploadFile(
-              file: file,
-              filename: file.uri.pathSegments.isNotEmpty
-                  ? file.uri.pathSegments.last
-                  : null,
-            );
-            mediaUrls.add(url);
-            continue;
-          }
-        } catch (_) {
-          // Fall through to bytes upload if available.
+    setState(() {
+      _publishing = true;
+      _publishStatus = 'Preparing content…';
+    });
+
+    final messenger = ScaffoldMessenger.of(context);
+    final textContent = widget.campaign.campaignCaption;
+
+    try {
+      _setStatus('Uploading media…');
+      final mediaUrls = <String>[];
+      for (final c in widget.campaign.contents) {
+        if (c.type == MarketingContentType.text) continue;
+
+        final existing = c.generatedResult?.trim();
+        if (existing != null &&
+            existing.isNotEmpty &&
+            (existing.startsWith('http://') ||
+                existing.startsWith('https://'))) {
+          mediaUrls.add(existing);
+          continue;
         }
-      }
 
-      final bytes = c.generatedBytes;
-      if (bytes != null && bytes.isNotEmpty) {
-        try {
+        final localPath = c.localFilePath?.trim();
+        if (!kIsWeb && localPath != null && localPath.isNotEmpty) {
+          try {
+            final file = File(localPath);
+            if (await file.exists() && await file.length() > 0) {
+              final url = await _apiService.uploadFile(
+                file: file,
+                filename: file.uri.pathSegments.isNotEmpty
+                    ? file.uri.pathSegments.last
+                    : null,
+              );
+              mediaUrls.add(url);
+              continue;
+            }
+          } catch (_) {
+            // Fall through to bytes upload if available.
+          }
+        }
+
+        final bytes = c.generatedBytes;
+        if (bytes != null && bytes.isNotEmpty) {
           final filename = c.type == MarketingContentType.videos
               ? 'marketing-video.mp4'
               : (c.generatedResult?.trim().isNotEmpty == true
@@ -2742,87 +3533,147 @@ class _SelectOutletPageState extends State<_SelectOutletPage> {
             filename: filename,
           );
           mediaUrls.add(url);
-        } catch (_) {
-          // Skip media that could not be uploaded.
         }
       }
-    }
 
-    final scheduleTime = widget.campaign.scheduledDate
-        ?.toUtc()
-        .toIso8601String();
+      final igIds = selectedIds
+          .where((id) => id.startsWith(_kAutobusIgPrefix))
+          .map((id) => id.substring(_kAutobusIgPrefix.length))
+          .where((id) => id.isNotEmpty)
+          .toList();
+      final postizIds =
+          selectedIds.where((id) => !id.startsWith(_kAutobusIgPrefix)).toList();
 
-    final canPostiz = _usePostiz;
-    final canBlotato = _useBlotato;
+      final scheduleTime =
+          widget.campaign.scheduledDate?.toUtc().toIso8601String();
 
-    try {
-      if (canPostiz) {
-        final selected = _postizIntegrations
-            .where((p) => selectedIds.contains(p.id))
+      var publishedCount = 0;
+      final errors = <String>[];
+
+      if (igIds.isNotEmpty) {
+        if (mediaUrls.isEmpty) {
+          throw Exception(
+            'Instagram needs at least one uploaded image or video URL.',
+          );
+        }
+        _setStatus(
+          widget.campaign.postRightAway
+              ? 'Publishing to Instagram…'
+              : 'Publishing to Instagram (goes live now)…',
+        );
+        for (final accountId in igIds) {
+          final outletKey = '$_kAutobusIgPrefix$accountId';
+          try {
+            await _apiService.publishInstagramPost(
+              accountId: accountId,
+              caption: _captionForOutlet(outletKey, textContent),
+              mediaUrls: mediaUrls,
+            );
+            publishedCount++;
+          } catch (e) {
+            errors.add(
+              'Instagram: ${e.toString().replaceFirst('Exception: ', '')}',
+            );
+          }
+        }
+      }
+
+      if (postizIds.isNotEmpty && widget.usePostiz) {
+        final selected = widget.postizIntegrations
+            .where((p) => postizIds.contains(p.id))
             .toList();
         if (selected.isEmpty) {
           throw Exception('No matching Postiz channels for the selection.');
         }
+        _setStatus(
+          widget.campaign.postRightAway
+              ? 'Publishing via Postiz…'
+              : 'Scheduling via Postiz…',
+        );
         final payload = buildPostizCreatePostPayload(
           selectedIntegrations: selected,
           content: textContent,
           mediaUrls: mediaUrls,
           postRightAway: widget.campaign.postRightAway,
           scheduledUtc: widget.campaign.scheduledDate,
+          outletDetails: widget.campaign.outletDetails,
         );
         await _apiService.createPostizPost(
           payload,
           agentName: 'digital_marketing',
         );
-      } else if (canBlotato) {
+        publishedCount += selected.length;
+      } else if (postizIds.isNotEmpty && widget.useBlotato) {
+        _setStatus('Publishing…');
+        // Blotato has one content field — use first selected caption override if any.
+        var blotatoContent = textContent;
+        for (final id in postizIds) {
+          final c = widget.campaign.outletDetails[id]?.caption.trim();
+          if (c != null && c.isNotEmpty) {
+            blotatoContent = c;
+            break;
+          }
+        }
         await _apiService.publishSocialPost(
-          accountIds: selectedIds,
-          content: textContent,
+          accountIds: postizIds,
+          content: blotatoContent.isEmpty ? ' ' : blotatoContent,
           mediaUrls: mediaUrls,
           scheduleTime: scheduleTime,
         );
-      } else {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Connect an outlet in Marketing → Link Social Media (Postiz) or link a social account, then try again.',
-              style: GoogleFonts.montserrat(color: Colors.white, fontSize: 13),
-            ),
-            backgroundColor: Colors.orange.shade800,
-            behavior: SnackBarBehavior.floating,
-          ),
+        publishedCount += postizIds.length;
+      } else if (igIds.isEmpty) {
+        throw Exception(
+          'Connect an outlet in Marketing → Link Social Media, then try again.',
         );
-        return;
       }
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
+
+      if (publishedCount == 0 && errors.isNotEmpty) {
+        throw Exception(errors.join('\n'));
+      }
+
+      final successMsg = errors.isEmpty
+          ? (widget.campaign.postRightAway
+                ? 'Published to $publishedCount channel(s)'
+                : 'Scheduled / published for $publishedCount channel(s)')
+          : 'Published to $publishedCount channel(s). Some failed: ${errors.join('; ')}';
+
+      messenger.showSnackBar(
         SnackBar(
           content: Text(
-            canPostiz
-                ? (widget.campaign.postRightAway
-                      ? 'Posted via Postiz to ${selectedIds.length} channel(s)'
-                      : 'Scheduled in Postiz for ${selectedIds.length} channel(s)')
-                : 'Published successfully to ${selectedIds.length} account(s)',
-            style: GoogleFonts.montserrat(color: Colors.white),
+            successMsg,
+            style: GoogleFonts.montserrat(color: Colors.white, fontSize: 13),
           ),
-          backgroundColor: Colors.green,
+          backgroundColor:
+              errors.isEmpty ? Colors.green : Colors.orange.shade800,
           behavior: SnackBarBehavior.floating,
         ),
       );
+
+      if (errors.isEmpty && mounted) {
+        Navigator.of(context).popUntil((route) => route.isFirst);
+      }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         SnackBar(
           content: Text(
-            'Publish failed: $e',
-            style: GoogleFonts.montserrat(color: Colors.white),
+            'Publish failed: ${e.toString().replaceFirst('Exception: ', '')}',
+            style: GoogleFonts.montserrat(color: Colors.white, fontSize: 13),
           ),
           backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 6),
         ),
       );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _publishing = false;
+          _publishStatus = '';
+        });
+      }
     }
   }
 }
