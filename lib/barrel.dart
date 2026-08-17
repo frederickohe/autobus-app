@@ -11,6 +11,8 @@ export 'package:autobus/config/app_config.dart';
 export 'package:flutter_secure_storage/flutter_secure_storage.dart';
 export 'package:autobus/config/glob_navigator.dart';
 export 'package:autobus/features/subscription/services/paystack_service.dart';
+export 'package:autobus/features/subscription/services/apple_iap_service.dart';
+export 'package:autobus/features/subscription/data/apple_iap_ids.dart';
 
 // bloc imports
 export 'package:autobus/features/auth/bloc/auth_bloc.dart';

@@ -1046,6 +1046,37 @@ class ApiService {
     return response.statusCode == 200 || response.statusCode == 201;
   }
 
+  /// POST /api/v1/iap/apple/verify — StoreKit 2 signed transaction.
+  Future<bool> verifyAppleIapPurchase({
+    required String signedTransaction,
+    int? planId,
+    String? billingId,
+    String? phone,
+  }) async {
+    final body = <String, dynamic>{
+      'signed_transaction': signedTransaction,
+      if (planId != null) 'plan_id': planId,
+      if (billingId != null && billingId.trim().isNotEmpty)
+        'billing_id': billingId.trim(),
+      if (phone != null && phone.trim().isNotEmpty) 'phone': phone.trim(),
+    };
+    final response = await httpClient.post(
+      Uri.parse('$baseUrl/iap/apple/verify'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode(body),
+    );
+    Map<String, dynamic>? map;
+    try {
+      final data = json.decode(response.body);
+      if (data is Map) map = Map<String, dynamic>.from(data);
+    } catch (_) {}
+    if (response.statusCode == 200 && map?['success'] == true) {
+      return true;
+    }
+    final detail = map?['detail']?.toString() ?? map?['message']?.toString();
+    throw Exception(detail ?? 'Apple purchase verification failed (${response.statusCode})');
+  }
+
   Future<List<SubscriptionPlan>> getSubscriptionPlans() async {
     final response = await httpClient.get(
       Uri.parse('$baseUrl/subscription/plans'),

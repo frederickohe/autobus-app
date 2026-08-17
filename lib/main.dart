@@ -28,6 +28,9 @@ void main() async {
   _apiService = ApiService(httpClient: _httpClient);
 
   _paystackService = PaystackService();
+  if (AppleIapIds.isSupported) {
+    await AppleIapService.instance.start(api: _apiService);
+  }
   print('✓ Services initialized');
 
   // Create blocs

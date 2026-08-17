@@ -1,4 +1,6 @@
 import 'package:autobus/barrel.dart';
+import 'package:in_app_purchase/in_app_purchase.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'services/subscription_storage.dart';
 
 class SubscriptionBillPage extends StatefulWidget {
@@ -28,6 +30,8 @@ class _SubscriptionBillPageState extends State<SubscriptionBillPage> {
   String? _fullname;
   String? _email;
   String? _phone;
+  Map<String, ProductDetails> _storeProducts = {};
+  bool _storeProductsReady = false;
 
   Future<void> _finalizeSubscription({
     required ApiService api,
@@ -109,6 +113,18 @@ class _SubscriptionBillPageState extends State<SubscriptionBillPage> {
       return;
     }
 
+    await _persistAndNavigate(
+      messenger: messenger,
+      successBloc: successBloc,
+      navigator: navigator,
+    );
+  }
+
+  Future<void> _persistAndNavigate({
+    required ScaffoldMessengerState messenger,
+    required SuccessBloc successBloc,
+    required NavigatorState navigator,
+  }) async {
     try {
       await _storage.saveSelection(
         planId: widget.plan.id.toString(),
@@ -147,6 +163,34 @@ class _SubscriptionBillPageState extends State<SubscriptionBillPage> {
     super.initState();
     _selected = widget.plan.billing.first;
     _loadUserProfile();
+    _loadStoreProducts();
+  }
+
+  Future<void> _loadStoreProducts() async {
+    if (!AppleIapIds.isSupported) {
+      setState(() => _storeProductsReady = true);
+      return;
+    }
+    final ids = widget.plan.appleProductIds.values
+        .where((id) => id.trim().isNotEmpty)
+        .toSet();
+    final products = await AppleIapService.instance.queryProducts(ids);
+    if (!mounted) return;
+    setState(() {
+      _storeProducts = products;
+      _storeProductsReady = true;
+    });
+  }
+
+  String _priceLabel(BillingOption option) {
+    if (AppleIapIds.isSupported) {
+      final productId = widget.plan.appleProductIdFor(option.id);
+      final product = productId == null ? null : _storeProducts[productId];
+      if (product != null) return product.price;
+      if (!_storeProductsReady) return '…';
+      return 'Unavailable';
+    }
+    return '\$ ${option.price.toStringAsFixed(0)}';
   }
 
   Future<void> _loadUserProfile() async {
@@ -176,17 +220,107 @@ class _SubscriptionBillPageState extends State<SubscriptionBillPage> {
     return id == 'free' || label == 'free';
   }
 
+  Future<void> _openUrl(String url) async {
+    final uri = Uri.parse(url);
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+
+  Future<void> _handleAppleIap({
+    required ScaffoldMessengerState messenger,
+    required SuccessBloc successBloc,
+    required NavigatorState navigator,
+  }) async {
+    final productId = widget.plan.appleProductIdFor(_selected.id);
+    final product = productId == null ? null : _storeProducts[productId];
+    if (product == null) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            productId == null
+                ? 'This plan is not configured for the App Store.'
+                : 'App Store product "$productId" is not available yet. Create it in App Store Connect and try again.',
+          ),
+        ),
+      );
+      return;
+    }
+
+    final result = await AppleIapService.instance.purchaseAndActivate(
+      product: product,
+      planId: widget.plan.id,
+      billingId: _selected.id,
+      phone: _phone,
+    );
+    if (!mounted) return;
+    if (result.cancelled) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Purchase was cancelled.')),
+      );
+      return;
+    }
+    if (!result.success) {
+      messenger.showSnackBar(
+        SnackBar(content: Text(result.error ?? 'App Store purchase failed.')),
+      );
+      return;
+    }
+    await _persistAndNavigate(
+      messenger: messenger,
+      successBloc: successBloc,
+      navigator: navigator,
+    );
+  }
+
+  Future<void> _restoreApplePurchases() async {
+    setState(() => _isLoading = true);
+    final messenger = ScaffoldMessenger.of(context);
+    final successBloc = context.read<SuccessBloc>();
+    final navigator = Navigator.of(context);
+    try {
+      final result = await AppleIapService.instance.restoreActiveSubscription(
+        planId: widget.plan.id,
+        billingId: _selected.id,
+      );
+      if (!mounted) return;
+      if (!result.success) {
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(result.error ?? 'No Apple subscription to restore.'),
+          ),
+        );
+        return;
+      }
+      await _persistAndNavigate(
+        messenger: messenger,
+        successBloc: successBloc,
+        navigator: navigator,
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
   Future<void> _handleSubscription() async {
     setState(() => _isLoading = true);
 
     try {
       final api = context.read<ApiService>();
-      final paystack = context.read<PaystackService>();
       final messenger = ScaffoldMessenger.of(context);
       final successBloc = context.read<SuccessBloc>();
       final navigator = Navigator.of(context);
 
       final skipPaystack = _skipPaystackForSelectedBilling();
+
+      if (AppleIapIds.isSupported && !skipPaystack) {
+        await _handleAppleIap(
+          messenger: messenger,
+          successBloc: successBloc,
+          navigator: navigator,
+        );
+        return;
+      }
+
+      final paystack = context.read<PaystackService>();
 
       var userEmail = widget.userEmail.trim();
       if (userEmail.isEmpty) userEmail = (_email ?? '').trim();
@@ -310,6 +444,7 @@ class _SubscriptionBillPageState extends State<SubscriptionBillPage> {
         child: SafeArea(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+            child: SingleChildScrollView(
             child: Column(
               children: [
                 Row(
@@ -369,15 +504,74 @@ class _SubscriptionBillPageState extends State<SubscriptionBillPage> {
                   options: widget.plan.billing,
                   selectedId: _selected.id,
                   onSelect: (opt) => setState(() => _selected = opt),
+                  priceLabel: _priceLabel,
                 ),
-                const Spacer(),
+                const SizedBox(height: 18),
+                if (AppleIapIds.isSupported) ...[
+                  Text(
+                    'Payment will be charged to your Apple ID at confirmation. '
+                    'Subscription automatically renews unless cancelled at least '
+                    '24 hours before the end of the current period. Manage or cancel '
+                    'in your Apple ID account settings.',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.montserrat(
+                      color: Colors.white.withOpacity(0.7),
+                      fontSize: 11,
+                      height: 1.35,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Wrap(
+                    alignment: WrapAlignment.center,
+                    spacing: 16,
+                    children: [
+                      TextButton(
+                        onPressed: () => _openUrl(AppConfig.privacyPolicyUrl),
+                        child: Text(
+                          'Privacy Policy',
+                          style: GoogleFonts.montserrat(
+                            color: Colors.white,
+                            fontSize: 12,
+                            decoration: TextDecoration.underline,
+                          ),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () => _openUrl(AppConfig.termsOfServiceUrl),
+                        child: Text(
+                          'Terms of Use',
+                          style: GoogleFonts.montserrat(
+                            color: Colors.white,
+                            fontSize: 12,
+                            decoration: TextDecoration.underline,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  TextButton(
+                    onPressed: _isLoading ? null : _restoreApplePurchases,
+                    child: Text(
+                      'Restore Purchases',
+                      style: GoogleFonts.montserrat(
+                        color: Colors.white.withOpacity(0.9),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                ],
                 _isLoading
                     ? const AutobusLoadingIndicator(size: 28)
                     : _BottomCta(
-                        label: 'Subscribe Now',
+                        label: AppleIapIds.isSupported
+                            ? 'Subscribe'
+                            : 'Subscribe Now',
                         onPressed: _handleSubscription,
                       ),
               ],
+            ),
             ),
           ),
         ),
@@ -429,11 +623,13 @@ class _BillingSelector extends StatelessWidget {
   final List<BillingOption> options;
   final String selectedId;
   final ValueChanged<BillingOption> onSelect;
+  final String Function(BillingOption option)? priceLabel;
 
   const _BillingSelector({
     required this.options,
     required this.selectedId,
     required this.onSelect,
+    this.priceLabel,
   });
 
   @override
@@ -453,6 +649,7 @@ class _BillingSelector extends StatelessWidget {
                 option: options[i],
                 active: options[i].id == selectedId,
                 onTap: () => onSelect(options[i]),
+                priceLabel: priceLabel?.call(options[i]),
               ),
             ),
             if (i != options.length - 1)
@@ -472,11 +669,13 @@ class _BillingOptionTile extends StatelessWidget {
   final BillingOption option;
   final bool active;
   final VoidCallback onTap;
+  final String? priceLabel;
 
   const _BillingOptionTile({
     required this.option,
     required this.active,
     required this.onTap,
+    this.priceLabel,
   });
 
   @override
@@ -514,7 +713,7 @@ class _BillingOptionTile extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             Text(
-              '\$ ${option.price.toStringAsFixed(0)}',
+              priceLabel ?? '\$ ${option.price.toStringAsFixed(0)}',
               style: GoogleFonts.montserrat(
                 color: labelColor,
                 fontSize: 18,

@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:autobus/common_design/colors.dart';
 import 'package:autobus/common_design/credit_category.dart';
 import 'package:autobus/common_design/widgets/autobus_loading_indicator.dart';
 import 'package:autobus/features/home/services/api_service.dart';
+import 'package:autobus/features/subscription/data/apple_iap_ids.dart';
+import 'package:autobus/features/subscription/services/apple_iap_service.dart';
 import 'package:autobus/features/subscription/userplan.dart';
 
 /// [RouteSettings.name] for [Navigator.popUntil] after plan purchase from this flow.
@@ -193,6 +196,10 @@ class _ManageSubscriptionPageState extends State<ManageSubscriptionPage> {
     );
   }
 
+  bool get _isAppleIap {
+    return (_status?['payment_provider'] ?? '').toString() == 'apple_iap';
+  }
+
   bool get _hasActive {
     final s = _status;
     if (s == null) return false;
@@ -272,7 +279,36 @@ class _ManageSubscriptionPageState extends State<ManageSubscriptionPage> {
     if (mounted) await _refreshAll();
   }
 
+  Future<void> _restoreApplePurchases() async {
+    setState(() => _loading = true);
+    try {
+      final result = await AppleIapService.instance.restoreActiveSubscription();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            result.success
+                ? 'Apple subscription restored.'
+                : (result.error ?? 'No Apple subscription to restore.'),
+          ),
+        ),
+      );
+      if (result.success) await _refreshAll();
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _openAppleSubscriptions() async {
+    final uri = Uri.parse('https://apps.apple.com/account/subscriptions');
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+
   Future<void> _confirmCancel() async {
+    if (_isAppleIap) {
+      await _openAppleSubscriptions();
+      return;
+    }
     final reasonCtrl = TextEditingController();
     final go = await showDialog<bool>(
       context: context,
@@ -496,7 +532,38 @@ class _ManageSubscriptionPageState extends State<ManageSubscriptionPage> {
                                 ),
                               ),
                               child: Text(
-                                'Cancel subscription',
+                                _isAppleIap
+                                    ? 'Manage on Apple ID'
+                                    : 'Cancel subscription',
+                                style: GoogleFonts.montserrat(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                        if (AppleIapIds.isSupported) ...[
+                          const SizedBox(height: 12),
+                          SizedBox(
+                            width: double.infinity,
+                            child: OutlinedButton(
+                              onPressed: _loading
+                                  ? null
+                                  : _restoreApplePurchases,
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: CustColors.mainCol,
+                                side: const BorderSide(
+                                  color: CustColors.mainCol,
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              child: Text(
+                                'Restore Purchases',
                                 style: GoogleFonts.montserrat(
                                   fontWeight: FontWeight.w600,
                                 ),

@@ -1,4 +1,5 @@
 import 'package:autobus/barrel.dart';
+import 'package:autobus/features/subscription/data/apple_iap_ids.dart';
 
 class BillingOption extends Equatable {
   final String id;
@@ -32,6 +33,7 @@ class SubscriptionPlan extends Equatable {
   final List<String> agents;
   final String description;
   final bool isActive;
+  final Map<String, String> appleProductIds;
 
   const SubscriptionPlan({
     required this.id,
@@ -41,14 +43,28 @@ class SubscriptionPlan extends Equatable {
     this.agents = const [],
     required this.description,
     required this.isActive,
+    this.appleProductIds = const {},
   });
 
   factory SubscriptionPlan.fromJson(Map<String, dynamic> json) {
+    final name = (json['name'] ?? '').toString();
+    final rawIds = json['apple_product_ids'];
+    final appleIds = <String, String>{};
+    if (rawIds is Map) {
+      rawIds.forEach((key, value) {
+        final id = value?.toString() ?? '';
+        if (id.isNotEmpty) appleIds[key.toString()] = id;
+      });
+    }
+    if (appleIds.isEmpty) {
+      appleIds.addAll(AppleIapIds.forPlanName(name));
+    }
+
     return SubscriptionPlan(
       id: json['id'] is int
           ? json['id'] as int
           : int.tryParse((json['id'] ?? '0').toString()) ?? 0,
-      name: (json['name'] ?? '').toString(),
+      name: name,
       price: (json['price'] is num)
           ? (json['price'] as num).toDouble()
           : double.tryParse((json['price'] ?? '0').toString()) ?? 0,
@@ -60,6 +76,7 @@ class SubscriptionPlan extends Equatable {
           .toList(),
       description: (json['description'] ?? '').toString(),
       isActive: json['is_active'] == true,
+      appleProductIds: appleIds,
     );
   }
 
@@ -72,7 +89,15 @@ class SubscriptionPlan extends Equatable {
       'agents': agents,
       'description': description,
       'is_active': isActive,
+      'apple_product_ids': appleProductIds,
     };
+  }
+
+  String? appleProductIdFor(String billingId) {
+    final key = billingId == 'annual' || billingId == 'yearly' || billingId == 'y1'
+        ? 'annual'
+        : 'monthly';
+    return appleProductIds[key];
   }
 
   List<BillingOption> get billing => [
@@ -119,5 +144,6 @@ class SubscriptionPlan extends Equatable {
     agents,
     description,
     isActive,
+    appleProductIds,
   ];
 }

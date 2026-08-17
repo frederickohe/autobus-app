@@ -53,6 +53,7 @@ dependencies:
   video_player: ^2.9.5
   flutter_paystack_plus: ^2.5.0
   webview_flutter: ^4.13.0
+  in_app_purchase: ^3.2.3
 
 dev_dependencies:
   flutter_test:
