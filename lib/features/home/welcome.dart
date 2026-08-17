@@ -1,4 +1,5 @@
 import 'package:autobus/barrel.dart';
+import 'package:autobus/features/onboarding/onboarding_storage.dart';
 
 class Welcome extends StatefulWidget {
   const Welcome({super.key});
@@ -78,11 +79,30 @@ class _WelcomeState extends State<Welcome> {
                             Center(
                               child: TransparentCtaButton(
                                 label: 'Get Started',
-                                onPressed: () {
+                                onPressed: () async {
                                   print('=== GET STARTED BUTTON PRESSED ===');
-                                  Navigator.of(
-                                    context,
-                                  ).pushReplacement(Home.routeFromWelcome());
+                                  final authState =
+                                      context.read<AuthBloc>().state;
+                                  final user = authState is Authenticated
+                                      ? authState.user
+                                      : authState is TokenRefreshed
+                                      ? authState.user
+                                      : null;
+                                  if (user is Map) {
+                                    final userMap = user is Map<String, dynamic>
+                                        ? user
+                                        : Map<String, dynamic>.from(user);
+                                    await OnboardingStorage()
+                                        .markWelcomeCompleted(
+                                          OnboardingStorage.userKeyFromMap(
+                                            userMap,
+                                          ),
+                                        );
+                                  }
+                                  if (!context.mounted) return;
+                                  Navigator.of(context).pushReplacement(
+                                    Home.routeFromWelcome(),
+                                  );
                                 },
                               ),
                             ),

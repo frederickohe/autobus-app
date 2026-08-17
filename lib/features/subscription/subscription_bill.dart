@@ -1,6 +1,8 @@
 import 'package:autobus/barrel.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:autobus/features/onboarding/onboarding_storage.dart';
+
 import 'services/subscription_storage.dart';
 
 class SubscriptionBillPage extends StatefulWidget {
@@ -149,13 +151,42 @@ class _SubscriptionBillPageState extends State<SubscriptionBillPage> {
       return;
     }
 
-    navigator.pushReplacement(
-      PageTransition(
-        type: PageTransitionType.rightToLeftWithFade,
-        duration: const Duration(milliseconds: 600),
-        child: const Welcome(),
-      ),
-    );
+    try {
+      final api = context.read<ApiService>();
+      final user = await api.getUserProfile();
+      if (!mounted) return;
+
+      final userKey = OnboardingStorage.userKeyFromMap(user);
+      final showWelcome =
+          userKey.isNotEmpty &&
+          !await OnboardingStorage().hasCompletedWelcome(userKey);
+
+      if (showWelcome) {
+        navigator.pushReplacement(
+          PageTransition(
+            type: PageTransitionType.rightToLeftWithFade,
+            duration: const Duration(milliseconds: 600),
+            child: const Welcome(),
+          ),
+        );
+        return;
+      }
+    } catch (e) {
+      debugPrint('Welcome routing fallback after subscription: $e');
+      if (!widget.isUpgrade) {
+        navigator.pushReplacement(
+          PageTransition(
+            type: PageTransitionType.rightToLeftWithFade,
+            duration: const Duration(milliseconds: 600),
+            child: const Welcome(),
+          ),
+        );
+        return;
+      }
+    }
+
+    if (!mounted) return;
+    navigator.pushReplacement(Home.routeFromWelcome());
   }
 
   @override

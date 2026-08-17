@@ -1,15 +1,24 @@
 import 'package:autobus/barrel.dart';
+import 'package:autobus/features/onboarding/onboarding_storage.dart';
 
 class SplashPge extends StatefulWidget {
-  const SplashPge({super.key});
+  final VoidCallback? onFinished;
+
+  const SplashPge({super.key, this.onFinished});
 
   @override
   State<SplashPge> createState() => _SplashPgeState();
 }
 
 class _SplashPgeState extends State<SplashPge> {
-  void _goNext() {
+  Future<void> _goNext() async {
     print('=== SPLASH BUTTON PRESSED - NAVIGATING ===');
+    await OnboardingStorage().markSplashSeen();
+    if (!mounted) return;
+    if (widget.onFinished != null) {
+      widget.onFinished!();
+      return;
+    }
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (context) => const AuthWrapper()),

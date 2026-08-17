@@ -35,18 +35,23 @@ class _ManageChannelsState extends State<ManageChannels> {
       } catch (_) {
         inboxes = [];
       }
-      final waAccounts = await api.listWhatsAppAccounts();
-      for (final row in waAccounts) {
-        final phone = (row['display_phone_number'] ?? row['phone_number_id'] ?? '')
-            .toString();
-        final name = (row['verified_name'] ?? '').toString().trim();
-        inboxes.add(
-          ChatwootInbox(
-            id: (row['phone_number_id'] ?? row['id'] ?? phone).hashCode.abs(),
-            name: name.isNotEmpty ? '$name ($phone)' : phone,
-            kind: 'whatsapp',
-          ),
-        );
+      try {
+        final waAccounts = await api.listWhatsAppAccounts();
+        for (final row in waAccounts) {
+          final phone =
+              (row['display_phone_number'] ?? row['phone_number_id'] ?? '')
+                  .toString();
+          final name = (row['verified_name'] ?? '').toString().trim();
+          inboxes.add(
+            ChatwootInbox(
+              id: (row['phone_number_id'] ?? row['id'] ?? phone).hashCode.abs(),
+              name: name.isNotEmpty ? '$name ($phone)' : phone,
+              kind: 'whatsapp',
+            ),
+          );
+        }
+      } catch (_) {
+        // Autobus Meta WhatsApp accounts are the chat WhatsApp source of truth.
       }
       try {
         final igAccounts = await api.listInstagramAccounts();
@@ -67,7 +72,7 @@ class _ManageChannelsState extends State<ManageChannels> {
           );
         }
       } catch (_) {
-        // Instagram Business Login accounts are optional for the channel list.
+        // Autobus Instagram Business Login accounts are the chat IG source of truth.
       }
       try {
         final smsRows = await api.listSmsSenderIds();
@@ -171,26 +176,25 @@ class _ManageChannelsState extends State<ManageChannels> {
       return;
     }
 
-    final api = context.read<ApiService>();
-    if (channel.apiSlug == 'whatsapp') {
-      await openEmbeddedPlatformSession(
+    if (channel.apiSlug == 'whatsapp' || channel.apiSlug == 'instagram') {
+      final api = context.read<ApiService>();
+      await openPlatformConnectInBrowser(
         context,
-        title: 'Link WhatsApp',
-        fetchSession: () => api.getWhatsAppConnectSession(),
+        label: channel.label,
+        fetchSession: channel.apiSlug == 'whatsapp'
+            ? api.getWhatsAppConnectSession
+            : api.getInstagramConnectSession,
       );
-    } else if (channel.apiSlug == 'instagram') {
-      await openEmbeddedPlatformSession(
-        context,
-        title: 'Link Instagram',
-        fetchSession: () => api.getInstagramConnectSession(),
-      );
-    } else {
-      await openEmbeddedPlatformSession(
-        context,
-        title: 'Link ${channel.label}',
-        fetchSession: () => api.getChatwootChannelLink(channel.apiSlug),
-      );
+      if (mounted) await _refreshInboxes();
+      return;
     }
+
+    await openEmbeddedPlatformSession(
+      context,
+      title: 'Link ${channel.label}',
+      fetchSession: () =>
+          context.read<ApiService>().getChatwootChannelLink(channel.apiSlug),
+    );
 
     if (mounted) {
       await _refreshInboxes();
