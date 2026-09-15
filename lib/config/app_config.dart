@@ -1,11 +1,15 @@
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class AppConfig {
+  /// Default timeout for backend HTTP calls (auth refresh, profile, etc.).
+  static const Duration networkTimeout = Duration(seconds: 10);
+
   static late String _backendUrl;
   static late String paystackPublicKey;
   static late String paystackCallbackUrl;
   static late String privacyPolicyUrl;
   static late String termsOfServiceUrl;
+  static late String homeYoutubeUrl;
 
   static Future<void> init() async {
     await dotenv.load();
@@ -16,6 +20,7 @@ class AppConfig {
         dotenv.env['PRIVACY_POLICY_URL'] ?? 'https://useautobus.com/privacy';
     termsOfServiceUrl =
         dotenv.env['TERMS_OF_SERVICE_URL'] ?? 'https://useautobus.com/terms';
+    homeYoutubeUrl = (dotenv.env['HOME_YOUTUBE_URL'] ?? '').trim();
   }
 
   static String get backendUrl => _backendUrl;

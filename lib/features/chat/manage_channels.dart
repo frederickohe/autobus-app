@@ -1,5 +1,10 @@
 import 'package:autobus/barrel.dart';
-import 'package:autobus/features/chat/channel_catalog.dart';
+import 'package:autobus/common_design/light_screen_theme.dart';
+import 'package:autobus/common_design/widgets/app_bottom_nav.dart';
+import 'package:autobus/common_design/widgets/light_hub_card.dart';
+import 'package:autobus/common_design/widgets/light_list_card.dart';
+import 'package:autobus/common_design/widgets/light_screen_scaffold.dart';
+import 'package:autobus/icons/home_figma_icons.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class ManageChannels extends StatefulWidget {
@@ -119,15 +124,15 @@ class _ManageChannelsState extends State<ManageChannels> {
       context: context,
       builder: (ctx) {
         return AlertDialog(
-          backgroundColor: const Color(0xFF1A1333),
+          backgroundColor: LightScreenTheme.surface,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
-            side: const BorderSide(color: Color(0xFF3F1163)),
+            side: BorderSide(color: LightScreenTheme.hint.withValues(alpha: 0.5)),
           ),
           title: Text(
             'Coming Soon',
             style: GoogleFonts.montserrat(
-              color: Colors.white,
+              color: Colors.black,
               fontWeight: FontWeight.w600,
               fontSize: 18,
             ),
@@ -135,7 +140,7 @@ class _ManageChannelsState extends State<ManageChannels> {
           content: Text(
             '${channel.label} messaging will be available soon.',
             style: GoogleFonts.montserrat(
-              color: Colors.white.withValues(alpha: 0.75),
+              color: LightScreenTheme.body,
               fontSize: 14,
               height: 1.45,
             ),
@@ -146,7 +151,7 @@ class _ManageChannelsState extends State<ManageChannels> {
               child: Text(
                 'OK',
                 style: GoogleFonts.montserrat(
-                  color: Colors.white,
+                  color: LightScreenTheme.accent,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -203,280 +208,158 @@ class _ManageChannelsState extends State<ManageChannels> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          const DecoratedBox(
-            decoration: ManageScreenStyle.homeDashboardBodyDecoration,
-          ),
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  ManageScreenHeader(
-                    title: 'Manage Channels',
-                    padding: EdgeInsets.zero,
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
+    final scale = MediaQuery.sizeOf(context).width / appShellDesignWidth;
+
+    final extraLinkChannels = _unlinked
+        .where((c) => c.apiSlug != 'instagram' && c.apiSlug != 'whatsapp')
+        .toList();
+
+    return LightScreenScaffold(
+      title: 'Link Channel',
+      titleFontSize: 16,
+      creditCategory: CreditCategory.llm,
+      body: _loading
+          ? Center(child: CircularProgressIndicator(color: LightScreenTheme.accent))
+          : RefreshIndicator(
+              onRefresh: _refreshInboxes,
+              color: LightScreenTheme.accent,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: EdgeInsets.fromLTRB(20 * scale, 30 * scale, 20 * scale, 32 * scale),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (_loadError != null) ...[
+                      Text(
+                        _loadError!,
+                        textAlign: TextAlign.center,
+                        style: LightScreenTheme.emptyState(scale).copyWith(
+                          color: LightScreenTheme.warning,
+                        ),
+                      ),
+                      SizedBox(height: 16 * scale),
+                    ],
+                    Text(
+                      'Select to Link a Channel',
+                      textAlign: TextAlign.center,
+                      style: LightScreenTheme.hubTitle(scale),
+                    ),
+                    SizedBox(height: 16 * scale),
+                    Text(
+                      'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
+                      textAlign: TextAlign.center,
+                      style: LightScreenTheme.hubBody(scale).copyWith(
+                        color: const Color(0xFF4E4E4E),
+                      ),
+                    ),
+                    SizedBox(height: 30 * scale),
+                    _ChannelGrid(
+                      scale: scale,
                       children: [
-                        if (!_loading)
-                          IconButton(
-                            onPressed: _refreshInboxes,
-                            icon: const Icon(
-                              Icons.refresh,
-                              color: Colors.white70,
-                            ),
-                            tooltip: 'Refresh',
-                          ),
-                        const CreditAvatar(creditCategory: CreditCategory.llm),
+                        for (final channel in ChannelCatalog.all.where(
+                          (c) =>
+                              c.apiSlug == 'instagram' ||
+                              c.apiSlug == 'whatsapp',
+                        ))
+                          _brandHubCard(scale, channel),
+                        for (final channel in extraLinkChannels)
+                          _brandHubCard(scale, channel),
                       ],
                     ),
-                  ),
-                  const SizedBox(height: 24),
-                  Expanded(
-                    child: _loading
-                        ? const Center(child: AutobusLoadingIndicator(size: 32))
-                        : RefreshIndicator(
-                            onRefresh: _refreshInboxes,
-                            color: Colors.white,
-                            child: SingleChildScrollView(
-                              physics: const AlwaysScrollableScrollPhysics(),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  if (_loadError != null) ...[
-                                    Text(
-                                      _loadError!,
-                                      textAlign: TextAlign.center,
-                                      style: GoogleFonts.montserrat(
-                                        color: Colors.amber.shade200,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 16),
-                                  ],
-                                  Text(
-                                    'Linked Channels',
-                                    textAlign: TextAlign.center,
-                                    style: GoogleFonts.montserrat(
-                                      color: Colors.white,
-                                      fontSize: 19,
-                                      fontWeight: FontWeight.w500,
-                                      letterSpacing: -0.3,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 20),
-                                  if (_linked.isEmpty)
-                                    Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                      ),
-                                      child: Text(
-                                        'No channels linked yet. Add a messaging inbox below.',
-                                        textAlign: TextAlign.center,
-                                        style: GoogleFonts.montserrat(
-                                          color: Colors.white.withValues(
-                                            alpha: 0.55,
-                                          ),
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.w300,
-                                          height: 1.45,
-                                        ),
-                                      ),
-                                    )
-                                  else
-                                    _ChannelGrid(
-                                      children: [
-                                        for (final item in _linked)
-                                          _ChannelCard(
-                                            label: item.channel.label,
-                                            subtitle: item.subtitle,
-                                            icon: FaIcon(item.channel.icon),
-                                            iconColor: item.channel.iconColor,
-                                            isLinked: true,
-                                            onTap: () =>
-                                                _linkChannel(item.channel),
-                                          ),
-                                      ],
-                                    ),
-                                  const SizedBox(height: 28),
-                                  Text(
-                                    'Select to Link Channel',
-                                    textAlign: TextAlign.center,
-                                    style: GoogleFonts.montserrat(
-                                      color: Colors.white.withValues(alpha: 0.9),
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w400,
-                                      height: 1.5,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 12),
-                  Text(
-                    'Instagram uses Meta Business Login. WhatsApp uses Meta signup. SMS opens your Sender ID page.',
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.montserrat(
-                      color: Colors.white.withValues(alpha: 0.65),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w300,
-                      height: 1.45,
+                    SizedBox(height: 40 * scale),
+                    Text(
+                      'Linked Channels',
+                      style: LightScreenTheme.hubTitle(scale),
                     ),
-                  ),
-                                  const SizedBox(height: 20),
-                                  if (_unlinked.isEmpty)
-                                    Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 12,
-                                      ),
-                                      child: Text(
-                                        'All available channels are linked.',
-                                        textAlign: TextAlign.center,
-                                        style: GoogleFonts.montserrat(
-                                          color: Colors.white.withValues(
-                                            alpha: 0.55,
-                                          ),
-                                          fontSize: 13,
-                                        ),
-                                      ),
-                                    )
-                                  else
-                                    _ChannelGrid(
-                                      children: [
-                                        for (final channel in _unlinked)
-                                          _ChannelCard(
-                                            label: channel.label,
-                                            icon: FaIcon(channel.icon),
-                                            iconColor: channel.iconColor,
-                                            onTap: () =>
-                                                _linkChannel(channel),
-                                          ),
-                                      ],
-                                    ),
-                                  const SizedBox(height: 24),
-                                ],
+                    SizedBox(height: 8 * scale),
+                    Text(
+                      'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do',
+                      style: LightScreenTheme.hubBody(scale).copyWith(
+                        color: const Color(0xFF4E4E4E),
+                      ),
+                    ),
+                    if (_linked.isNotEmpty) ...[
+                      SizedBox(height: 16 * scale),
+                      for (final item in _linked) ...[
+                        LightListCard(
+                          scale: scale,
+                          onTap: () => _linkChannel(item.channel),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 44 * scale,
+                                height: 44 * scale,
+                                decoration: BoxDecoration(
+                                  color: item.channel.tileColor,
+                                  borderRadius: BorderRadius.circular(12 * scale),
+                                ),
+                                alignment: Alignment.center,
+                                child: FaIcon(
+                                  item.channel.icon,
+                                  color: Colors.white,
+                                  size: 22 * scale,
+                                ),
                               ),
-                            ),
+                              SizedBox(width: 12 * scale),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      item.channel.label,
+                                      style: LightScreenTheme.listTitle(scale),
+                                    ),
+                                    SizedBox(height: 4 * scale),
+                                    Text(
+                                      item.subtitle,
+                                      style: LightScreenTheme.listSubtitle(scale),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              HomeSfIcon(
+                                icon: HomeFigmaIcons.check,
+                                color: const Color(0xFF22C55E),
+                                size: 18 * scale,
+                              ),
+                            ],
                           ),
-                  ),
-                ],
+                        ),
+                        SizedBox(height: 12 * scale),
+                      ],
+                    ],
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+    );
+  }
+
+  Widget _brandHubCard(double scale, ChannelOption channel) {
+    return LightHubCard(
+      scale: scale,
+      title: channel.label,
+      subtitle: channel.linkSubtitle,
+      icon: HomeFigmaIcons.linkChannel,
+      iconTileColor: channel.tileColor,
+      iconWidget: FaIcon(
+        channel.icon,
+        color: Colors.white,
+        size: 22 * scale,
       ),
+      onTap: () => _linkChannel(channel),
     );
   }
 }
 
 class _ChannelGrid extends StatelessWidget {
+  final double scale;
   final List<Widget> children;
 
-  const _ChannelGrid({required this.children});
+  const _ChannelGrid({required this.scale, required this.children});
 
   @override
   Widget build(BuildContext context) {
-    return GridView.count(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisCount: 2,
-      crossAxisSpacing: 16,
-      mainAxisSpacing: 16,
-      childAspectRatio: 133 / 89,
-      children: children,
-    );
+    return LightHubGrid(scale: scale, children: children);
   }
 }
-
-class _ChannelCard extends StatelessWidget {
-  final String label;
-  final String? subtitle;
-  final Widget icon;
-  final Color iconColor;
-  final bool isLinked;
-  final VoidCallback onTap;
-
-  const _ChannelCard({
-    required this.label,
-    required this.icon,
-    required this.iconColor,
-    required this.onTap,
-    this.subtitle,
-    this.isLinked = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          color: const Color(0xFF1A1333).withValues(alpha: 0.35),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isLinked ? const Color(0xFF22C55E) : const Color(0xFF3F1163),
-            width: isLinked ? 1.5 : 1,
-          ),
-        ),
-        child: Stack(
-          children: [
-            Center(
-              child: IconTheme(
-                data: IconThemeData(color: iconColor, size: 40),
-                child: icon,
-              ),
-            ),
-            if (isLinked)
-              const Positioned(
-                top: 8,
-                right: 8,
-                child: Icon(
-                  Icons.check_circle,
-                  color: Color(0xFF22C55E),
-                  size: 18,
-                ),
-              ),
-            Positioned(
-              left: 8,
-              right: 8,
-              bottom: 8,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    label,
-                    textAlign: TextAlign.center,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.montserrat(
-                      color: Colors.white.withValues(alpha: 0.88),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  if (subtitle != null && subtitle!.isNotEmpty) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle!,
-                      textAlign: TextAlign.center,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.montserrat(
-                        color: Colors.white.withValues(alpha: 0.55),
-                        fontSize: 10,
-                        fontWeight: FontWeight.w400,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-

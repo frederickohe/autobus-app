@@ -1,4 +1,11 @@
 import 'package:autobus/barrel.dart';
+import 'package:autobus/common_design/light_screen_theme.dart';
+import 'package:autobus/common_design/widgets/app_bottom_nav.dart';
+import 'package:autobus/common_design/widgets/app_screen_header.dart';
+import 'package:autobus/common_design/widgets/credits_pill.dart';
+import 'package:autobus/common_design/widgets/light_list_card.dart';
+import 'package:autobus/common_design/widgets/light_screen_scaffold.dart';
+import 'package:autobus/icons/home_figma_icons.dart';
 
 class ManageSmsSenderIds extends StatefulWidget {
   const ManageSmsSenderIds({super.key});
@@ -87,159 +94,114 @@ class _ManageSmsSenderIdsState extends State<ManageSmsSenderIds> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: Stack(
-        fit: StackFit.expand,
+    final scale = MediaQuery.sizeOf(context).width / appShellDesignWidth;
+
+    return LightScreenScaffold(
+      title: 'SMS Sender IDs',
+      creditCategory: CreditCategory.llm,
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          const DecoratedBox(
-            decoration: ManageScreenStyle.homeDashboardBodyDecoration,
-          ),
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  ManageScreenHeader(
-                    title: 'SMS Sender IDs',
-                    padding: EdgeInsets.zero,
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (!_loading)
-                          IconButton(
-                            onPressed: _refresh,
-                            icon: const Icon(
-                              Icons.refresh,
-                              color: Colors.white70,
-                            ),
-                            tooltip: 'Refresh',
-                          ),
-                        IconButton(
-                          onPressed: _openRegisterDialog,
-                          icon: const Icon(Icons.add, color: Colors.white),
-                          tooltip: 'Register Sender ID',
-                        ),
-                        const CreditAvatar(creditCategory: CreditCategory.llm),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'Register a Sender ID for SMS. Approved IDs can be used after the Autobus team verifies them.',
-                    style: GoogleFonts.montserrat(
-                      color: Colors.white.withValues(alpha: 0.65),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w300,
-                      height: 1.45,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  Expanded(
-                    child: _loading
-                        ? const Center(child: AutobusLoadingIndicator(size: 32))
-                        : RefreshIndicator(
-                            onRefresh: _refresh,
-                            color: Colors.white,
-                            child: SingleChildScrollView(
-                              physics: const AlwaysScrollableScrollPhysics(),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  if (_loadError != null) ...[
-                                    Text(
-                                      _loadError!,
-                                      textAlign: TextAlign.center,
-                                      style: GoogleFonts.montserrat(
-                                        color: Colors.amber.shade200,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 16),
-                                  ],
-                                  _SectionHeader(
-                                    title: 'Approved',
-                                    count: _approved.length,
-                                  ),
-                                  const SizedBox(height: 12),
-                                  if (_approved.isEmpty)
-                                    const _EmptyHint(
-                                      text: 'No approved Sender IDs yet.',
-                                    )
-                                  else
-                                    for (final row in _approved)
-                                      _SenderIdCard(row: row),
-                                  const SizedBox(height: 28),
-                                  _SectionHeader(
-                                    title: 'Not approved',
-                                    count: _notApproved.length,
-                                  ),
-                                  const SizedBox(height: 12),
-                                  if (_notApproved.isEmpty)
-                                    const _EmptyHint(
-                                      text:
-                                          'No pending or rejected Sender IDs.',
-                                    )
-                                  else
-                                    for (final row in _notApproved)
-                                      _SenderIdCard(row: row),
-                                  const SizedBox(height: 88),
-                                ],
-                              ),
-                            ),
-                          ),
-                  ),
-                ],
+          if (!_loading)
+            IconButton(
+              onPressed: _refresh,
+              icon: HomeSfIcon(
+                icon: HomeFigmaIcons.refresh,
+                color: AppScreenHeader.iconColor,
+                size: 22 * scale,
               ),
+              tooltip: 'Refresh',
             ),
+          IconButton(
+            onPressed: _openRegisterDialog,
+            icon: HomeSfIcon(
+              icon: HomeFigmaIcons.add,
+              color: AppScreenHeader.iconColor,
+              size: 24 * scale,
+            ),
+            tooltip: 'Register Sender ID',
           ),
+          CreditsPill(scale: scale, creditCategory: CreditCategory.llm),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _openRegisterDialog,
-        backgroundColor: const Color(0xFF9333EA),
-        foregroundColor: Colors.white,
-        icon: const Icon(Icons.add),
-        label: Text(
-          'Register Sender ID',
-          style: GoogleFonts.montserrat(fontWeight: FontWeight.w600),
-        ),
-      ),
+      body: _loading
+          ? Center(child: CircularProgressIndicator(color: LightScreenTheme.accent))
+          : RefreshIndicator(
+              onRefresh: _refresh,
+              color: LightScreenTheme.accent,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: EdgeInsets.fromLTRB(20 * scale, 12 * scale, 20 * scale, 100 * scale),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      'Register a Sender ID for SMS. Approved IDs can be used after the Autobus team verifies them.',
+                      style: LightScreenTheme.hubBody(scale).copyWith(fontSize: 12 * scale.clamp(0.9, 1.05)),
+                    ),
+                    SizedBox(height: 20 * scale),
+                    if (_loadError != null) ...[
+                      Text(
+                        _loadError!,
+                        textAlign: TextAlign.center,
+                        style: LightScreenTheme.emptyState(scale).copyWith(
+                          color: LightScreenTheme.warning,
+                        ),
+                      ),
+                      SizedBox(height: 16 * scale),
+                    ],
+                    _SectionHeader(scale: scale, title: 'Approved', count: _approved.length),
+                    SizedBox(height: 12 * scale),
+                    if (_approved.isEmpty)
+                      _EmptyHint(scale: scale, text: 'No approved Sender IDs yet.')
+                    else
+                      for (final row in _approved)
+                        _SenderIdCard(scale: scale, row: row),
+                    SizedBox(height: 28 * scale),
+                    _SectionHeader(scale: scale, title: 'Not approved', count: _notApproved.length),
+                    SizedBox(height: 12 * scale),
+                    if (_notApproved.isEmpty)
+                      _EmptyHint(
+                        scale: scale,
+                        text: 'No pending or rejected Sender IDs.',
+                      )
+                    else
+                      for (final row in _notApproved)
+                        _SenderIdCard(scale: scale, row: row),
+                  ],
+                ),
+              ),
+            ),
     );
   }
 }
 
 class _SectionHeader extends StatelessWidget {
+  final double scale;
   final String title;
   final int count;
 
-  const _SectionHeader({required this.title, required this.count});
+  const _SectionHeader({
+    required this.scale,
+    required this.title,
+    required this.count,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Text(
-          title,
-          style: GoogleFonts.montserrat(
-            color: Colors.white,
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(width: 8),
+        Text(title, style: LightScreenTheme.listTitle(scale)),
+        SizedBox(width: 8 * scale),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+          padding: EdgeInsets.symmetric(horizontal: 8 * scale, vertical: 2 * scale),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.08),
+            color: LightScreenTheme.surface,
             borderRadius: BorderRadius.circular(999),
           ),
           child: Text(
             '$count',
-            style: GoogleFonts.montserrat(
-              color: Colors.white.withValues(alpha: 0.7),
-              fontSize: 11,
+            style: LightScreenTheme.listSubtitle(scale).copyWith(
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -250,30 +212,25 @@ class _SectionHeader extends StatelessWidget {
 }
 
 class _EmptyHint extends StatelessWidget {
+  final double scale;
   final String text;
 
-  const _EmptyHint({required this.text});
+  const _EmptyHint({required this.scale, required this.text});
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Text(
-        text,
-        style: GoogleFonts.montserrat(
-          color: Colors.white.withValues(alpha: 0.5),
-          fontSize: 13,
-          height: 1.4,
-        ),
-      ),
+      padding: EdgeInsets.symmetric(vertical: 8 * scale),
+      child: Text(text, style: LightScreenTheme.emptyState(scale)),
     );
   }
 }
 
 class _SenderIdCard extends StatelessWidget {
+  final double scale;
   final Map<String, dynamic> row;
 
-  const _SenderIdCard({required this.row});
+  const _SenderIdCard({required this.scale, required this.row});
 
   static String _statusLabel(String status) {
     switch (status) {
@@ -293,7 +250,7 @@ class _SenderIdCard extends StatelessWidget {
       case 'rejected':
         return const Color(0xFFEF4444);
       default:
-        return const Color(0xFFF59E0B);
+        return LightScreenTheme.warning;
     }
   }
 
@@ -306,81 +263,64 @@ class _SenderIdCard extends StatelessWidget {
     final rejection = (row['rejection_reason'] ?? '').toString().trim();
     final statusColor = _statusColor(status);
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1A1333).withValues(alpha: 0.45),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: statusColor.withValues(alpha: 0.45)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  senderId,
-                  style: GoogleFonts.montserrat(
-                    color: Colors.white,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
+    return Padding(
+      padding: EdgeInsets.only(bottom: 12 * scale),
+      child: LightListCard(
+        scale: scale,
+        padding: EdgeInsets.fromLTRB(16 * scale, 14 * scale, 16 * scale, 14 * scale),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(senderId, style: LightScreenTheme.listTitle(scale)),
+                ),
+                Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 10 * scale,
+                    vertical: 4 * scale,
+                  ),
+                  decoration: BoxDecoration(
+                    color: statusColor.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(color: statusColor.withValues(alpha: 0.5)),
+                  ),
+                  child: Text(
+                    _statusLabel(status),
+                    style: GoogleFonts.montserrat(
+                      color: statusColor,
+                      fontSize: 11 * scale.clamp(0.9, 1.05),
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
+              ],
+            ),
+            if (company.isNotEmpty) ...[
+              SizedBox(height: 8 * scale),
+              Text(company, style: LightScreenTheme.listSubtitle(scale)),
+            ],
+            if (notes.isNotEmpty) ...[
+              SizedBox(height: 6 * scale),
+              Text(
+                notes,
+                style: LightScreenTheme.hubBody(scale).copyWith(fontSize: 12 * scale.clamp(0.9, 1.05)),
               ),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: statusColor.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(999),
-                  border: Border.all(color: statusColor.withValues(alpha: 0.5)),
-                ),
-                child: Text(
-                  _statusLabel(status),
-                  style: GoogleFonts.montserrat(
-                    color: statusColor,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                  ),
+            ],
+            if (rejection.isNotEmpty) ...[
+              SizedBox(height: 8 * scale),
+              Text(
+                'Reason: $rejection',
+                style: GoogleFonts.montserrat(
+                  color: const Color(0xFFEF4444),
+                  fontSize: 12 * scale.clamp(0.9, 1.05),
+                  height: 1.4,
                 ),
               ),
             ],
-          ),
-          if (company.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Text(
-              company,
-              style: GoogleFonts.montserrat(
-                color: Colors.white.withValues(alpha: 0.7),
-                fontSize: 12,
-              ),
-            ),
           ],
-          if (notes.isNotEmpty) ...[
-            const SizedBox(height: 6),
-            Text(
-              notes,
-              style: GoogleFonts.montserrat(
-                color: Colors.white.withValues(alpha: 0.55),
-                fontSize: 12,
-                height: 1.4,
-              ),
-            ),
-          ],
-          if (rejection.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Text(
-              'Reason: $rejection',
-              style: GoogleFonts.montserrat(
-                color: const Color(0xFFEF4444).withValues(alpha: 0.9),
-                fontSize: 12,
-                height: 1.4,
-              ),
-            ),
-          ],
-        ],
+        ),
       ),
     );
   }
@@ -414,27 +354,23 @@ class _SmsSenderIdDialogState extends State<_SmsSenderIdDialog> {
     return InputDecoration(
       hintText: hint,
       hintStyle: GoogleFonts.montserrat(
-        color: Colors.white.withValues(alpha: 0.4),
+        color: LightScreenTheme.hint,
         fontSize: 13,
       ),
       errorText: errorText,
       filled: true,
-      fillColor: Colors.white.withValues(alpha: 0.06),
+      fillColor: LightScreenTheme.field,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide(
-          color: const Color(0xFF9333EA).withValues(alpha: 0.45),
-        ),
+        borderSide: BorderSide(color: LightScreenTheme.hint.withValues(alpha: 0.5)),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide(
-          color: const Color(0xFF9333EA).withValues(alpha: 0.35),
-        ),
+        borderSide: BorderSide(color: LightScreenTheme.hint.withValues(alpha: 0.4)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: Color(0xFF9333EA)),
+        borderSide: const BorderSide(color: LightScreenTheme.accent),
       ),
     );
   }
@@ -464,14 +400,11 @@ class _SmsSenderIdDialogState extends State<_SmsSenderIdDialog> {
     final maxHeight =
         (media.size.height - media.viewInsets.bottom - 48).clamp(240.0, media.size.height * 0.85);
     return Dialog(
-      backgroundColor: const Color(0xFF1A1333),
+      backgroundColor: LightScreenTheme.surface,
       insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
-        side: BorderSide(
-          color: Colors.white.withValues(alpha: 0.25),
-          width: 1,
-        ),
+        side: BorderSide(color: LightScreenTheme.hint.withValues(alpha: 0.4)),
       ),
       child: ConstrainedBox(
         constraints: BoxConstraints(maxHeight: maxHeight),
@@ -484,7 +417,7 @@ class _SmsSenderIdDialogState extends State<_SmsSenderIdDialog> {
               Text(
                 'Register SMS Sender ID',
                 style: GoogleFonts.montserrat(
-                  color: Colors.white,
+                  color: Colors.black,
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
                 ),
@@ -493,7 +426,7 @@ class _SmsSenderIdDialogState extends State<_SmsSenderIdDialog> {
               Text(
                 'Submit the name that appears as the SMS sender. The Autobus team will verify and approve it before it can be used.',
                 style: GoogleFonts.montserrat(
-                  color: Colors.white.withValues(alpha: 0.75),
+                  color: LightScreenTheme.body,
                   fontSize: 12,
                   height: 1.45,
                 ),
@@ -502,7 +435,7 @@ class _SmsSenderIdDialogState extends State<_SmsSenderIdDialog> {
               TextField(
                 controller: _senderIdController,
                 autofocus: true,
-                style: GoogleFonts.montserrat(color: Colors.white, fontSize: 14),
+                style: GoogleFonts.montserrat(color: Colors.black87, fontSize: 14),
                 textCapitalization: TextCapitalization.characters,
                 decoration: _fieldDecoration(
                   hint: 'Sender ID (e.g. AutoBus)',
@@ -516,13 +449,13 @@ class _SmsSenderIdDialogState extends State<_SmsSenderIdDialog> {
               const SizedBox(height: 12),
               TextField(
                 controller: _companyController,
-                style: GoogleFonts.montserrat(color: Colors.white, fontSize: 14),
+                style: GoogleFonts.montserrat(color: Colors.black87, fontSize: 14),
                 decoration: _fieldDecoration(hint: 'Company name (optional)'),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: _notesController,
-                style: GoogleFonts.montserrat(color: Colors.white, fontSize: 14),
+                style: GoogleFonts.montserrat(color: Colors.black87, fontSize: 14),
                 maxLines: 2,
                 decoration: _fieldDecoration(hint: 'Notes (optional)'),
               ),
@@ -534,16 +467,14 @@ class _SmsSenderIdDialogState extends State<_SmsSenderIdDialog> {
                     onPressed: () => Navigator.of(context).pop(),
                     child: Text(
                       'Cancel',
-                      style: GoogleFonts.montserrat(
-                        color: Colors.white.withValues(alpha: 0.7),
-                      ),
+                      style: GoogleFonts.montserrat(color: LightScreenTheme.muted),
                     ),
                   ),
                   const SizedBox(width: 8),
                   FilledButton(
                     onPressed: _submit,
                     style: FilledButton.styleFrom(
-                      backgroundColor: const Color(0xFF9333EA),
+                      backgroundColor: LightScreenTheme.accent,
                     ),
                     child: Text(
                       'Submit',

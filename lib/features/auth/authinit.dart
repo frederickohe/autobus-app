@@ -13,9 +13,10 @@ class AuthWrapper extends StatelessWidget {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(state.message), backgroundColor: Colors.red),
           );
-          Navigator.of(
-            context,
-          ).pushNamedAndRemoveUntil('/signin', (route) => false);
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (_) => const AuthWrapper()),
+            (route) => false,
+          );
         }
         // Handle token refresh failure
         else if (state is TokenRefreshFailed) {

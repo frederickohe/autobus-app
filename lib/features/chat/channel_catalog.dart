@@ -6,8 +6,10 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 class ChannelOption {
   final String label;
   final String apiSlug;
-  final IconData icon;
+  final FaIconData icon;
   final Color iconColor;
+  final Color tileColor;
+  final String linkSubtitle;
   final Set<String> chatwootKinds;
   final bool comingSoon;
 
@@ -16,6 +18,8 @@ class ChannelOption {
     required this.apiSlug,
     required this.icon,
     required this.iconColor,
+    required this.tileColor,
+    required this.linkSubtitle,
     required this.chatwootKinds,
     this.comingSoon = false,
   });
@@ -50,14 +54,18 @@ class ChannelCatalog {
       label: 'Instagram',
       apiSlug: 'instagram',
       icon: FontAwesomeIcons.instagram,
-      iconColor: Color(0xFFE4405F),
+      iconColor: Color(0xFFE60B51),
+      tileColor: Color(0xFFE60B51),
+      linkSubtitle: 'Link instagram',
       chatwootKinds: {'instagram'},
     ),
     ChannelOption(
-      label: 'WhatsApp',
+      label: 'Whatsapp',
       apiSlug: 'whatsapp',
       icon: FontAwesomeIcons.whatsapp,
-      iconColor: Color(0xFF25D366),
+      iconColor: Color(0xFF3BBF77),
+      tileColor: Color(0xFF3BBF77),
+      linkSubtitle: 'Link whatsapp',
       chatwootKinds: {'whatsapp'},
     ),
     ChannelOption(
@@ -65,6 +73,8 @@ class ChannelCatalog {
       apiSlug: 'sms',
       icon: FontAwesomeIcons.commentSms,
       iconColor: Color(0xFF0EA5E9),
+      tileColor: Color(0xFF0EA5E9),
+      linkSubtitle: 'Link SMS',
       chatwootKinds: {'sms'},
     ),
     ChannelOption(
@@ -72,6 +82,8 @@ class ChannelCatalog {
       apiSlug: 'twitter',
       icon: FontAwesomeIcons.xTwitter,
       iconColor: Colors.white,
+      tileColor: Color(0xFF111827),
+      linkSubtitle: 'Coming soon',
       chatwootKinds: {'twitter'},
       comingSoon: true,
     ),

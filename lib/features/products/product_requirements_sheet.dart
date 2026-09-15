@@ -1,3 +1,4 @@
+import 'package:autobus/common_design/light_screen_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -58,18 +59,10 @@ class ProductRequirementsSheet extends StatelessWidget {
     final maxHeight = MediaQuery.sizeOf(context).height * 0.82;
 
     return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Color(0xFF1E0C37), Color(0xFF0C0418)],
-        ),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        border: Border(
-          top: BorderSide(color: Color(0xFF3F1163), width: 1.2),
-          left: BorderSide(color: Color(0xFF3F1163), width: 1.2),
-          right: BorderSide(color: Color(0xFF3F1163), width: 1.2),
-        ),
+      decoration: BoxDecoration(
+        color: LightScreenTheme.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        border: Border.all(color: LightScreenTheme.border),
       ),
       child: SafeArea(
         top: false,
@@ -87,7 +80,7 @@ class ProductRequirementsSheet extends StatelessWidget {
                     height: 4,
                     margin: const EdgeInsets.only(bottom: 20),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.25),
+                      color: LightScreenTheme.muted.withValues(alpha: 0.35),
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -97,7 +90,7 @@ class ProductRequirementsSheet extends StatelessWidget {
                   children: [
                     Icon(
                       Icons.info_outline,
-                      color: Colors.white.withValues(alpha: 0.9),
+                      color: LightScreenTheme.accent,
                       size: 22,
                     ),
                     const SizedBox(width: 12),
@@ -105,7 +98,7 @@ class ProductRequirementsSheet extends StatelessWidget {
                       child: Text(
                         'Product information',
                         style: GoogleFonts.montserrat(
-                          color: Colors.white,
+                          color: LightScreenTheme.title,
                           fontSize: 18,
                           fontWeight: FontWeight.w600,
                           letterSpacing: -0.3,
@@ -118,9 +111,9 @@ class ProductRequirementsSheet extends StatelessWidget {
                 Text(
                   'When you add a product, provide the fields below. Describe your item to the assistant in this chat.',
                   style: GoogleFonts.montserrat(
-                    color: Colors.white.withValues(alpha: 0.78),
+                    color: LightScreenTheme.body,
                     fontSize: 13,
-                    fontWeight: FontWeight.w300,
+                    fontWeight: FontWeight.w400,
                     height: 1.5,
                   ),
                 ),
@@ -132,13 +125,13 @@ class ProductRequirementsSheet extends StatelessWidget {
                       children: [
                         _ProductFieldSection(
                           title: 'Required',
-                          badgeColor: const Color(0xFF9333EA),
+                          badgeColor: LightScreenTheme.accent,
                           fields: _requiredFields,
                         ),
                         const SizedBox(height: 16),
                         _ProductFieldSection(
                           title: 'Optional',
-                          badgeColor: Colors.white.withValues(alpha: 0.35),
+                          badgeColor: LightScreenTheme.muted,
                           fields: _optionalFields,
                         ),
                       ],
@@ -149,7 +142,7 @@ class ProductRequirementsSheet extends StatelessWidget {
                 FilledButton(
                   onPressed: () => Navigator.of(context).pop(),
                   style: FilledButton.styleFrom(
-                    backgroundColor: const Color(0xFF9333EA),
+                    backgroundColor: LightScreenTheme.button,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
@@ -199,7 +192,7 @@ class _ProductFieldSection extends StatelessWidget {
         Text(
           title,
           style: GoogleFonts.montserrat(
-            color: Colors.white.withValues(alpha: 0.55),
+            color: LightScreenTheme.muted,
             fontSize: 11,
             fontWeight: FontWeight.w600,
             letterSpacing: 0.8,
@@ -238,10 +231,8 @@ class _ProductFieldRow extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.04),
-        border: Border.all(
-          color: const Color(0xFF3F1163).withValues(alpha: 0.85),
-        ),
+        color: Colors.white,
+        border: Border.all(color: LightScreenTheme.border),
         borderRadius: BorderRadius.circular(14),
       ),
       child: Row(
@@ -264,7 +255,7 @@ class _ProductFieldRow extends StatelessWidget {
                 Text(
                   label,
                   style: GoogleFonts.montserrat(
-                    color: Colors.white.withValues(alpha: 0.95),
+                    color: LightScreenTheme.title,
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
                   ),
@@ -273,9 +264,9 @@ class _ProductFieldRow extends StatelessWidget {
                 Text(
                   detail,
                   style: GoogleFonts.montserrat(
-                    color: Colors.white.withValues(alpha: 0.65),
+                    color: LightScreenTheme.body,
                     fontSize: 12,
-                    fontWeight: FontWeight.w300,
+                    fontWeight: FontWeight.w400,
                     height: 1.4,
                   ),
                 ),

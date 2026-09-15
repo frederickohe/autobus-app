@@ -1,323 +1,635 @@
 import 'package:autobus/barrel.dart';
 
+import 'package:autobus/common_design/light_screen_theme.dart';
+
+import 'package:autobus/common_design/widgets/app_bottom_nav.dart';
+
+import 'package:autobus/common_design/widgets/light_screen_scaffold.dart';
+
+import 'package:autobus/icons/home_figma_icons.dart';
+
+
+
 enum _MarketingType { pictures, videos, text }
 
+
+
 class DigitalMarketingSelection extends StatefulWidget {
+
   const DigitalMarketingSelection({super.key});
 
+
+
   @override
+
   State<DigitalMarketingSelection> createState() =>
+
       _DigitalMarketingSelectionState();
+
 }
 
+
+
 class _DigitalMarketingSelectionState extends State<DigitalMarketingSelection> {
+
   final Set<_MarketingType> _selected = <_MarketingType>{};
+
+
 
   static const _green = Color(0xFF22C55E);
 
+
+
   MarketingContentType _mapType(_MarketingType type) {
+
     switch (type) {
+
       case _MarketingType.pictures:
+
         return MarketingContentType.pictures;
+
       case _MarketingType.videos:
+
         return MarketingContentType.videos;
+
       case _MarketingType.text:
+
         return MarketingContentType.text;
+
     }
+
   }
+
+
 
   void _toggle(_MarketingType type) {
+
     setState(() {
+
       if (_selected.contains(type)) {
+
         _selected.remove(type);
+
       } else {
+
         _selected.add(type);
+
       }
+
     });
+
   }
+
+
 
   void _onGetStarted() {
+
     if (_selected.isEmpty) {
+
       ScaffoldMessenger.of(context).showSnackBar(
+
         SnackBar(
+
           content: Text(
+
             'Please select a content type',
+
             style: GoogleFonts.montserrat(),
+
           ),
+
         ),
+
       );
+
       return;
+
     }
 
+
+
     Navigator.of(context).push<void>(
+
       MaterialPageRoute<void>(
+
         builder: (_) => DigitalMarketingPage(
+
           initialSelected: _selected.map(_mapType).toSet(),
+
         ),
+
       ),
+
     );
+
   }
+
+
 
   @override
+
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: Stack(
-        fit: StackFit.expand,
+
+    final scale = MediaQuery.sizeOf(context).width / appShellDesignWidth;
+
+    final bottomInset = MediaQuery.viewPaddingOf(context).bottom;
+
+
+
+    return LightScreenScaffold(
+
+      title: 'Digital Marketing',
+
+      creditCategory: CreditCategory.imageGen,
+
+      body: Column(
+
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+
         children: [
-          const DecoratedBox(
-            decoration: ManageScreenStyle.homeDashboardBodyDecoration,
-          ),
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const ManageScreenHeader(
-                    title: 'Digital Marketing',
-                    creditCategory: CreditCategory.imageGen,
-                  ),
-                  const SizedBox(height: 28),
-                  Text(
-                    'What are you creating?',
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.montserrat(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                      letterSpacing: -0.4,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Tap one or more. Selected items get a green outline.',
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.montserrat(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w400,
-                      color: Colors.white.withValues(alpha: 0.55),
-                      height: 1.4,
-                    ),
-                  ),
-                  const SizedBox(height: 28),
-                  Expanded(
-                    child: Align(
-                      alignment: Alignment.topCenter,
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 420),
-                        child: Column(
-                          children: [
-                            _ContentOptionRow(
-                              label: 'Pictures',
-                              hint: 'Stills & carousels',
-                              icon: Icons.photo_library_outlined,
-                              selected: _selected.contains(_MarketingType.pictures),
-                              accent: _green,
-                              onTap: () => _toggle(_MarketingType.pictures),
-                            ),
-                            const SizedBox(height: 10),
-                            _ContentOptionRow(
-                              label: 'Videos',
-                              hint: 'Clips & reels',
-                              icon: Icons.videocam_outlined,
-                              selected: _selected.contains(_MarketingType.videos),
-                              accent: _green,
-                              onTap: () => _toggle(_MarketingType.videos),
-                            ),
-                            const SizedBox(height: 10),
-                            _ContentOptionRow(
-                              label: 'Text',
-                              hint: 'Captions & copy',
-                              icon: Icons.text_snippet_outlined,
-                              selected: _selected.contains(_MarketingType.text),
-                              accent: _green,
-                              onTap: () => _toggle(_MarketingType.text),
-                            ),
-                            if (_selected.isNotEmpty) ...[
-                              const SizedBox(height: 20),
-                              Wrap(
-                                spacing: 8,
-                                runSpacing: 8,
-                                alignment: WrapAlignment.center,
-                                children: [
-                                  for (final t in _MarketingType.values)
-                                    if (_selected.contains(t))
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 10,
-                                          vertical: 5,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: _green.withValues(alpha: 0.12),
-                                          borderRadius: BorderRadius.circular(20),
-                                          border: Border.all(
-                                            color: _green.withValues(alpha: 0.55),
-                                          ),
-                                        ),
-                                        child: Text(
-                                          t == _MarketingType.pictures
-                                              ? 'Pictures'
-                                              : t == _MarketingType.videos
-                                                  ? 'Videos'
-                                                  : 'Text',
-                                          style: GoogleFonts.montserrat(
-                                            color: _green,
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                      ),
-                                ],
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8, bottom: 8),
-                    child: Center(
-                      child: ElevatedButton(
-                        onPressed: _onGetStarted,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: CustColors.mainCol,
-                          minimumSize: const Size(0, 44),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(28),
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 22,
-                            vertical: 12,
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              'Continue',
-                              style: GoogleFonts.montserrat(
-                                color: Colors.white,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            const Icon(
-                              Icons.arrow_forward_rounded,
-                              color: Colors.white,
-                              size: 18,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+
+          Expanded(
+
+            child: SingleChildScrollView(
+
+              padding: EdgeInsets.fromLTRB(
+
+                20 * scale,
+
+                20 * scale,
+
+                20 * scale,
+
+                16 * scale,
+
               ),
+
+              child: Column(
+
+                children: [
+
+                  Text(
+
+                    'What are you creating?',
+
+                    textAlign: TextAlign.center,
+
+                    style: LightScreenTheme.hubTitle(scale).copyWith(
+
+                      fontSize: 18 * scale.clamp(0.9, 1.05),
+
+                    ),
+
+                  ),
+
+                  SizedBox(height: 8 * scale),
+
+                  Text(
+
+                    'Tap one or more content types to include in this campaign.',
+
+                    textAlign: TextAlign.center,
+
+                    style: LightScreenTheme.hubBody(scale).copyWith(
+
+                      fontSize: 13 * scale.clamp(0.9, 1.05),
+
+                      color: LightScreenTheme.muted,
+
+                    ),
+
+                  ),
+
+                  SizedBox(height: 28 * scale),
+
+                  _ContentTypeCard(
+
+                    scale: scale,
+
+                    label: 'Pictures',
+
+                    hint: 'Stills & carousels',
+
+                    icon: HomeFigmaIcons.marketingPictures,
+
+                    iconGradient: HomeFigmaIcons.marketingPicturesGradient,
+
+                    selected: _selected.contains(_MarketingType.pictures),
+
+                    onTap: () => _toggle(_MarketingType.pictures),
+
+                  ),
+
+                  SizedBox(height: 12 * scale),
+
+                  _ContentTypeCard(
+
+                    scale: scale,
+
+                    label: 'Videos',
+
+                    hint: 'Clips & reels',
+
+                    icon: HomeFigmaIcons.marketingVideos,
+
+                    iconGradient: HomeFigmaIcons.marketingVideosGradient,
+
+                    selected: _selected.contains(_MarketingType.videos),
+
+                    onTap: () => _toggle(_MarketingType.videos),
+
+                  ),
+
+                  SizedBox(height: 12 * scale),
+
+                  _ContentTypeCard(
+
+                    scale: scale,
+
+                    label: 'Text',
+
+                    hint: 'Captions & copy',
+
+                    icon: HomeFigmaIcons.marketingText,
+
+                    iconGradient: HomeFigmaIcons.marketingTextGradient,
+
+                    selected: _selected.contains(_MarketingType.text),
+
+                    onTap: () => _toggle(_MarketingType.text),
+
+                  ),
+
+                  if (_selected.isNotEmpty) ...[
+
+                    SizedBox(height: 24 * scale),
+
+                    Wrap(
+
+                      spacing: 8 * scale,
+
+                      runSpacing: 8 * scale,
+
+                      alignment: WrapAlignment.center,
+
+                      children: [
+
+                        for (final t in _MarketingType.values)
+
+                          if (_selected.contains(t))
+
+                            Container(
+
+                              padding: EdgeInsets.symmetric(
+
+                                horizontal: 12 * scale,
+
+                                vertical: 6 * scale,
+
+                              ),
+
+                              decoration: BoxDecoration(
+
+                                color: _green.withValues(alpha: 0.12),
+
+                                borderRadius: BorderRadius.circular(20 * scale),
+
+                                border: Border.all(
+
+                                  color: _green.withValues(alpha: 0.55),
+
+                                ),
+
+                              ),
+
+                              child: Row(
+
+                                mainAxisSize: MainAxisSize.min,
+
+                                children: [
+
+                                  HomeSfIcon(
+
+                                    icon: t == _MarketingType.pictures
+
+                                        ? HomeFigmaIcons.marketingPictures
+
+                                        : t == _MarketingType.videos
+
+                                            ? HomeFigmaIcons.marketingVideos
+
+                                            : HomeFigmaIcons.marketingText,
+
+                                    size: 14 * scale.clamp(0.9, 1.05),
+
+                                    color: _green,
+
+                                  ),
+
+                                  SizedBox(width: 6 * scale),
+
+                                  Text(
+
+                                    t == _MarketingType.pictures
+
+                                        ? 'Pictures'
+
+                                        : t == _MarketingType.videos
+
+                                            ? 'Videos'
+
+                                            : 'Text',
+
+                                    style: GoogleFonts.montserrat(
+
+                                      color: _green,
+
+                                      fontSize: 11 * scale.clamp(0.9, 1.05),
+
+                                      fontWeight: FontWeight.w600,
+
+                                    ),
+
+                                  ),
+
+                                ],
+
+                              ),
+
+                            ),
+
+                      ],
+
+                    ),
+
+                  ],
+
+                ],
+
+              ),
+
             ),
+
           ),
+
+          Padding(
+
+            padding: EdgeInsets.fromLTRB(
+
+              35 * scale,
+
+              0,
+
+              35 * scale,
+
+              24 * scale + bottomInset,
+
+            ),
+
+            child: SizedBox(
+
+              height: 56 * scale.clamp(0.9, 1.05),
+
+              child: FilledButton(
+
+                onPressed: _onGetStarted,
+
+                style: FilledButton.styleFrom(
+
+                  backgroundColor: LightScreenTheme.button,
+
+                  shape: RoundedRectangleBorder(
+
+                    borderRadius: BorderRadius.circular(30 * scale),
+
+                  ),
+
+                ),
+
+                child: Row(
+
+                  mainAxisAlignment: MainAxisAlignment.center,
+
+                  mainAxisSize: MainAxisSize.min,
+
+                  children: [
+
+                    Text(
+
+                      'Continue',
+
+                      style: GoogleFonts.montserrat(
+
+                        color: Colors.white,
+
+                        fontSize: 16 * scale.clamp(0.9, 1.05),
+
+                        fontWeight: FontWeight.w500,
+
+                      ),
+
+                    ),
+
+                    SizedBox(width: 10 * scale),
+
+                    HomeSfIcon(
+
+                      icon: HomeFigmaIcons.arrowForward,
+
+                      color: Colors.white,
+
+                      size: 18 * scale.clamp(0.9, 1.05),
+
+                    ),
+
+                  ],
+
+                ),
+
+              ),
+
+            ),
+
+          ),
+
         ],
+
       ),
+
     );
+
   }
+
 }
 
-class _ContentOptionRow extends StatelessWidget {
+
+
+class _ContentTypeCard extends StatelessWidget {
+
+  final double scale;
+
   final String label;
+
   final String hint;
+
   final IconData icon;
+
+  final Gradient iconGradient;
+
   final bool selected;
-  final Color accent;
+
   final VoidCallback onTap;
 
-  const _ContentOptionRow({
+
+
+  static const _green = Color(0xFF22C55E);
+
+
+
+  const _ContentTypeCard({
+
+    required this.scale,
+
     required this.label,
+
     required this.hint,
+
     required this.icon,
+
+    required this.iconGradient,
+
     required this.selected,
-    required this.accent,
+
     required this.onTap,
+
   });
 
+
+
   @override
+
   Widget build(BuildContext context) {
+
     return Material(
-      color: Colors.transparent,
+
+      color: LightScreenTheme.surface,
+
+      borderRadius: BorderRadius.circular(20 * scale),
+
+      clipBehavior: Clip.antiAlias,
+
       child: InkWell(
+
         onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
+
+        borderRadius: BorderRadius.circular(20 * scale),
+
         child: AnimatedContainer(
+
           duration: const Duration(milliseconds: 180),
+
           curve: Curves.easeOut,
-          height: 64,
-          padding: const EdgeInsets.symmetric(horizontal: 14),
+
+          padding: EdgeInsets.all(16 * scale),
+
           decoration: BoxDecoration(
-            color: selected
-                ? accent.withValues(alpha: 0.08)
-                : Colors.white.withValues(alpha: 0.04),
-            borderRadius: BorderRadius.circular(14),
+
+            borderRadius: BorderRadius.circular(20 * scale),
+
             border: Border.all(
-              color: selected
-                  ? accent
-                  : Colors.white.withValues(alpha: 0.14),
+
+              color: selected ? _green : LightScreenTheme.border,
+
               width: selected ? 2 : 1,
+
             ),
+
           ),
+
           child: Row(
+
             children: [
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
-                width: 40,
-                height: 40,
+
+              Container(
+
+                width: 48 * scale,
+
+                height: 48 * scale,
+
                 decoration: BoxDecoration(
-                  color: selected
-                      ? accent.withValues(alpha: 0.18)
-                      : Colors.white.withValues(alpha: 0.06),
-                  borderRadius: BorderRadius.circular(10),
+
+                  gradient: iconGradient,
+
+                  borderRadius: BorderRadius.circular(14 * scale),
+
                 ),
-                child: Icon(
-                  icon,
-                  size: 20,
-                  color: selected ? accent : Colors.white.withValues(alpha: 0.85),
+
+                alignment: Alignment.center,
+
+                child: HomeSfIcon(
+
+                  icon: icon,
+
+                  size: 22 * scale.clamp(0.9, 1.05),
+
+                  color: Colors.white,
+
                 ),
+
               ),
-              const SizedBox(width: 14),
+
+              SizedBox(width: 14 * scale),
+
               Expanded(
+
                 child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
+
                   crossAxisAlignment: CrossAxisAlignment.start,
+
                   children: [
-                    Text(
-                      label,
-                      style: GoogleFonts.montserrat(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      hint,
-                      style: GoogleFonts.montserrat(
-                        color: Colors.white.withValues(alpha: 0.5),
-                        fontWeight: FontWeight.w400,
-                        fontSize: 11,
-                      ),
-                    ),
+
+                    Text(label, style: LightScreenTheme.listTitle(scale)),
+
+                    SizedBox(height: 4 * scale),
+
+                    Text(hint, style: LightScreenTheme.listSubtitle(scale)),
+
                   ],
+
                 ),
+
               ),
+
               AnimatedOpacity(
+
                 duration: const Duration(milliseconds: 180),
+
                 opacity: selected ? 1 : 0,
-                child: Icon(Icons.check_circle_rounded, color: accent, size: 22),
+
+                child: HomeSfIcon(
+
+                  icon: HomeFigmaIcons.check,
+
+                  color: _green,
+
+                  size: 24 * scale.clamp(0.9, 1.05),
+
+                ),
+
               ),
+
             ],
+
           ),
+
         ),
+
       ),
+
     );
+
   }
+
 }
+
+

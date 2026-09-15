@@ -1,4 +1,5 @@
 import 'package:autobus/barrel.dart';
+import 'package:autobus/features/onboarding/onboarding_page.dart';
 import 'package:autobus/features/onboarding/onboarding_storage.dart';
 
 class SplashWrapper extends StatefulWidget {
@@ -12,12 +13,23 @@ class _SplashWrapperState extends State<SplashWrapper> {
   bool _navigated = false;
   bool? _hasSeenSplash;
   Timer? _splashTimer;
+  Timer? _authStallTimer;
 
   @override
   void initState() {
     super.initState();
     print('=== SPLASH WRAPPER INIT ===');
+    _startAuthStallTimer();
     _loadSplashPref();
+  }
+
+  void _startAuthStallTimer() {
+    _authStallTimer?.cancel();
+    _authStallTimer = Timer(const Duration(seconds: 12), () {
+      if (_navigated || !mounted) return;
+      print('=== AUTH STALL TIMEOUT - PROCEEDING ===');
+      _goToAuth();
+    });
   }
 
   Future<void> _loadSplashPref() async {
@@ -31,6 +43,7 @@ class _SplashWrapperState extends State<SplashWrapper> {
     if (_navigated || !mounted) return;
     _navigated = true;
     _splashTimer?.cancel();
+    _authStallTimer?.cancel();
     print('=== NAVIGATING TO AUTH WRAPPER ===');
     if (_hasSeenSplash == false) {
       unawaited(OnboardingStorage().markSplashSeen());
@@ -53,7 +66,10 @@ class _SplashWrapperState extends State<SplashWrapper> {
       return;
     }
 
-    if (state is Unauthenticated || state is SessionExpired) {
+    if (state is Unauthenticated ||
+        state is SessionExpired ||
+        state is TokenRefreshFailed ||
+        state is AuthError) {
       if (_hasSeenSplash == true) {
         _goToAuth();
       } else {
@@ -65,6 +81,7 @@ class _SplashWrapperState extends State<SplashWrapper> {
   @override
   void dispose() {
     _splashTimer?.cancel();
+    _authStallTimer?.cancel();
     super.dispose();
   }
 
@@ -101,7 +118,7 @@ class _SplashWrapperState extends State<SplashWrapper> {
 
         if ((state is Unauthenticated || state is SessionExpired) &&
             _hasSeenSplash == false) {
-          return SplashPge(onFinished: _goToAuth);
+          return OnboardingPage(onFinished: _goToAuth);
         }
 
         return const Scaffold(

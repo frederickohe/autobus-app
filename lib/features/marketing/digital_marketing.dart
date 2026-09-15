@@ -2,25 +2,73 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:autobus/barrel.dart';
+import 'package:autobus/common_design/light_screen_theme.dart';
+import 'package:autobus/common_design/widgets/app_bottom_nav.dart';
+import 'package:autobus/common_design/widgets/ai_sparkle_icon.dart';
+import 'package:autobus/common_design/widgets/light_list_card.dart';
+import 'package:autobus/common_design/widgets/light_screen_scaffold.dart';
 import 'package:autobus/features/marketing/marketing_media_download.dart';
 import 'package:autobus/features/marketing/platform_post_details.dart';
+import 'package:autobus/icons/home_figma_icons.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:video_player/video_player.dart';
 
-const _kPrimary = Color(0xFF1A1A2E);
-const _kHeaderPurple = Color(0xFF2A1447);
-const _kHeaderBorder = Color(0xFFA92FEB);
-const _kNextButtonPurple = Color(0xFF2A1447);
-const _kPurple = Color(0xFF6C63FF);
 const _kSelectGreen = Color(0xFF22C55E);
 const _kAutobusIgPrefix = 'autobus-ig-';
+const _kComposerHint = Color(0xFF94A3B8);
+const _kComposerDivider = Color(0xFFE2E8F0);
+const _kSuggestionStroke = Color(0xFFDFDFDF);
+const _kSuggestionText = Color(0xFF898888);
+const _kCreatePurple = Color(0xFF7F03B9);
+const _kNextDisabled = Color(0xFFCFCFCF);
+const _kNextEnabled = Color(0xFF2D0851);
+const _kAssistantBubble = Color(0xFFF8FAFC);
+const _kAssistantText = Color(0xFF475569);
+const _kComposerSendGradient = LinearGradient(
+  begin: Alignment.centerLeft,
+  end: Alignment.centerRight,
+  colors: [Color(0xFF6366F1), Color(0xFFA855F7)],
+);
+
+const _kComposerSuggestions = [
+  'Product photo for instagram that catches the eye',
+  '15 seconds promo video of product A and B for tiktok',
+  'Caption for a weekend sale',
+];
 
 enum MarketingContentType { pictures, videos, text }
 
 enum MediaGenState { idle, generating, ready }
+
+bool _marketingContentIsReady(MarketingContent content) {
+  if (content.type == MarketingContentType.text) {
+    final text = (content.manualText ?? content.generatedResult ?? '').trim();
+    return text.isNotEmpty;
+  }
+  if (content.genState != MediaGenState.ready) return false;
+  if (content.type == MarketingContentType.pictures) {
+    final hasBytes = content.generatedBytes != null;
+    final localPath = content.localFilePath;
+    final hasLocalFile = !kIsWeb &&
+        localPath != null &&
+        localPath.isNotEmpty &&
+        File(localPath).existsSync();
+    return hasBytes || hasLocalFile;
+  }
+  final hasRemote = (content.generatedResult ?? '').trim().startsWith('http');
+  final hasBytes =
+      content.generatedBytes != null && content.generatedBytes!.isNotEmpty;
+  final localPath = content.localFilePath;
+  final hasLocalFile = !kIsWeb &&
+      localPath != null &&
+      localPath.isNotEmpty &&
+      File(localPath).existsSync();
+  return hasRemote || hasLocalFile || hasBytes;
+}
 
 class MarketingContent {
   final MarketingContentType type;
@@ -72,14 +120,24 @@ class DigitalMarketingCampaign {
   DateTime? scheduledDate;
   bool postRightAway = false;
   final Set<String> selectedOutlets = {};
+  final Set<int> selectedContentIndexes = {};
+  bool aiWriteCaptions = true;
 
   /// Per-outlet supporting details (title, privacy, tags, …), keyed by integration id.
   final Map<String, PlatformPostDetails> outletDetails = {};
 
   DigitalMarketingCampaign(this.contents);
 
+  Iterable<MarketingContent> get selectedContents {
+    if (selectedContentIndexes.isEmpty) return contents;
+    return [
+      for (var i = 0; i < contents.length; i++)
+        if (selectedContentIndexes.contains(i)) contents[i],
+    ];
+  }
+
   String get campaignCaption {
-    return contents
+    return selectedContents
         .where((c) => c.type == MarketingContentType.text)
         .map((c) => c.manualText ?? c.generatedResult ?? '')
         .where((s) => s.isNotEmpty)
@@ -90,79 +148,55 @@ class DigitalMarketingCampaign {
 class _MarketingScaffold extends StatelessWidget {
   final Widget child;
   final double contentHorizontalPadding;
+  final Widget? trailing;
 
   const _MarketingScaffold({
     required this.child,
     this.contentHorizontalPadding = 18,
+    this.trailing,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Column(
-          children: [
-            const SizedBox(height: 42),
+    return LightScreenScaffold(
+      title: 'Digital Marketing',
+      titleFontSize: 16,
+      creditCategory: trailing == null ? CreditCategory.imageGen : null,
+      trailing: trailing,
+      resizeToAvoidBottomInset: true,
+      body: Padding(
+        padding: EdgeInsets.symmetric(horizontal: contentHorizontalPadding),
+        child: child,
+      ),
+    );
+  }
+}
 
-            /// Header to match Chatbot / Orders
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 34),
-              child: SizedBox(
-                height: 54,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: GestureDetector(
-                        onTap: () => Navigator.pop(context),
-                        child: Container(
-                          width: 54,
-                          height: 54,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: _kHeaderPurple,
-                            border: Border.all(
-                              color: _kHeaderBorder,
-                              width: 0.5,
-                            ),
-                          ),
-                          child: const Icon(
-                            Icons.arrow_back_ios_new,
-                            color: Colors.white,
-                            size: 18,
-                          ),
-                        ),
-                      ),
-                    ),
-                    Text(
-                      'Digital Marketing',
-                      style: GoogleFonts.montserrat(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w400,
-                        color: _kHeaderPurple,
-                      ),
-                    ),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: const UserAvatar(onLightBackground: true),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+class _HeaderNextPill extends StatelessWidget {
+  final bool enabled;
+  final VoidCallback? onTap;
 
-            const SizedBox(height: 26),
-            Expanded(
-              child: Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: contentHorizontalPadding,
-                ),
-                child: child,
-              ),
-            ),
-          ],
+  const _HeaderNextPill({required this.enabled, this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: enabled ? onTap : null,
+      child: Container(
+        width: 67,
+        height: 37,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: enabled ? _kNextEnabled : _kNextDisabled,
+          borderRadius: BorderRadius.circular(100),
+        ),
+        child: Text(
+          'Next',
+          style: GoogleFonts.montserrat(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: Colors.white,
+          ),
         ),
       ),
     );
@@ -176,15 +210,23 @@ class _DarkButton extends StatelessWidget {
   /// Narrower pill used on the generate-media step.
   final bool compact;
 
-  const _DarkButton({required this.label, this.onTap, this.compact = false});
+  /// Figma marketing CTA: 64pt, radius 30, no arrow.
+  final bool figmaCta;
+
+  const _DarkButton({
+    required this.label,
+    this.onTap,
+    this.compact = false,
+    this.figmaCta = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     final enabled = onTap != null;
-    final height = compact ? 48.0 : 74.0;
-    final fontSize = compact ? 14.0 : 16.0;
-    final arrowSize = compact ? 11.0 : 14.0;
-    final arrowGap = compact ? 7.0 : 10.0;
+    final height = figmaCta ? 64.0 : (compact ? 48.0 : 74.0);
+    final fontSize = figmaCta ? 16.0 : (compact ? 14.0 : 16.0);
+    final showArrow = !figmaCta;
+    final arrowSize = compact ? 14.0 : 18.0;
     final labelArrowGap = compact ? 8.0 : 12.0;
     final hPad = compact ? 18.0 : 22.0;
     return GestureDetector(
@@ -194,11 +236,11 @@ class _DarkButton extends StatelessWidget {
         height: height,
         padding: EdgeInsets.symmetric(horizontal: hPad),
         decoration: BoxDecoration(
-          color: enabled ? _kNextButtonPurple : Colors.grey.shade300,
-          borderRadius: BorderRadius.circular(compact ? 36 : 50),
-          border: Border.all(
-            color: enabled ? Colors.white : Colors.white.withValues(alpha: 0.0),
-            width: 0.5,
+          color: enabled
+              ? (figmaCta ? _kNextEnabled : LightScreenTheme.button)
+              : Colors.grey.shade300,
+          borderRadius: BorderRadius.circular(
+            figmaCta ? 30 : (compact ? 36 : 50),
           ),
         ),
         child: Row(
@@ -213,29 +255,14 @@ class _DarkButton extends StatelessWidget {
                 color: enabled ? Colors.white : Colors.white70,
               ),
             ),
-            SizedBox(width: labelArrowGap),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.arrow_forward_ios,
-                  size: arrowSize,
-                  color: Colors.white.withValues(alpha: enabled ? 1.0 : 0.7),
-                ),
-                SizedBox(width: arrowGap),
-                Icon(
-                  Icons.arrow_forward_ios,
-                  size: arrowSize,
-                  color: Colors.white.withValues(alpha: enabled ? 0.8 : 0.55),
-                ),
-                SizedBox(width: arrowGap),
-                Icon(
-                  Icons.arrow_forward_ios,
-                  size: arrowSize,
-                  color: Colors.white.withValues(alpha: enabled ? 0.6 : 0.4),
-                ),
-              ],
-            ),
+            if (showArrow) ...[
+              SizedBox(width: labelArrowGap),
+              HomeSfIcon(
+                icon: HomeFigmaIcons.arrowForward,
+                size: arrowSize,
+                color: Colors.white.withValues(alpha: enabled ? 1.0 : 0.7),
+              ),
+            ],
           ],
         ),
       ),
@@ -248,94 +275,92 @@ class _PromptBar extends StatelessWidget {
   final String hint;
   final VoidCallback? onAttach;
   final VoidCallback? onGenerate;
-  final IconData generateIcon;
-  final int minLines;
-  final int maxLines;
 
   const _PromptBar({
     required this.controller,
     required this.hint,
     this.onAttach,
     this.onGenerate,
-    this.generateIcon = Icons.auto_awesome,
-    this.minLines = 2,
-    this.maxLines = 4,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+    final bottomInset = MediaQuery.viewPaddingOf(context).bottom;
+    final canSend = onGenerate != null;
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(12, 0, 12, 8 + bottomInset),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          TextField(
-            controller: controller,
-            minLines: minLines,
-            maxLines: maxLines,
-            onSubmitted: (_) => onGenerate?.call(),
-            style: GoogleFonts.montserrat(fontSize: 14, height: 1.45),
-            decoration: InputDecoration(
-              hintText: hint,
-              hintStyle: GoogleFonts.montserrat(
-                fontSize: 14,
-                color: Colors.black38,
-              ),
-              border: InputBorder.none,
-              contentPadding: EdgeInsets.zero,
-            ),
-          ),
-          const SizedBox(height: 10),
+          const Divider(height: 1, thickness: 0.5, color: _kComposerDivider),
+          const SizedBox(height: 12),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              if (onAttach != null)
-                GestureDetector(
-                  onTap: onAttach,
-                  child: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: CustColors.logodeep.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(
-                      Icons.add,
-                      color: CustColors.logodeep,
-                      size: 22,
-                    ),
+              GestureDetector(
+                onTap: onAttach,
+                child: Padding(
+                  padding: const EdgeInsets.all(4),
+                  child: HomeSfIcon(
+                    icon: HomeFigmaIcons.add,
+                    color: _kComposerHint,
+                    size: 24,
+                    fontWeight: FontWeight.w500,
                   ),
-                )
-              else
-                const SizedBox(width: 38),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: TextField(
+                  controller: controller,
+                  minLines: 1,
+                  maxLines: 4,
+                  textInputAction: TextInputAction.send,
+                  onSubmitted: canSend ? (_) => onGenerate!() : null,
+                  style: GoogleFonts.montserrat(
+                    fontSize: 14,
+                    color: const Color(0xFF475569),
+                  ),
+                  decoration: InputDecoration(
+                    hintText: hint,
+                    hintStyle: GoogleFonts.montserrat(
+                      fontSize: 14,
+                      color: _kComposerHint,
+                    ),
+                    border: InputBorder.none,
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(4),
+                child: HomeSfIcon(
+                  icon: HomeFigmaIcons.microphone,
+                  color: _kComposerHint,
+                  size: 24,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(width: 8),
               GestureDetector(
                 onTap: onGenerate,
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: onGenerate != null
-                        ? CustColors.logodeep.withValues(alpha: 0.14)
-                        : Colors.grey.shade100,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(
-                    generateIcon,
-                    color: onGenerate != null
-                        ? CustColors.logodeep
-                        : Colors.black38,
-                    size: 20,
+                child: Opacity(
+                  opacity: canSend ? 1 : 0.45,
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: _kComposerSendGradient,
+                    ),
+                    alignment: Alignment.center,
+                    child: HomeSfIcon(
+                      icon: HomeFigmaIcons.sendMail,
+                      color: Colors.white,
+                      size: 18,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ),
@@ -420,24 +445,17 @@ class _TypeCard extends StatelessWidget {
         width: 148,
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: LightScreenTheme.surface,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: selected ? _kPrimary : Colors.grey.shade200,
+            color: selected ? LightScreenTheme.accent : LightScreenTheme.border,
             width: selected ? 2 : 1,
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 40, color: iconColor),
+            HomeSfIcon(icon: icon, size: 40, color: iconColor),
             const SizedBox(height: 8),
             Text(
               label,
@@ -469,10 +487,34 @@ class _GenerateMediaPage extends StatefulWidget {
   State<_GenerateMediaPage> createState() => _GenerateMediaPageState();
 }
 
+class _MarketingChatTurn {
+  final bool isUser;
+  final String text;
+  final DateTime at;
+  final Uint8List? imageBytes;
+  final String? localPath;
+  final String? videoUrl;
+  final bool pending;
+  final int? slotIndex;
+
+  const _MarketingChatTurn({
+    required this.isUser,
+    required this.text,
+    required this.at,
+    this.imageBytes,
+    this.localPath,
+    this.videoUrl,
+    this.pending = false,
+    this.slotIndex,
+  });
+}
+
 class _GenerateMediaPageState extends State<_GenerateMediaPage> {
   final TextEditingController _promptCtrl = TextEditingController();
   final TextEditingController _textBodyCtrl = TextEditingController();
   final FocusNode _textBodyFocus = FocusNode();
+  final ScrollController _chatScroll = ScrollController();
+  final List<_MarketingChatTurn> _turns = [];
 
   final ApiService _apiService = ApiService(
     httpClient: SessionAwareHttpClient(tokenService: TokenService()),
@@ -551,7 +593,92 @@ class _GenerateMediaPageState extends State<_GenerateMediaPage> {
     _textBodyFocus.dispose();
     _promptCtrl.dispose();
     _textBodyCtrl.dispose();
+    _chatScroll.dispose();
     super.dispose();
+  }
+
+  String _relativeTime(DateTime at) {
+    final diff = DateTime.now().difference(at);
+    if (diff.inSeconds < 60) return 'Just now';
+    if (diff.inMinutes < 60) {
+      final m = diff.inMinutes;
+      return m == 1 ? '1 min ago' : '$m min ago';
+    }
+    if (diff.inHours < 24) {
+      final h = diff.inHours;
+      return h == 1 ? '1 hr ago' : '$h hr ago';
+    }
+    return '${at.day}/${at.month}/${at.year}';
+  }
+
+  void _scrollChat() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_chatScroll.hasClients) return;
+      _chatScroll.animateTo(
+        _chatScroll.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOut,
+      );
+    });
+  }
+
+  String _creatingLabel() {
+    switch (_segmentType) {
+      case MarketingContentType.pictures:
+        return 'Creating your image…';
+      case MarketingContentType.videos:
+        return 'Creating your video…';
+      case MarketingContentType.text:
+        return 'Writing your caption…';
+    }
+  }
+
+  void _completeLastAssistant({
+    required String text,
+    Uint8List? imageBytes,
+    String? localPath,
+    String? videoUrl,
+    int? slotIndex,
+  }) {
+    final turn = _MarketingChatTurn(
+      isUser: false,
+      text: text,
+      at: DateTime.now(),
+      imageBytes: imageBytes,
+      localPath: localPath,
+      videoUrl: videoUrl,
+      slotIndex: slotIndex,
+    );
+    final i = _turns.lastIndexWhere((t) => !t.isUser && t.pending);
+    if (i >= 0) {
+      _turns[i] = turn;
+    } else {
+      _turns.add(turn);
+    }
+  }
+
+  void _recordUploadChat(MarketingContent slot) {
+    final isPicture = slot.type == MarketingContentType.pictures;
+    _turns.add(
+      _MarketingChatTurn(
+        isUser: true,
+        text: isPicture ? 'I uploaded a photo' : 'I uploaded a video',
+        at: DateTime.now(),
+      ),
+    );
+    _turns.add(
+      _MarketingChatTurn(
+        isUser: false,
+        text: isPicture
+            ? 'Here is the photo you added.'
+            : 'Here is the video you added.',
+        at: DateTime.now(),
+        imageBytes: slot.generatedBytes,
+        localPath: slot.localFilePath,
+        slotIndex: _selectedSlotIndex,
+      ),
+    );
+    _scrollChat();
   }
 
   Future<void> _generate() async {
@@ -565,8 +692,20 @@ class _GenerateMediaPageState extends State<_GenerateMediaPage> {
       slot.generatedBytes = null;
       slot.localFilePath = null;
       if (!_isText) slot.generatedResult = null;
+      _turns.add(
+        _MarketingChatTurn(isUser: true, text: prompt, at: DateTime.now()),
+      );
+      _turns.add(
+        _MarketingChatTurn(
+          isUser: false,
+          text: _creatingLabel(),
+          at: DateTime.now(),
+          pending: true,
+        ),
+      );
     });
     _promptCtrl.clear();
+    _scrollChat();
 
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -622,20 +761,37 @@ class _GenerateMediaPageState extends State<_GenerateMediaPage> {
       setState(() {
         slot.genState = MediaGenState.ready;
         if (_isText) _textBodyCtrl.text = result;
+        if (_isText) {
+          _completeLastAssistant(text: result);
+        } else if (slot.type == MarketingContentType.pictures) {
+          _completeLastAssistant(
+            text: 'Here is the image I created.',
+            imageBytes: slot.generatedBytes,
+            slotIndex: _selectedSlotIndex,
+          );
+        } else {
+          _completeLastAssistant(
+            text: 'Here is the video I created.',
+            localPath: slot.localFilePath,
+            videoUrl: slot.generatedResult,
+            slotIndex: _selectedSlotIndex,
+          );
+        }
       });
-      if (slot.type == MarketingContentType.videos) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (!mounted) return;
-          _showMediaPreview(_selectedSlotIndex);
-        });
-      }
+      _scrollChat();
     } catch (e) {
       if (!mounted) return;
-      setState(() => slot.genState = MediaGenState.idle);
-
       final message = e is Exception ? e.toString() : 'Media generation failed';
+      setState(() {
+        slot.genState = MediaGenState.idle;
+        _completeLastAssistant(
+          text: message.contains('GOOGLE_API_KEY')
+              ? 'Image/Video generation is unavailable: server missing configuration.'
+              : 'I could not create that. Please try again.',
+        );
+      });
+      _scrollChat();
 
-      // Show a friendly snackbar explaining the backend limitation.
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -653,22 +809,28 @@ class _GenerateMediaPageState extends State<_GenerateMediaPage> {
     return showModalBottomSheet<ImageSource>(
       context: context,
       showDragHandle: true,
-      backgroundColor: Colors.white,
+      backgroundColor: LightScreenTheme.surface,
       builder: (context) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: Icon(
-                isPicture
-                    ? Icons.photo_camera_outlined
-                    : Icons.videocam_outlined,
+              leading: HomeSfIcon(
+                icon: isPicture
+                    ? HomeFigmaIcons.camera
+                    : HomeFigmaIcons.marketingVideos,
+                size: 22,
+                color: LightScreenTheme.accent,
               ),
               title: Text(isPicture ? 'Take photo' : 'Record video'),
               onTap: () => Navigator.pop(context, ImageSource.camera),
             ),
             ListTile(
-              leading: const Icon(Icons.photo_library_outlined),
+              leading: HomeSfIcon(
+                icon: HomeFigmaIcons.photoLibrary,
+                size: 22,
+                color: LightScreenTheme.accent,
+              ),
               title: const Text('Choose from gallery'),
               onTap: () => Navigator.pop(context, ImageSource.gallery),
             ),
@@ -780,6 +942,7 @@ class _GenerateMediaPageState extends State<_GenerateMediaPage> {
           slot.localFilePath = stablePath ?? picked.path;
           slot.generatedResult = picked.name;
           slot.genState = MediaGenState.ready;
+          _recordUploadChat(slot);
         });
         return;
       }
@@ -830,6 +993,7 @@ class _GenerateMediaPageState extends State<_GenerateMediaPage> {
         // localFilePath so publish/view checks don't treat a path as an URL.
         slot.generatedResult = null;
         slot.genState = MediaGenState.ready;
+        _recordUploadChat(slot);
       });
     } catch (e) {
       if (!mounted) return;
@@ -899,6 +1063,7 @@ class _GenerateMediaPageState extends State<_GenerateMediaPage> {
         _activeContent.localFilePath = path;
         _activeContent.generatedResult = file.name;
         _activeContent.genState = MediaGenState.ready;
+        _recordUploadChat(_activeContent);
       });
       return;
     }
@@ -919,6 +1084,7 @@ class _GenerateMediaPageState extends State<_GenerateMediaPage> {
           _activeContent.localFilePath = stablePath;
           _activeContent.generatedResult = null;
           _activeContent.genState = MediaGenState.ready;
+          _recordUploadChat(_activeContent);
         });
         return;
       }
@@ -931,6 +1097,7 @@ class _GenerateMediaPageState extends State<_GenerateMediaPage> {
         _activeContent.localFilePath = path;
         _activeContent.generatedResult = null;
         _activeContent.genState = MediaGenState.ready;
+        _recordUploadChat(_activeContent);
       });
       return;
     }
@@ -1119,74 +1286,39 @@ class _GenerateMediaPageState extends State<_GenerateMediaPage> {
     }
   }
 
+  bool get _showEmptyComposer => _turns.isEmpty;
+
   @override
   Widget build(BuildContext context) {
     final canGenerate =
         _promptCtrl.text.trim().isNotEmpty &&
         _activeContent.genState != MediaGenState.generating;
-    // Keyboard shrinks the column; the tall prompt bar then crowds the body
-    // field. Hide it while editing so typed text stays visible.
-    final editingBodyText = _isText && _textBodyFocus.hasFocus;
 
     return _MarketingScaffold(
-      contentHorizontalPadding: 10,
+      contentHorizontalPadding: 0,
+      trailing: _HeaderNextPill(enabled: _canGoNext, onTap: _goNext),
       child: Column(
         children: [
-          Text(
-            widget.campaign.contents[widget.segmentStartIndex].pageTitle,
-            style: GoogleFonts.montserrat(fontSize: 16, color: Colors.black87),
+          Expanded(
+            child: _showEmptyComposer
+                ? _ComposerEmptyState(
+                    onSuggestion: (text) {
+                      setState(() => _promptCtrl.text = text);
+                    },
+                  )
+                : _MarketingChatThread(
+                    turns: _turns,
+                    scrollController: _chatScroll,
+                    formatTime: _relativeTime,
+                    onMediaTap: (index) => _showMediaPreview(index),
+                  ),
           ),
-          const SizedBox(height: 20),
-
-          if (_isText)
-            Expanded(
-              child: Container(
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.grey.shade200),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.03),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: _buildPreviewBox(),
-                ),
-              ),
-            )
-          else
-            Expanded(
-              child: Center(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.center,
-                  child: _buildMediaSlotsRow(),
-                ),
-              ),
-            ),
-
-          if (!editingBodyText) ...[
-            _PromptBar(
-              controller: _promptCtrl,
-              hint: _activeContent.promptHint,
-              onAttach: _isText ? null : _pickAndAttachMedia,
-              onGenerate: canGenerate ? _generate : null,
-              generateIcon: Icons.auto_awesome,
-            ),
-            const SizedBox(height: 16),
-          ],
-          _DarkButton(
-            label: 'Next',
-            compact: true,
-            onTap: _canGoNext ? _goNext : null,
+          _PromptBar(
+            controller: _promptCtrl,
+            hint: 'Type your message...',
+            onAttach: _isText ? null : _pickAndAttachMedia,
+            onGenerate: canGenerate ? _generate : null,
           ),
-          const SizedBox(height: 20),
         ],
       ),
     );
@@ -1270,6 +1402,279 @@ class _GenerateMediaPageState extends State<_GenerateMediaPage> {
   }
 }
 
+class _MarketingChatThread extends StatelessWidget {
+  final List<_MarketingChatTurn> turns;
+  final ScrollController scrollController;
+  final String Function(DateTime) formatTime;
+  final ValueChanged<int> onMediaTap;
+
+  const _MarketingChatThread({
+    required this.turns,
+    required this.scrollController,
+    required this.formatTime,
+    required this.onMediaTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
+          child: Text(
+            'Create with Autobus',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.montserrat(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: _kCreatePurple,
+            ),
+          ),
+        ),
+        Expanded(
+          child: ListView.builder(
+            controller: scrollController,
+            padding: const EdgeInsets.fromLTRB(14, 12, 12, 16),
+            itemCount: turns.length,
+            itemBuilder: (context, index) {
+              final turn = turns[index];
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: _MarketingChatBubble(
+                  turn: turn,
+                  timestamp: turn.pending ? 'Sending…' : formatTime(turn.at),
+                  onMediaTap: turn.slotIndex == null
+                      ? null
+                      : () => onMediaTap(turn.slotIndex!),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _MarketingChatBubble extends StatelessWidget {
+  final _MarketingChatTurn turn;
+  final String timestamp;
+  final VoidCallback? onMediaTap;
+
+  const _MarketingChatBubble({
+    required this.turn,
+    required this.timestamp,
+    this.onMediaTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final bubble = ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 310),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onMediaTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            decoration: BoxDecoration(
+              color: turn.isUser ? null : _kAssistantBubble,
+              gradient: turn.isUser ? _kComposerSendGradient : null,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (turn.text.isNotEmpty)
+                  Text(
+                    turn.text,
+                    style: GoogleFonts.montserrat(
+                      color: turn.isUser ? Colors.white : _kAssistantText,
+                      fontSize: 14,
+                      height: 1.4,
+                    ),
+                  ),
+                if (turn.pending) ...[
+                  if (turn.text.isNotEmpty) const SizedBox(height: 8),
+                  const SizedBox(
+                    height: 18,
+                    width: 18,
+                    child: AutobusLoadingIndicator(size: 18),
+                  ),
+                ],
+                if (turn.imageBytes != null) ...[
+                  if (turn.text.isNotEmpty) const SizedBox(height: 8),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.memory(
+                      turn.imageBytes!,
+                      width: 220,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ] else if ((turn.localPath != null &&
+                        turn.localPath!.isNotEmpty) ||
+                    (turn.videoUrl != null && turn.videoUrl!.isNotEmpty)) ...[
+                  if (turn.text.isNotEmpty) const SizedBox(height: 8),
+                  Container(
+                    width: 220,
+                    height: 120,
+                    decoration: BoxDecoration(
+                      color: Colors.black12,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    alignment: Alignment.center,
+                    child: HomeSfIcon(
+                      icon: HomeFigmaIcons.play,
+                      size: 36,
+                      color: _kCreatePurple,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final time = Text(
+      timestamp,
+      textAlign: turn.isUser ? TextAlign.right : TextAlign.left,
+      style: GoogleFonts.montserrat(
+        color: _kComposerHint,
+        fontSize: 12,
+      ),
+    );
+
+    if (turn.isUser) {
+      return Align(
+        alignment: Alignment.centerRight,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            bubble,
+            const SizedBox(height: 4),
+            time,
+          ],
+        ),
+      );
+    }
+
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          bubble,
+          const SizedBox(height: 4),
+          time,
+        ],
+      ),
+    );
+  }
+}
+
+class _ComposerEmptyState extends StatelessWidget {
+  final ValueChanged<String> onSuggestion;
+
+  const _ComposerEmptyState({required this.onSuggestion});
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(38, 24, 38, 16),
+      child: Column(
+        children: [
+          Text(
+            'Create with Autobus',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.montserrat(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: _kCreatePurple,
+            ),
+          ),
+          const SizedBox(height: 86),
+          const AiSparkleIcon(size: 50),
+          const SizedBox(height: 12),
+          Text(
+            'What would you like to create?',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.montserrat(
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+              color: Colors.black,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            'Describe an image, video or caption. Send a follow-up to refine it.',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.montserrat(
+              fontSize: 14,
+              height: 1.4,
+              color: const Color(0xFF4E4E4E),
+            ),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'Suggestions',
+            style: GoogleFonts.montserrat(
+              fontSize: 14,
+              color: const Color(0xFF4E4E4E),
+            ),
+          ),
+          const SizedBox(height: 16),
+          for (final suggestion in _kComposerSuggestions) ...[
+            _SuggestionChip(
+              label: suggestion,
+              onTap: () => onSuggestion(suggestion),
+            ),
+            const SizedBox(height: 10),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _SuggestionChip extends StatelessWidget {
+  final String label;
+  final VoidCallback onTap;
+
+  const _SuggestionChip({required this.label, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(30),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(30),
+            border: Border.all(color: _kSuggestionStroke),
+          ),
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.montserrat(
+              fontSize: 12,
+              height: 1.35,
+              color: _kSuggestionText,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _MediaSlotThumbCard extends StatelessWidget {
   final MarketingContent content;
   final bool selected;
@@ -1295,19 +1700,10 @@ class _MediaSlotThumbCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: selected
-                ? _kHeaderBorder
-                : CustColors.mainCol.withValues(alpha: 0.2),
+                ? LightScreenTheme.accent
+                : LightScreenTheme.border,
             width: selected ? 2 : 1,
           ),
-          boxShadow: [
-            BoxShadow(
-              color: CustColors.mainCol.withValues(
-                alpha: selected ? 0.12 : 0.06,
-              ),
-              blurRadius: 6,
-              offset: const Offset(0, 2),
-            ),
-          ],
         ),
         clipBehavior: Clip.antiAlias,
         child: _thumbFill(),
@@ -1320,20 +1716,20 @@ class _MediaSlotThumbCard extends StatelessWidget {
     switch (content.genState) {
       case MediaGenState.idle:
         return ColoredBox(
-          color: CustColors.mainCol.withValues(alpha: 0.06),
+          color: LightScreenTheme.field,
           child: Center(
-            child: Icon(
-              isPicture
-                  ? Icons.add_photo_alternate_outlined
-                  : Icons.video_call_outlined,
-              color: CustColors.logodeep.withValues(alpha: 0.7),
+            child: HomeSfIcon(
+              icon: isPicture
+                  ? HomeFigmaIcons.photoOnRectangle
+                  : HomeFigmaIcons.marketingVideos,
+              color: LightScreenTheme.accent.withValues(alpha: 0.7),
               size: 34,
             ),
           ),
         );
       case MediaGenState.generating:
         return ColoredBox(
-          color: CustColors.mainCol.withValues(alpha: 0.08),
+          color: LightScreenTheme.field,
           child: Center(child: const AutobusLoadingIndicator(size: 26)),
         );
       case MediaGenState.ready:
@@ -1367,23 +1763,23 @@ class _MediaSlotThumbCard extends StatelessWidget {
           final hasBytes = content.generatedBytes?.isNotEmpty ?? false;
           if (hasRemote || hasLocal || hasBytes) {
             return ColoredBox(
-              color: CustColors.logodeep.withValues(alpha: 0.1),
+              color: LightScreenTheme.accent.withValues(alpha: 0.1),
               child: Center(
-                child: Icon(
-                  Icons.play_circle_fill_rounded,
+                child: HomeSfIcon(
+                  icon: HomeFigmaIcons.play,
                   size: 40,
-                  color: CustColors.logodeep,
+                  color: LightScreenTheme.accent,
                 ),
               ),
             );
           }
         }
         return ColoredBox(
-          color: CustColors.logodeep.withValues(alpha: 0.1),
+          color: LightScreenTheme.accent.withValues(alpha: 0.1),
           child: Center(
-            child: Icon(
-              Icons.check_rounded,
-              color: CustColors.logodeep,
+            child: HomeSfIcon(
+              icon: HomeFigmaIcons.checkmark,
+              color: LightScreenTheme.accent,
               size: 34,
             ),
           ),
@@ -1560,8 +1956,8 @@ class _MarketingInlineVideoPlayerState
                         ),
                         child: value.isPlaying
                             ? const SizedBox.expand()
-                            : const Icon(
-                                Icons.play_circle_fill_rounded,
+                            : HomeSfIcon(
+                                icon: HomeFigmaIcons.play,
                                 size: 72,
                                 color: Colors.white,
                               ),
@@ -1686,7 +2082,11 @@ class _MediaSlotPreviewDialogState extends State<_MediaSlotPreviewDialog> {
             alignment: Alignment.topRight,
             child: IconButton(
               onPressed: () => Navigator.of(context).pop(),
-              icon: const Icon(Icons.close, color: Colors.white, size: 28),
+              icon: HomeSfIcon(
+                icon: HomeFigmaIcons.close,
+                color: Colors.white,
+                size: 28,
+              ),
             ),
           ),
           ConstrainedBox(
@@ -1716,13 +2116,17 @@ class _MediaSlotPreviewDialogState extends State<_MediaSlotPreviewDialog> {
                           color: Colors.white,
                         ),
                       )
-                    : const Icon(Icons.download_rounded),
+                    : HomeSfIcon(
+                        icon: HomeFigmaIcons.download,
+                        size: 18,
+                        color: Colors.white,
+                      ),
                 label: Text(
                   downloadLabel,
                   style: GoogleFonts.montserrat(fontWeight: FontWeight.w600),
                 ),
                 style: FilledButton.styleFrom(
-                  backgroundColor: _kHeaderPurple,
+                  backgroundColor: LightScreenTheme.button,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
@@ -1737,8 +2141,9 @@ class _MediaSlotPreviewDialogState extends State<_MediaSlotPreviewDialog> {
             width: double.infinity,
             child: OutlinedButton.icon(
               onPressed: widget.onDelete,
-              icon: const Icon(
-                Icons.delete_outline,
+              icon: HomeSfIcon(
+                icon: HomeFigmaIcons.delete,
+                size: 20,
                 color: CustColors.accentRed,
               ),
               label: Text(
@@ -1749,7 +2154,7 @@ class _MediaSlotPreviewDialogState extends State<_MediaSlotPreviewDialog> {
                 ),
               ),
               style: OutlinedButton.styleFrom(
-                backgroundColor: Colors.white,
+                backgroundColor: LightScreenTheme.surface,
                 side: const BorderSide(color: CustColors.accentRed),
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
@@ -1783,9 +2188,9 @@ class _MediaSlotPreviewDialogState extends State<_MediaSlotPreviewDialog> {
         maxScale: 4,
         child: hasBytes || hasLocalFile
             ? image
-            : const Center(
-                child: Icon(
-                  Icons.broken_image_outlined,
+            : Center(
+                child: HomeSfIcon(
+                  icon: HomeFigmaIcons.brokenImage,
                   color: Colors.white54,
                   size: 48,
                 ),
@@ -1818,20 +2223,20 @@ class _AddAnotherMediaSlotCard extends StatelessWidget {
         width: _MediaSlotThumbCard._w,
         height: _MediaSlotThumbCard._h,
         decoration: BoxDecoration(
-          color: CustColors.mainCol.withValues(alpha: 0.06),
+          color: LightScreenTheme.field,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: CustColors.mainCol.withValues(alpha: 0.2),
+            color: LightScreenTheme.border,
             width: 1,
           ),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.add_circle_outline,
+            HomeSfIcon(
+              icon: HomeFigmaIcons.addCircle,
               size: 36,
-              color: CustColors.logodeep,
+              color: LightScreenTheme.accent,
             ),
             const SizedBox(height: 6),
             Text(
@@ -1840,7 +2245,7 @@ class _AddAnotherMediaSlotCard extends StatelessWidget {
               style: GoogleFonts.montserrat(
                 fontSize: 10,
                 fontWeight: FontWeight.w600,
-                color: CustColors.mainCol.withValues(alpha: 0.7),
+                color: LightScreenTheme.muted,
               ),
             ),
           ],
@@ -1871,17 +2276,19 @@ class _IdlePreview extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            isPicture ? Icons.image_rounded : Icons.movie_rounded,
+          HomeSfIcon(
+            icon: isPicture
+                ? HomeFigmaIcons.marketingPictures
+                : HomeFigmaIcons.film,
             size: iconSize,
-            color: _kPurple,
+            color: LightScreenTheme.accent,
           ),
           SizedBox(height: compact ? 8 : 12),
           Text(
             content.label,
             style: GoogleFonts.montserrat(
               fontSize: compact ? 12 : 13,
-              color: _kPurple,
+              color: LightScreenTheme.accent,
             ),
           ),
           if (onUpload != null) ...[
@@ -1944,7 +2351,7 @@ class _GeneratingOverlayState extends State<_GeneratingOverlay>
   Widget build(BuildContext context) {
     final c = widget.compact;
     return Container(
-      color: Colors.white.withOpacity(0.93),
+      color: LightScreenTheme.surface.withValues(alpha: 0.93),
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -1954,13 +2361,13 @@ class _GeneratingOverlayState extends State<_GeneratingOverlay>
               child: Container(
                 padding: EdgeInsets.all(c ? 14 : 22),
                 decoration: BoxDecoration(
-                  color: _kPurple.withOpacity(0.12),
+                  color: LightScreenTheme.accent.withValues(alpha: 0.12),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(
-                  Icons.auto_awesome,
+                child: HomeSfIcon(
+                  icon: HomeFigmaIcons.ai,
                   size: c ? 30 : 44,
-                  color: _kPurple,
+                  color: LightScreenTheme.accent,
                 ),
               ),
             ),
@@ -1972,7 +2379,7 @@ class _GeneratingOverlayState extends State<_GeneratingOverlay>
                 style: GoogleFonts.montserrat(
                   fontSize: c ? 15 : 18,
                   fontWeight: FontWeight.w600,
-                  color: _kPrimary,
+                  color: LightScreenTheme.button,
                 ),
               ),
             ),
@@ -1981,7 +2388,7 @@ class _GeneratingOverlayState extends State<_GeneratingOverlay>
               'Creating your ${widget.label.toLowerCase()}',
               style: GoogleFonts.montserrat(
                 fontSize: c ? 11 : 13,
-                color: Colors.black45,
+                color: LightScreenTheme.muted,
               ),
             ),
           ],
@@ -2080,14 +2487,14 @@ class _ReadyPreview extends StatelessWidget {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(16),
-              color: Colors.white,
+              color: LightScreenTheme.surface,
               child: Text(
                 caption,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: GoogleFonts.montserrat(
                   fontSize: 12,
-                  color: Colors.black45,
+                  color: LightScreenTheme.muted,
                 ),
               ),
             ),
@@ -2157,14 +2564,14 @@ class _ReadyPreview extends StatelessWidget {
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(16),
-            color: Colors.white,
+            color: LightScreenTheme.surface,
             child: Text(
               caption,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: GoogleFonts.montserrat(
                 fontSize: 12,
-                color: Colors.black45,
+                color: LightScreenTheme.muted,
               ),
             ),
           ),
@@ -2180,13 +2587,13 @@ class _ReadyPreview extends StatelessWidget {
             width: 52,
             height: 52,
             decoration: BoxDecoration(
-              color: Colors.green.withOpacity(0.1),
+              color: _kSelectGreen.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
-            child: const Icon(
-              Icons.check_circle_rounded,
+            child: HomeSfIcon(
+              icon: HomeFigmaIcons.check,
               size: 32,
-              color: Colors.green,
+              color: _kSelectGreen,
             ),
           ),
           const SizedBox(height: 10),
@@ -2195,7 +2602,7 @@ class _ReadyPreview extends StatelessWidget {
             style: GoogleFonts.montserrat(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: _kPrimary,
+              color: LightScreenTheme.button,
             ),
           ),
           const SizedBox(height: 4),
@@ -2223,13 +2630,13 @@ class _ReadyPreview extends StatelessWidget {
           width: 72,
           height: 72,
           decoration: BoxDecoration(
-            color: Colors.green.withOpacity(0.1),
+            color: _kSelectGreen.withValues(alpha: 0.1),
             shape: BoxShape.circle,
           ),
-          child: const Icon(
-            Icons.check_circle_rounded,
+          child: HomeSfIcon(
+            icon: HomeFigmaIcons.check,
             size: 44,
-            color: Colors.green,
+            color: _kSelectGreen,
           ),
         ),
         const SizedBox(height: 14),
@@ -2238,7 +2645,7 @@ class _ReadyPreview extends StatelessWidget {
           style: GoogleFonts.montserrat(
             fontSize: 15,
             fontWeight: FontWeight.w600,
-            color: _kPrimary,
+            color: LightScreenTheme.button,
           ),
         ),
         const SizedBox(height: 6),
@@ -2290,9 +2697,9 @@ class _SchedulePageState extends State<_SchedulePage> {
         return Theme(
           data: Theme.of(ctx).copyWith(
             colorScheme: const ColorScheme.light(
-              primary: _kHeaderPurple,
+              primary: LightScreenTheme.button,
               onPrimary: Colors.white,
-              surface: Colors.white,
+              surface: LightScreenTheme.surface,
               onSurface: Colors.black87,
             ),
           ),
@@ -2331,109 +2738,125 @@ class _SchedulePageState extends State<_SchedulePage> {
   @override
   Widget build(BuildContext context) {
     final timeLabel = _selectedTime.format(context);
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
     return _MarketingScaffold(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            'Schedule Your Post',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.montserrat(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: Colors.black87,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'Pick a day and time, or publish immediately',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.montserrat(
-              fontSize: 12,
-              color: Colors.black45,
-            ),
-          ),
-          const SizedBox(height: 16),
-          _CompactCalendar(
-            focusedMonth: _focusedMonth,
-            selectedDay: _selectedDay,
-            onDaySelected: (d) => setState(() => _selectedDay = d),
-            onMonthChanged: (m) => setState(() => _focusedMonth = m),
-          ),
-          const SizedBox(height: 12),
-          Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: _pickTime,
-              borderRadius: BorderRadius.circular(12),
-              child: Container(
-                height: 44,
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF7F5FB),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFFE8E0F0)),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.schedule_rounded,
-                      size: 18,
-                      color: _kHeaderPurple,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            primary: true,
+            physics: const AlwaysScrollableScrollPhysics(),
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+            padding: EdgeInsets.only(bottom: bottomInset + 12),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                    Text(
+                      'Schedule Your Post',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.montserrat(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: LightScreenTheme.title,
+                      ),
                     ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        'Time  ·  $timeLabel',
-                        style: GoogleFonts.montserrat(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.black87,
+                    const SizedBox(height: 6),
+                    Text(
+                      'Pick a day and time, or publish immediately',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.montserrat(
+                        fontSize: 12,
+                        color: LightScreenTheme.muted,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    _CompactCalendar(
+                      focusedMonth: _focusedMonth,
+                      selectedDay: _selectedDay,
+                      onDaySelected: (d) => setState(() => _selectedDay = d),
+                      onMonthChanged: (m) => setState(() => _focusedMonth = m),
+                    ),
+                    const SizedBox(height: 12),
+                    Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: _pickTime,
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          height: 44,
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          decoration: BoxDecoration(
+                            color: LightScreenTheme.surface,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: LightScreenTheme.border),
+                          ),
+                          child: Row(
+                            children: [
+                              HomeSfIcon(
+                                icon: HomeFigmaIcons.schedule,
+                                size: 18,
+                                color: LightScreenTheme.accent,
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  'Time  ·  $timeLabel',
+                                  style: GoogleFonts.montserrat(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500,
+                                    color: LightScreenTheme.title,
+                                  ),
+                                ),
+                              ),
+                              Text(
+                                'Change',
+                                style: GoogleFonts.montserrat(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: LightScreenTheme.accent,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
-                    Text(
-                      'Change',
-                      style: GoogleFonts.montserrat(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: _kHeaderPurple,
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      height: 44,
+                      child: OutlinedButton(
+                        onPressed: () => _proceed(rightAway: true),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: LightScreenTheme.button,
+                          side: const BorderSide(
+                            color: LightScreenTheme.button,
+                            width: 1.2,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(28),
+                          ),
+                        ),
+                        child: Text(
+                          'Post Right Away',
+                          style: GoogleFonts.montserrat(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ),
+                    ),
+                    const SizedBox(height: 10),
+                    _DarkButton(
+                      label: 'Next',
+                      compact: true,
+                      onTap: () => _proceed(),
                     ),
                   ],
                 ),
-              ),
             ),
-          ),
-          const Spacer(),
-          SizedBox(
-            height: 44,
-            child: OutlinedButton(
-              onPressed: () => _proceed(rightAway: true),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: _kHeaderPurple,
-                side: const BorderSide(color: _kHeaderPurple, width: 1.2),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(28),
-                ),
-              ),
-              child: Text(
-                'Post Right Away',
-                style: GoogleFonts.montserrat(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 10),
-          _DarkButton(
-            label: 'Next',
-            compact: true,
-            onTap: () => _proceed(),
-          ),
-          const SizedBox(height: 12),
-        ],
+          );
+        },
       ),
     );
   }
@@ -2481,9 +2904,9 @@ class _CompactCalendar extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(10, 10, 10, 8),
       decoration: BoxDecoration(
-        color: const Color(0xFFF7F5FB),
+        color: LightScreenTheme.surface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE8E0F0)),
+        border: Border.all(color: LightScreenTheme.border),
       ),
       child: Column(
         children: [
@@ -2499,12 +2922,12 @@ class _CompactCalendar extends StatelessWidget {
               ),
               const Spacer(),
               _CalNavBtn(
-                icon: Icons.chevron_left_rounded,
+                icon: HomeFigmaIcons.chevronLeft,
                 onTap: () => onMonthChanged(DateTime(y, m - 1)),
               ),
               const SizedBox(width: 4),
               _CalNavBtn(
-                icon: Icons.chevron_right_rounded,
+                icon: HomeFigmaIcons.chevronRight,
                 onTap: () => onMonthChanged(DateTime(y, m + 1)),
               ),
             ],
@@ -2593,7 +3016,7 @@ class _CalNavBtn extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.white,
+      color: LightScreenTheme.surface,
       borderRadius: BorderRadius.circular(8),
       child: InkWell(
         onTap: onTap,
@@ -2601,7 +3024,13 @@ class _CalNavBtn extends StatelessWidget {
         child: SizedBox(
           width: 28,
           height: 28,
-          child: Icon(icon, size: 18, color: _kHeaderPurple),
+          child: Center(
+            child: HomeSfIcon(
+              icon: icon,
+              size: 18,
+              color: LightScreenTheme.accent,
+            ),
+          ),
         ),
       ),
     );
@@ -2617,6 +3046,13 @@ class _SelectOutletPage extends StatefulWidget {
 }
 
 class _SelectOutletPageState extends State<_SelectOutletPage> {
+  static const _figmaPlatformOrder = [
+    'WhatsApp Status',
+    'Instagram',
+    'YouTube',
+    'Tiktok',
+  ];
+
   final ApiService _apiService = ApiService(
     httpClient: SessionAwareHttpClient(tokenService: TokenService()),
   );
@@ -2627,11 +3063,23 @@ class _SelectOutletPageState extends State<_SelectOutletPage> {
   /// Postiz channels + Autobus Instagram (merged for selection).
   List<PostizIntegration> _postizIntegrations = [];
   bool _loadingAccounts = true;
+  final Set<String> _unlinkedSelected = {};
 
   @override
   void initState() {
     super.initState();
+    _seedSelectedContent();
     _loadAccounts();
+  }
+
+  void _seedSelectedContent() {
+    final campaign = widget.campaign;
+    if (campaign.selectedContentIndexes.isNotEmpty) return;
+    for (var i = 0; i < campaign.contents.length; i++) {
+      if (_marketingContentIsReady(campaign.contents[i])) {
+        campaign.selectedContentIndexes.add(i);
+      }
+    }
   }
 
   Future<void> _loadAccounts() async {
@@ -2680,7 +3128,25 @@ class _SelectOutletPageState extends State<_SelectOutletPage> {
         _postizIntegrations = postiz.where((p) => p.isActive).toList();
         _blotatoAccounts = blotato;
         _loadingAccounts = false;
+        _applyUnlinkedToLinked();
       });
+    }
+  }
+
+  void _applyUnlinkedToLinked() {
+    for (final label in _unlinkedSelected.toList()) {
+      OutletOption? outlet;
+      for (final o in OutletCatalog.all) {
+        if (o.label == label) {
+          outlet = o;
+          break;
+        }
+      }
+      if (outlet == null) continue;
+      final ids = _idsForOutlet(outlet);
+      if (ids.isEmpty) continue;
+      widget.campaign.selectedOutlets.addAll(ids);
+      _unlinkedSelected.remove(label);
     }
   }
 
@@ -2688,21 +3154,174 @@ class _SelectOutletPageState extends State<_SelectOutletPage> {
 
   bool get _useBlotato => !_usePostiz && _blotatoAccounts.isNotEmpty;
 
-  OutletOption? _outletFor(PostizIntegration p) {
-    for (final o in OutletCatalog.all) {
-      if (o.matchesIntegration(p)) return o;
+  List<String> _idsForOutlet(OutletOption outlet) {
+    if (_usePostiz) {
+      return _postizIntegrations
+          .where(outlet.matchesIntegration)
+          .map((p) => p.id)
+          .toList();
     }
-    return null;
+    if (_useBlotato) {
+      final keys = outlet.postizIdentifiers
+          .map((id) => id.toLowerCase())
+          .toList();
+      final labelKey = outlet.label.toLowerCase().split(' ').first;
+      return [
+        for (final acct in _blotatoAccounts)
+          if (_blotatoMatches(acct, keys, labelKey))
+            (acct['id'] ?? '').toString(),
+      ].where((id) => id.isNotEmpty).toList();
+    }
+    return [];
+  }
+
+  bool _blotatoMatches(
+    Map<String, dynamic> acct,
+    List<String> keys,
+    String labelKey,
+  ) {
+    final plat = (acct['platform'] ?? '').toString().toLowerCase();
+    if (plat.contains(labelKey)) return true;
+    return keys.any((k) => plat.contains(k));
+  }
+
+  bool _isOutletSelected(OutletOption outlet) {
+    final ids = _idsForOutlet(outlet);
+    if (ids.isEmpty) return _unlinkedSelected.contains(outlet.label);
+    return ids.any(widget.campaign.selectedOutlets.contains);
+  }
+
+  void _toggleOutlet(OutletOption outlet) {
+    final ids = _idsForOutlet(outlet);
+    setState(() {
+      if (ids.isEmpty) {
+        if (!_unlinkedSelected.add(outlet.label)) {
+          _unlinkedSelected.remove(outlet.label);
+        }
+        return;
+      }
+      _unlinkedSelected.remove(outlet.label);
+      final allSelected = ids.every(widget.campaign.selectedOutlets.contains);
+      if (allSelected) {
+        widget.campaign.selectedOutlets.removeAll(ids);
+      } else {
+        widget.campaign.selectedOutlets.addAll(ids);
+      }
+    });
+  }
+
+  List<OutletOption> get _platformRows {
+    final byLabel = {for (final o in OutletCatalog.all) o.label: o};
+    final rows = <OutletOption>[
+      for (final label in _figmaPlatformOrder)
+        if (byLabel[label] != null) byLabel[label]!,
+    ];
+    for (final outlet in OutletCatalog.all) {
+      if (_figmaPlatformOrder.contains(outlet.label)) continue;
+      if (_idsForOutlet(outlet).isNotEmpty) rows.add(outlet);
+    }
+    return rows;
+  }
+
+  List<(int, MarketingContent)> get _readyContents {
+    final items = <(int, MarketingContent)>[];
+    for (var i = 0; i < widget.campaign.contents.length; i++) {
+      final content = widget.campaign.contents[i];
+      if (_marketingContentIsReady(content)) {
+        items.add((i, content));
+      }
+    }
+    return items;
+  }
+
+  String _contentPreview(MarketingContent content) {
+    if (content.type == MarketingContentType.text) {
+      final text =
+          (content.manualText ?? content.generatedResult ?? '').trim();
+      return text.isEmpty ? 'Generated text' : text;
+    }
+    final prompt = (content.prompt ?? '').trim();
+    if (prompt.isNotEmpty) return prompt;
+    return content.type == MarketingContentType.pictures
+        ? 'Generated image'
+        : 'Generated video';
+  }
+
+  Widget _contentLeading(MarketingContent content) {
+    final FaIconData icon;
+    switch (content.type) {
+      case MarketingContentType.pictures:
+        icon = FontAwesomeIcons.image;
+      case MarketingContentType.videos:
+        icon = FontAwesomeIcons.video;
+      case MarketingContentType.text:
+        icon = FontAwesomeIcons.alignLeft;
+    }
+    return Container(
+      width: 44,
+      height: 44,
+      decoration: BoxDecoration(
+        color: Colors.black,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      alignment: Alignment.center,
+      child: FaIcon(icon, size: 16, color: Colors.white),
+    );
+  }
+
+  Widget _platformLeading(OutletOption outlet) {
+    return Container(
+      width: 44,
+      height: 44,
+      decoration: BoxDecoration(
+        color: outlet.tileColor,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      alignment: Alignment.center,
+      child: FaIcon(outlet.icon, size: 18, color: Colors.white),
+    );
+  }
+
+  Future<void> _openLinkSocial() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => const ManageOutlets()),
+    );
+    if (mounted) {
+      setState(() => _loadingAccounts = true);
+      await _loadAccounts();
+    }
   }
 
   void _goToPostDetails() {
-    if (widget.campaign.selectedOutlets.isEmpty) return;
+    if (widget.campaign.selectedContentIndexes.isEmpty) return;
+    if (widget.campaign.selectedOutlets.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            _unlinkedSelected.isEmpty
+                ? 'Choose a platform to continue'
+                : 'Link those platforms in Link Social Media before publishing.',
+            style: GoogleFonts.montserrat(fontSize: 13),
+          ),
+          behavior: SnackBarBehavior.floating,
+          action: _unlinkedSelected.isEmpty
+              ? null
+              : SnackBarAction(label: 'Link', onPressed: _openLinkSocial),
+        ),
+      );
+      return;
+    }
     final caption = widget.campaign.campaignCaption;
     for (final id in widget.campaign.selectedOutlets) {
-      widget.campaign.outletDetails.putIfAbsent(
+      final details = widget.campaign.outletDetails.putIfAbsent(
         id,
         () => PlatformPostDetails.fromCampaignCaption(caption),
       );
+      if (!widget.campaign.aiWriteCaptions) {
+        details.caption = '';
+      } else if (details.caption.trim().isEmpty) {
+        details.caption = caption;
+      }
     }
     Navigator.push(
       context,
@@ -2720,230 +3339,293 @@ class _SelectOutletPageState extends State<_SelectOutletPage> {
 
   @override
   Widget build(BuildContext context) {
-    final useConnected = !_loadingAccounts && (_usePostiz || _useBlotato);
-    final gridCount =
-        _usePostiz ? _postizIntegrations.length : _blotatoAccounts.length;
+    final scale = MediaQuery.sizeOf(context).width / appShellDesignWidth;
+    final ready = _readyContents;
+    final canNext = widget.campaign.selectedContentIndexes.isNotEmpty &&
+        (widget.campaign.selectedOutlets.isNotEmpty ||
+            _unlinkedSelected.isNotEmpty);
+
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
 
     return _MarketingScaffold(
-      child: Column(
-        children: [
-          Text(
-            'Select Your Digital Outlet',
-            style: GoogleFonts.montserrat(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: Colors.black87,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'Choose where to publish. Linked Instagram, TikTok, and YouTube appear here.',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.montserrat(
-              fontSize: 12,
-              color: Colors.black45,
-              height: 1.35,
-            ),
-          ),
-          const SizedBox(height: 18),
-          if (_loadingAccounts)
-            const Expanded(child: Center(child: AutobusLoadingIndicator()))
-          else if (!useConnected)
-            Expanded(
-              child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.link_off,
-                        size: 48,
-                        color: Colors.grey.shade400,
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'No Social Media linked yet. Use Link Social Media to connect your channels; they will appear here for publishing.',
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.montserrat(
-                          fontSize: 13,
-                          color: Colors.black54,
-                          height: 1.4,
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      _DarkButton(
-                        label: 'Open Link Social Media',
-                        compact: true,
-                        onTap: () async {
-                          await Navigator.of(context).push(
-                            MaterialPageRoute<void>(
-                              builder: (_) => const ManageOutlets(),
-                            ),
-                          );
-                          if (mounted) {
-                            setState(() => _loadingAccounts = true);
-                            await _loadAccounts();
-                          }
-                        },
-                      ),
-                    ],
+      trailing: const SizedBox.shrink(),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            primary: true,
+            physics: const AlwaysScrollableScrollPhysics(),
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+            padding: EdgeInsets.only(bottom: bottomInset + 12),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                Text(
+                  'Choose what to post',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.montserrat(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF323232),
                   ),
                 ),
-              ),
-            )
-          else
-            Expanded(
-              child: ListView.separated(
-                itemCount: gridCount,
-                separatorBuilder: (_, __) => const SizedBox(height: 10),
-                itemBuilder: (_, i) {
-                  final String id;
-                  final String label;
-                  final String? subtitle;
-                  final Color color;
-                  final IconData icon;
-                  final Widget? avatar;
-
-                  if (_usePostiz) {
-                    final p = _postizIntegrations[i];
-                    final outlet = _outletFor(p);
-                    id = p.id;
-                    label = outlet?.label ??
-                        (p.identifier.isNotEmpty
-                            ? p.identifier
-                            : 'Channel');
-                    final accountName = p.name.trim().isNotEmpty
-                        ? p.name.trim()
-                        : (p.profile?.trim() ?? '');
-                    subtitle =
-                        accountName.isNotEmpty ? accountName : null;
-                    icon = outlet?.icon ?? FontAwesomeIcons.globe;
-                    color = outlet?.iconColor ?? _kPurple;
-                    final pic = p.picture?.trim();
-                    avatar = pic != null &&
-                            (pic.startsWith('http://') ||
-                                pic.startsWith('https://'))
-                        ? CircleAvatar(
-                            radius: 16,
-                            backgroundImage: NetworkImage(pic),
-                            onBackgroundImageError: (_, __) {},
-                          )
-                        : null;
-                  } else {
-                    final acct = _blotatoAccounts[i];
-                    id = acct['id'] as String? ?? '';
-                    label = (acct['platform'] ?? 'Account').toString();
-                    subtitle =
-                        (acct['account_name'] ?? '').toString().trim();
-                    icon = Icons.link;
-                    color = _kPurple;
-                    avatar = null;
-                  }
-
-                  final sel =
-                      widget.campaign.selectedOutlets.contains(id);
-
-                  return Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: () => setState(
-                        () => sel
-                            ? widget.campaign.selectedOutlets.remove(id)
-                            : widget.campaign.selectedOutlets.add(id),
-                      ),
-                      borderRadius: BorderRadius.circular(12),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 180),
-                        height: 64,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                        ),
-                        decoration: BoxDecoration(
-                          color: sel
-                              ? _kSelectGreen.withValues(alpha: 0.06)
-                              : Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: sel
-                                ? _kSelectGreen
-                                : Colors.grey.shade200,
-                            width: sel ? 2 : 1,
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            avatar ??
-                                SizedBox(
-                                  width: 36,
-                                  height: 36,
-                                  child: Center(
-                                    child: Icon(
-                                      icon,
-                                      size: 20,
-                                      color: color,
-                                    ),
-                                  ),
-                                ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                crossAxisAlignment:
-                                    CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    label,
-                                    style: GoogleFonts.montserrat(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.black87,
-                                    ),
-                                  ),
-                                  if (subtitle != null &&
-                                      subtitle.isNotEmpty) ...[
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      subtitle,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: GoogleFonts.montserrat(
-                                        fontSize: 11,
-                                        color: Colors.black45,
-                                      ),
-                                    ),
-                                  ],
-                                ],
-                              ),
-                            ),
-                            AnimatedOpacity(
-                              duration: const Duration(milliseconds: 150),
-                              opacity: sel ? 1 : 0,
-                              child: const Icon(
-                                Icons.check_circle_rounded,
-                                color: _kSelectGreen,
-                                size: 22,
-                              ),
-                            ),
-                          ],
-                        ),
+                const SizedBox(height: 8),
+                Text(
+                  'Select generated content, platforms and captions',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.montserrat(
+                    fontSize: 12,
+                    color: const Color(0xFF898888),
+                  ),
+                ),
+                const SizedBox(height: 22),
+                _chooseSectionLabel('Generated Content'),
+                const SizedBox(height: 8),
+                if (ready.isEmpty)
+                  LightListCard(
+                    scale: scale,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 18,
+                      vertical: 18,
+                    ),
+                    child: Text(
+                      'Generate text, an image, or a video first.',
+                      style: GoogleFonts.montserrat(
+                        fontSize: 12,
+                        color: const Color(0xFF898888),
                       ),
                     ),
-                  );
-                },
-              ),
+                  )
+                else
+                  for (var i = 0; i < ready.length; i++) ...[
+                    if (i > 0) const SizedBox(height: 8),
+                    Builder(
+                      builder: (_) {
+                        final (index, content) = ready[i];
+                        final selected = widget
+                            .campaign.selectedContentIndexes
+                            .contains(index);
+                        return _ChooseSelectCard(
+                          scale: scale,
+                          selected: selected,
+                          leading: _contentLeading(content),
+                          title: content.label == 'Pictures'
+                              ? 'Image'
+                              : content.label == 'Videos'
+                                  ? 'Video'
+                                  : 'Text',
+                          subtitle: _contentPreview(content),
+                          subtitleMaxLines: 3,
+                          radioOnRight: true,
+                          onTap: () => setState(() {
+                            if (selected) {
+                              widget.campaign.selectedContentIndexes
+                                  .remove(index);
+                            } else {
+                              widget.campaign.selectedContentIndexes.add(index);
+                            }
+                          }),
+                        );
+                      },
+                    ),
+                  ],
+                const SizedBox(height: 20),
+                _chooseSectionLabel('Platforms'),
+                const SizedBox(height: 8),
+                if (_loadingAccounts)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 24),
+                    child: Center(child: AutobusLoadingIndicator()),
+                  )
+                else ...[
+                  for (var i = 0; i < _platformRows.length; i++) ...[
+                    if (i > 0) const SizedBox(height: 8),
+                    Builder(
+                      builder: (_) {
+                        final outlet = _platformRows[i];
+                        return _ChooseSelectCard(
+                          scale: scale,
+                          selected: _isOutletSelected(outlet),
+                          leading: _platformLeading(outlet),
+                          title: outlet.label,
+                          subtitle: 'Share from this phone',
+                          radioOnRight: true,
+                          onTap: () => _toggleOutlet(outlet),
+                        );
+                      },
+                    ),
+                  ],
+                ],
+                const SizedBox(height: 20),
+                _chooseSectionLabel('Captions and metadata'),
+                const SizedBox(height: 8),
+                _ChooseSelectCard(
+                  scale: scale,
+                  selected: widget.campaign.aiWriteCaptions,
+                  title: 'Let AI write captions',
+                  subtitle:
+                      'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor',
+                  radioOnRight: false,
+                  onTap: () => setState(
+                    () => widget.campaign.aiWriteCaptions = true,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                _ChooseSelectCard(
+                  scale: scale,
+                  selected: !widget.campaign.aiWriteCaptions,
+                  title: 'I will write them',
+                  subtitle:
+                      'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor',
+                  radioOnRight: false,
+                  onTap: () => setState(
+                    () => widget.campaign.aiWriteCaptions = false,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: _DarkButton(
+                    label: 'Next',
+                    figmaCta: true,
+                    onTap: canNext ? _goToPostDetails : null,
+                  ),
+                ),
+              ],
             ),
-          const SizedBox(height: 12),
-          _DarkButton(
-            label: 'Next',
-            compact: true,
-            onTap: widget.campaign.selectedOutlets.isNotEmpty
-                ? _goToPostDetails
-                : null,
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+Widget _chooseSectionLabel(String text) {
+  return Align(
+    alignment: Alignment.centerLeft,
+    child: Text(
+      text,
+      style: GoogleFonts.montserrat(
+        fontSize: 12,
+        fontWeight: FontWeight.w600,
+        color: const Color(0xFF323232),
+      ),
+    ),
+  );
+}
+
+class _ChooseSelectCard extends StatelessWidget {
+  final double scale;
+  final bool selected;
+  final String title;
+  final String subtitle;
+  final Widget? leading;
+  final bool radioOnRight;
+  final int subtitleMaxLines;
+  final VoidCallback onTap;
+
+  const _ChooseSelectCard({
+    required this.scale,
+    required this.selected,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+    this.leading,
+    this.radioOnRight = true,
+    this.subtitleMaxLines = 2,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final radio = selected ? const _FigmaRadio(selected: true) : null;
+    return LightListCard(
+      scale: scale,
+      borderColor: selected ? Colors.black : null,
+      borderWidth: 2,
+      padding: EdgeInsets.fromLTRB(
+        radioOnRight ? 18 : 16,
+        14,
+        16,
+        14,
+      ),
+      onTap: onTap,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          if (!radioOnRight) ...[
+            radio ?? const SizedBox(width: 20),
+            const SizedBox(width: 12),
+          ],
+          if (leading != null) ...[
+            leading!,
+            const SizedBox(width: 12),
+          ],
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.montserrat(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black,
+                    height: 1.25,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  maxLines: subtitleMaxLines,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.montserrat(
+                    fontSize: 11,
+                    height: 1.35,
+                    color: const Color(0xFF4E4E4E),
+                  ),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 12),
+          if (radioOnRight && radio != null) ...[
+            const SizedBox(width: 8),
+            radio,
+          ],
         ],
       ),
+    );
+  }
+}
+
+class _FigmaRadio extends StatelessWidget {
+  final bool selected;
+
+  const _FigmaRadio({required this.selected});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 20,
+      height: 20,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(color: Colors.black, width: 2),
+      ),
+      alignment: Alignment.center,
+      child: selected
+          ? Container(
+              width: 10,
+              height: 10,
+              decoration: const BoxDecoration(
+                color: Colors.black,
+                shape: BoxShape.circle,
+              ),
+            )
+          : null,
     );
   }
 }
@@ -3009,22 +3691,28 @@ class _PostDetailsPageState extends State<_PostDetailsPage> {
     return InputDecoration(
       labelText: label,
       hintText: hint,
-      labelStyle: GoogleFonts.montserrat(fontSize: 12, color: Colors.black54),
-      hintStyle: GoogleFonts.montserrat(fontSize: 12, color: Colors.black38),
+      labelStyle: GoogleFonts.montserrat(
+        fontSize: 12,
+        color: LightScreenTheme.muted,
+      ),
+      hintStyle: GoogleFonts.montserrat(
+        fontSize: 12,
+        color: LightScreenTheme.hint,
+      ),
       filled: true,
-      fillColor: const Color(0xFFF7F5FB),
+      fillColor: LightScreenTheme.field,
       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFFE8E0F0)),
+        borderSide: const BorderSide(color: LightScreenTheme.border),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFFE8E0F0)),
+        borderSide: const BorderSide(color: LightScreenTheme.border),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: _kHeaderPurple, width: 1.4),
+        borderSide: const BorderSide(color: LightScreenTheme.accent, width: 1.4),
       ),
     );
   }
@@ -3139,21 +3827,21 @@ class _PostDetailsPageState extends State<_PostDetailsPage> {
           contentPadding: EdgeInsets.zero,
           title: Text('Allow comments', style: GoogleFonts.montserrat(fontSize: 13)),
           value: d.tiktokComment,
-          activeColor: _kHeaderPurple,
+          activeColor: LightScreenTheme.accent,
           onChanged: (v) => setState(() => d.tiktokComment = v),
         ),
         SwitchListTile.adaptive(
           contentPadding: EdgeInsets.zero,
           title: Text('Allow duet', style: GoogleFonts.montserrat(fontSize: 13)),
           value: d.tiktokDuet,
-          activeColor: _kHeaderPurple,
+          activeColor: LightScreenTheme.accent,
           onChanged: (v) => setState(() => d.tiktokDuet = v),
         ),
         SwitchListTile.adaptive(
           contentPadding: EdgeInsets.zero,
           title: Text('Allow stitch', style: GoogleFonts.montserrat(fontSize: 13)),
           value: d.tiktokStitch,
-          activeColor: _kHeaderPurple,
+          activeColor: LightScreenTheme.accent,
           onChanged: (v) => setState(() => d.tiktokStitch = v),
         ),
         SwitchListTile.adaptive(
@@ -3163,7 +3851,7 @@ class _PostDetailsPageState extends State<_PostDetailsPage> {
             style: GoogleFonts.montserrat(fontSize: 13),
           ),
           value: d.tiktokBrandContent,
-          activeColor: _kHeaderPurple,
+          activeColor: LightScreenTheme.accent,
           onChanged: (v) => setState(() => d.tiktokBrandContent = v),
         ),
         SwitchListTile.adaptive(
@@ -3173,7 +3861,7 @@ class _PostDetailsPageState extends State<_PostDetailsPage> {
             style: GoogleFonts.montserrat(fontSize: 13),
           ),
           value: d.tiktokBrandOrganic,
-          activeColor: _kHeaderPurple,
+          activeColor: LightScreenTheme.accent,
           onChanged: (v) => setState(() => d.tiktokBrandOrganic = v),
         ),
         SwitchListTile.adaptive(
@@ -3183,7 +3871,7 @@ class _PostDetailsPageState extends State<_PostDetailsPage> {
             style: GoogleFonts.montserrat(fontSize: 13),
           ),
           value: d.tiktokMadeWithAi,
-          activeColor: _kHeaderPurple,
+          activeColor: LightScreenTheme.accent,
           onChanged: (v) => setState(() => d.tiktokMadeWithAi = v),
         ),
       ],
@@ -3248,7 +3936,7 @@ class _PostDetailsPageState extends State<_PostDetailsPage> {
     required String id,
     required String label,
     required String? subtitle,
-    required IconData icon,
+    required FaIconData icon,
     required Color color,
     required PlatformDetailsKind kind,
     required bool autobusIg,
@@ -3257,9 +3945,9 @@ class _PostDetailsPageState extends State<_PostDetailsPage> {
     final d = _detailsFor(id);
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: LightScreenTheme.surface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: LightScreenTheme.border),
       ),
       child: Column(
         children: [
@@ -3270,7 +3958,7 @@ class _PostDetailsPageState extends State<_PostDetailsPage> {
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
               child: Row(
                 children: [
-                  Icon(icon, size: 18, color: color),
+                  FaIcon(icon, size: 18, color: color),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Column(
@@ -3296,11 +3984,12 @@ class _PostDetailsPageState extends State<_PostDetailsPage> {
                       ],
                     ),
                   ),
-                  Icon(
-                    expanded
-                        ? Icons.keyboard_arrow_up_rounded
-                        : Icons.keyboard_arrow_down_rounded,
-                    color: Colors.black45,
+                  HomeSfIcon(
+                    icon: expanded
+                        ? HomeFigmaIcons.chevronUp
+                        : HomeFigmaIcons.chevronDown,
+                    size: 22,
+                    color: LightScreenTheme.muted,
                   ),
                 ],
               ),
@@ -3322,97 +4011,210 @@ class _PostDetailsPageState extends State<_PostDetailsPage> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final postizCards = <Widget>[];
+  String get _sharePlatformSubtitle {
+    final labels = <String>[];
     for (final p in _selectedPostiz) {
-      final outlet = _outletFor(p);
-      final label = outlet?.label ??
-          (p.identifier.isNotEmpty ? p.identifier : 'Channel');
-      final accountName = p.name.trim().isNotEmpty
-          ? p.name.trim()
-          : (p.profile?.trim() ?? '');
-      final autobusIg = p.id.startsWith(_kAutobusIgPrefix);
-      postizCards.add(
-        _outletCard(
-          id: p.id,
-          label: label,
-          subtitle: accountName.isNotEmpty ? accountName : null,
-          icon: outlet?.icon ?? FontAwesomeIcons.globe,
-          color: outlet?.iconColor ?? _kPurple,
-          kind: platformDetailsKindFor(p.identifier),
-          autobusIg: autobusIg,
-        ),
-      );
+      final label = _outletFor(p)?.label ??
+          (p.identifier.isNotEmpty ? p.identifier : '');
+      if (label.isNotEmpty) labels.add(label);
     }
-
-    final blotatoCards = <Widget>[];
     if (!widget.usePostiz) {
       for (final acct in _selectedBlotato) {
-        final id = (acct['id'] ?? '').toString();
-        if (id.isEmpty) continue;
-        blotatoCards.add(
-          _outletCard(
-            id: id,
-            label: (acct['platform'] ?? 'Account').toString(),
-            subtitle: (acct['account_name'] ?? '').toString().trim(),
-            icon: Icons.link,
-            color: _kPurple,
-            kind: PlatformDetailsKind.generic,
-            autobusIg: false,
-          ),
-        );
+        final label = (acct['platform'] ?? '').toString().trim();
+        if (label.isNotEmpty) labels.add(label);
       }
     }
+    if (labels.isEmpty) return 'This phone';
+    return labels.toSet().join(', ');
+  }
 
-    final cards = [...postizCards, ...blotatoCards];
+  Future<List<XFile>> _shareFiles() async {
+    final files = <XFile>[];
+    var index = 0;
+    for (final content in widget.campaign.selectedContents) {
+      if (content.type == MarketingContentType.text) continue;
+      final localPath = content.localFilePath?.trim();
+      if (!kIsWeb &&
+          localPath != null &&
+          localPath.isNotEmpty &&
+          File(localPath).existsSync()) {
+        files.add(XFile(localPath));
+        index++;
+        continue;
+      }
+      final bytes = content.generatedBytes;
+      if (!kIsWeb && bytes != null && bytes.isNotEmpty) {
+        final ext = content.type == MarketingContentType.videos ? 'mp4' : 'jpg';
+        final path =
+            '${Directory.systemTemp.path}/autobus-share-$index.$ext';
+        await File(path).writeAsBytes(bytes, flush: true);
+        files.add(XFile(path));
+      }
+      index++;
+    }
+    return files;
+  }
+
+  Future<void> _shareToApps() async {
+    if (_publishing) return;
+    final caption = widget.campaign.campaignCaption.trim();
+    setState(() {
+      _publishing = true;
+      _publishStatus = 'Preparing share…';
+    });
+    try {
+      final files = await _shareFiles();
+      if (!mounted) return;
+      setState(() {
+        _publishing = false;
+        _publishStatus = '';
+      });
+      if (files.isNotEmpty) {
+        await Share.shareXFiles(
+          files,
+          text: caption.isEmpty ? null : caption,
+        );
+      } else if (caption.isNotEmpty) {
+        await Share.share(caption);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Nothing to share yet. Generate content first.',
+              style: GoogleFonts.montserrat(fontSize: 13),
+            ),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        return;
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _publishing = false;
+        _publishStatus = '';
+      });
+      if (!widget.usePostiz && !widget.useBlotato) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Could not open share sheet. $e',
+              style: GoogleFonts.montserrat(fontSize: 13),
+            ),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        return;
+      }
+    }
+    if (mounted && (widget.usePostiz || widget.useBlotato)) {
+      await _publish();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scale = MediaQuery.sizeOf(context).width / appShellDesignWidth;
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
 
     return _MarketingScaffold(
+      trailing: const SizedBox.shrink(),
       child: Stack(
         children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                'Post Details',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.montserrat(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black87,
+          LayoutBuilder(
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                primary: true,
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: EdgeInsets.only(bottom: bottomInset + 12),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        'Post your campaign',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.montserrat(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF323232),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Select generated content, platforms and captions',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.montserrat(
+                          fontSize: 12,
+                          color: const Color(0xFF898888),
+                        ),
+                      ),
+                      const SizedBox(height: 22),
+                      LightListCard(
+                        scale: scale,
+                        padding: const EdgeInsets.fromLTRB(18, 14, 16, 14),
+                        onTap: _publishing ? null : _shareToApps,
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 44,
+                              height: 44,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFD8D8D8),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              alignment: Alignment.center,
+                              child: HomeSfIcon(
+                                icon: HomeFigmaIcons.share,
+                                size: 20,
+                                color: Colors.black,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Share to Apps on this phone',
+                                    style: GoogleFonts.montserrat(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.black,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    _sharePlatformSubtitle,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: GoogleFonts.montserrat(
+                                      fontSize: 11,
+                                      color: const Color(0xFF938F8F),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            HomeSfIcon(
+                              icon: HomeFigmaIcons.chevronRight,
+                              size: 16,
+                              color: const Color(0xFF14171A),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                'Add titles, captions, and privacy settings for each platform',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.montserrat(
-                  fontSize: 12,
-                  color: Colors.black45,
-                  height: 1.35,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Expanded(
-                child: ListView.separated(
-                  itemCount: cards.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 12),
-                  itemBuilder: (_, i) => cards[i],
-                ),
-              ),
-              const SizedBox(height: 12),
-              _DarkButton(
-                label: 'Publish',
-                compact: true,
-                onTap: _publishing ? null : _publish,
-              ),
-              const SizedBox(height: 12),
-            ],
+              );
+            },
           ),
           if (_publishing)
             Positioned.fill(
               child: ColoredBox(
-                color: Colors.white.withValues(alpha: 0.88),
+                color: LightScreenTheme.background.withValues(alpha: 0.88),
                 child: Center(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -3421,7 +4223,7 @@ class _PostDetailsPageState extends State<_PostDetailsPage> {
                       const SizedBox(height: 16),
                       Text(
                         _publishStatus.isEmpty
-                            ? 'Publishing…'
+                            ? 'Preparing…'
                             : _publishStatus,
                         textAlign: TextAlign.center,
                         style: GoogleFonts.montserrat(
@@ -3490,7 +4292,7 @@ class _PostDetailsPageState extends State<_PostDetailsPage> {
     try {
       _setStatus('Uploading media…');
       final mediaUrls = <String>[];
-      for (final c in widget.campaign.contents) {
+      for (final c in widget.campaign.selectedContents) {
         if (c.type == MarketingContentType.text) continue;
 
         final existing = c.generatedResult?.trim();

@@ -4,7 +4,11 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:autobus/common_design/colors.dart';
 import 'package:autobus/common_design/credit_category.dart';
+import 'package:autobus/common_design/light_screen_theme.dart';
+import 'package:autobus/common_design/widgets/app_bottom_nav.dart';
 import 'package:autobus/common_design/widgets/autobus_loading_indicator.dart';
+import 'package:autobus/common_design/widgets/light_list_card.dart';
+import 'package:autobus/common_design/widgets/light_screen_scaffold.dart';
 import 'package:autobus/features/home/services/api_service.dart';
 import 'package:autobus/features/subscription/data/apple_iap_ids.dart';
 import 'package:autobus/features/subscription/services/apple_iap_service.dart';
@@ -95,7 +99,7 @@ class _ManageSubscriptionPageState extends State<ManageSubscriptionPage> {
     return v.toStringAsFixed(v == v.roundToDouble() ? 0 : 1);
   }
 
-  Widget _buildCreditsSection() {
+  Widget _buildCreditsSection(double scale) {
     final creditsMap = _credits?['credits'];
     if (creditsMap is! Map || creditsMap.isEmpty) {
       return const SizedBox.shrink();
@@ -111,16 +115,16 @@ class _ManageSubscriptionPageState extends State<ManageSubscriptionPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(height: 20),
+        SizedBox(height: 20 * scale),
         Text(
           'Credits remaining',
           style: GoogleFonts.montserrat(
-            fontSize: 16,
+            fontSize: 16 * scale.clamp(0.9, 1.05),
             fontWeight: FontWeight.w700,
             color: Colors.black87,
           ),
         ),
-        const SizedBox(height: 10),
+        SizedBox(height: 10 * scale),
         ...entries.map((entry) {
           final key = entry.key.toString();
           final item = entry.value;
@@ -135,16 +139,14 @@ class _ManageSubscriptionPageState extends State<ManageSubscriptionPage> {
           final remNum = remaining is num
               ? remaining.toDouble()
               : double.tryParse(remaining?.toString() ?? '') ?? 0;
-          final progress = allocNum > 0 ? (remNum / allocNum).clamp(0.0, 1.0) : 0.0;
+          final progress =
+              allocNum > 0 ? (remNum / allocNum).clamp(0.0, 1.0) : 0.0;
 
           return Padding(
-            padding: const EdgeInsets.only(bottom: 10),
-            child: Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.65),
-                borderRadius: BorderRadius.circular(12),
-              ),
+            padding: EdgeInsets.only(bottom: 10 * scale),
+            child: LightListCard(
+              scale: scale,
+              padding: EdgeInsets.all(14 * scale),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -153,25 +155,22 @@ class _ManageSubscriptionPageState extends State<ManageSubscriptionPage> {
                       Expanded(
                         child: Text(
                           label,
-                          style: GoogleFonts.montserrat(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 14,
-                          ),
+                          style: LightScreenTheme.listTitle(scale),
                         ),
                       ),
                       Text(
                         '${_formatCreditValue(key, remaining)} left',
                         style: GoogleFonts.montserrat(
                           fontWeight: FontWeight.w700,
-                          fontSize: 13,
+                          fontSize: 13 * scale.clamp(0.9, 1.05),
                           color: CustColors.mainCol,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8 * scale),
                   ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: BorderRadius.circular(4 * scale),
                     child: LinearProgressIndicator(
                       value: progress,
                       minHeight: 6,
@@ -179,13 +178,10 @@ class _ManageSubscriptionPageState extends State<ManageSubscriptionPage> {
                       color: CustColors.mainCol,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: 4 * scale),
                   Text(
                     '${_formatCreditValue(key, allocated)} monthly allocation',
-                    style: GoogleFonts.montserrat(
-                      fontSize: 11,
-                      color: Colors.black45,
-                    ),
+                    style: LightScreenTheme.listSubtitle(scale),
                   ),
                 ],
               ),
@@ -374,210 +370,133 @@ class _ManageSubscriptionPageState extends State<ManageSubscriptionPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              Color.fromARGB(255, 244, 244, 244),
-              Color.fromARGB(255, 236, 236, 236),
-            ],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
+    final scale = MediaQuery.sizeOf(context).width / appShellDesignWidth;
+
+    return LightScreenScaffold(
+      title: 'Subscription',
+      creditCategory: CreditCategory.server,
+      body: RefreshIndicator(
+        color: LightScreenTheme.accent,
+        onRefresh: _refreshAll,
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: EdgeInsets.fromLTRB(
+            20 * scale,
+            20 * scale,
+            20 * scale,
+            32 * scale,
           ),
-        ),
-        child: SafeArea(
-          child: RefreshIndicator(
-            onRefresh: _refreshAll,
-            child: CustomScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              slivers: [
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(18, 16, 18, 8),
-                    child: Row(
-                      children: [
-                        SizedBox(
-                          width: 48,
-                          height: 48,
-                          child: Align(
-                            alignment: Alignment.centerLeft,
-                            child: GestureDetector(
-                              onTap: () => Navigator.pop(context),
-                              child: Container(
-                                width: 48,
-                                height: 48,
-                                decoration: const BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: CustColors.mainCol,
-                                ),
-                                child: const Icon(
-                                  Icons.arrow_back_ios_new,
-                                  color: Colors.white,
-                                  size: 18,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        Expanded(
-                          child: Text(
-                            'Subscription',
-                            textAlign: TextAlign.center,
-                            style: GoogleFonts.montserrat(
-                              fontSize: 22,
-                              fontWeight: FontWeight.w400,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 48),
-                      ],
+          children: [
+            if (_loading)
+              Padding(
+                padding: EdgeInsets.all(48 * scale),
+                child: const Center(
+                  child: AutobusLoadingIndicator(size: 36),
+                ),
+              )
+            else ...[
+              LightListCard(
+                scale: scale,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _hasActive ? _planName : 'No active plan',
+                      style: GoogleFonts.montserrat(
+                        fontSize: 22 * scale.clamp(0.9, 1.05),
+                        fontWeight: FontWeight.w800,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    SizedBox(height: 8 * scale),
+                    Text(
+                      _renewalLine(),
+                      style: LightScreenTheme.hubBody(scale),
+                    ),
+                    if (_expiresLine() != null) ...[
+                      SizedBox(height: 4 * scale),
+                      Text(
+                        _expiresLine()!,
+                        style: LightScreenTheme.listSubtitle(scale),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              _buildCreditsSection(scale),
+              SizedBox(height: 18 * scale),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _hasActive
+                      ? () => _openPlanPicker(upgrade: true)
+                      : () => _openPlanPicker(upgrade: false),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: CustColors.mainCol,
+                    foregroundColor: Colors.white,
+                    padding: EdgeInsets.symmetric(vertical: 14 * scale),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12 * scale),
+                    ),
+                  ),
+                  child: Text(
+                    _hasActive ? 'Upgrade or change plan' : 'Choose a plan',
+                    style: GoogleFonts.montserrat(
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
-                SliverPadding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 18,
-                    vertical: 12,
-                  ),
-                  sliver: SliverList(
-                    delegate: SliverChildListDelegate([
-                      if (_loading)
-                        const Padding(
-                          padding: EdgeInsets.all(48),
-                          child: Center(
-                            child: AutobusLoadingIndicator(size: 36),
-                          ),
-                        )
-                      else ...[
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(18),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.65),
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                _hasActive ? _planName : 'No active plan',
-                                style: GoogleFonts.montserrat(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.w800,
-                                  color: Colors.black87,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                _renewalLine(),
-                                style: GoogleFonts.montserrat(
-                                  fontSize: 14,
-                                  color: Colors.black54,
-                                ),
-                              ),
-                              if (_expiresLine() != null) ...[
-                                const SizedBox(height: 4),
-                                Text(
-                                  _expiresLine()!,
-                                  style: GoogleFonts.montserrat(
-                                    fontSize: 13,
-                                    color: Colors.black45,
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                        _buildCreditsSection(),
-                        const SizedBox(height: 18),
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton(
-                            onPressed: _hasActive
-                                ? () => _openPlanPicker(upgrade: true)
-                                : () => _openPlanPicker(upgrade: false),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: CustColors.mainCol,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            child: Text(
-                              _hasActive
-                                  ? 'Upgrade or change plan'
-                                  : 'Choose a plan',
-                              style: GoogleFonts.montserrat(
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ),
-                        if (_hasActive) ...[
-                          const SizedBox(height: 12),
-                          SizedBox(
-                            width: double.infinity,
-                            child: OutlinedButton(
-                              onPressed: _confirmCancel,
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: Colors.red.shade800,
-                                side: BorderSide(color: Colors.red.shade200),
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 14,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                              child: Text(
-                                _isAppleIap
-                                    ? 'Manage on Apple ID'
-                                    : 'Cancel subscription',
-                                style: GoogleFonts.montserrat(
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                        if (AppleIapIds.isSupported) ...[
-                          const SizedBox(height: 12),
-                          SizedBox(
-                            width: double.infinity,
-                            child: OutlinedButton(
-                              onPressed: _loading
-                                  ? null
-                                  : _restoreApplePurchases,
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: CustColors.mainCol,
-                                side: const BorderSide(
-                                  color: CustColors.mainCol,
-                                ),
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 14,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                              child: Text(
-                                'Restore Purchases',
-                                style: GoogleFonts.montserrat(
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ],
-                    ]),
+              ),
+              if (_hasActive) ...[
+                SizedBox(height: 12 * scale),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    onPressed: _confirmCancel,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.red.shade800,
+                      side: BorderSide(color: Colors.red.shade200),
+                      padding: EdgeInsets.symmetric(vertical: 14 * scale),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12 * scale),
+                      ),
+                    ),
+                    child: Text(
+                      _isAppleIap
+                          ? 'Manage on Apple ID'
+                          : 'Cancel subscription',
+                      style: GoogleFonts.montserrat(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
                 ),
               ],
-            ),
-          ),
+              if (AppleIapIds.isSupported) ...[
+                SizedBox(height: 12 * scale),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    onPressed: _loading ? null : _restoreApplePurchases,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: CustColors.mainCol,
+                      side: const BorderSide(color: CustColors.mainCol),
+                      padding: EdgeInsets.symmetric(vertical: 14 * scale),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12 * scale),
+                      ),
+                    ),
+                    child: Text(
+                      'Restore Purchases',
+                      style: GoogleFonts.montserrat(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ],
         ),
       ),
     );

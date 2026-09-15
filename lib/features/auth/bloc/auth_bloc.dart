@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -42,32 +44,96 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     };
   }
 
+  Map<String, String> _authHeadersForToken(String accessToken) => {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer $accessToken',
+  };
+
+  Map<String, dynamic> _unwrapTokenPayload(Map<String, dynamic> data) {
+    if (data['access_token'] != null) return data;
+    final nested = data['data'] ?? data['tokens'] ?? data['token'];
+    if (nested is Map) return Map<String, dynamic>.from(nested);
+    return data;
+  }
+
+  String _parseApiErrorMessage(String body, String fallback) {
+    try {
+      final errorData = json.decode(body);
+      if (errorData is! Map) return fallback;
+
+      final detail = errorData['detail'];
+      if (detail is String && detail.trim().isNotEmpty) return detail.trim();
+      if (detail is Map) {
+        final message = detail['message'];
+        if (message is String && message.trim().isNotEmpty) {
+          return message.trim();
+        }
+      }
+
+      final message = errorData['message'];
+      if (message is String && message.trim().isNotEmpty) return message.trim();
+    } catch (_) {}
+    return fallback;
+  }
+
+  String _normalizeLoginError(String message) {
+    final lower = message.toLowerCase();
+    if (lower.contains('invalid username and password') ||
+        lower.contains('invalid email or password')) {
+      return 'Invalid email/username or PIN';
+    }
+    return message;
+  }
+
   Future<void> _onLogin(LoginEvent event, Emitter<AuthState> emit) async {
     emit(AuthLoading());
     try {
       final identifier = event.identifier.trim();
-      final response = await http.post(
-        Uri.parse('${AppConfig.backendUrl}/api/v1/auth/signin'),
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({
-          'email': identifier,
-          'username': identifier,
-          'password': event.password,
-        }),
-      );
+      final response = await http
+          .post(
+            Uri.parse('${AppConfig.backendUrl}/api/v1/auth/signin'),
+            headers: {'Content-Type': 'application/json'},
+            body: json.encode({
+              'email': identifier,
+              'username': identifier,
+              'password': event.password,
+            }),
+          )
+          .timeout(AppConfig.networkTimeout);
 
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
+        final decoded = json.decode(response.body);
+        if (decoded is! Map) {
+          emit(
+            AuthError(
+              message: 'Unexpected login response from server.',
+              source: 'login',
+            ),
+          );
+          return;
+        }
 
-        // Parse and save token
-        final tokenModel = TokenModel.fromJson(data);
+        final tokenModel = TokenModel.fromJson(
+          _unwrapTokenPayload(Map<String, dynamic>.from(decoded)),
+        );
+        if (tokenModel.accessToken.isEmpty) {
+          emit(
+            AuthError(
+              message: 'Login succeeded but no access token was returned.',
+              source: 'login',
+            ),
+          );
+          return;
+        }
+
         await tokenService.saveToken(tokenModel);
 
-        // Fetch user data using access token
-        final userResponse = await http.get(
-          Uri.parse('${AppConfig.backendUrl}/api/v1/user/me'),
-          headers: await _getAuthHeaders(),
-        );
+        final userResponse = await http
+            .get(
+              Uri.parse('${AppConfig.backendUrl}/api/v1/user/me'),
+              headers: _authHeadersForToken(tokenModel.accessToken),
+            )
+            .timeout(AppConfig.networkTimeout);
 
         if (userResponse.statusCode == 200) {
           final userData = json.decode(userResponse.body);
@@ -75,31 +141,40 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           await prefs.setString('user', json.encode(userData));
           emit(Authenticated(user: userData));
         } else {
-          String errorMsg = 'Failed to fetch user data';
-          try {
-            final errorData = json.decode(userResponse.body);
-            if (errorData is Map && errorData['detail'] != null) {
-              errorMsg = errorData['detail'];
-            }
-          } catch (_) {}
+          final errorMsg = _parseApiErrorMessage(
+            userResponse.body,
+            'Failed to fetch user profile after login.',
+          );
           print('User fetch error: ${userResponse.body}');
           emit(AuthError(message: errorMsg, source: 'login'));
         }
       } else {
-        String errorMsg = 'Login failed';
-        try {
-          final errorData = json.decode(response.body);
-          if (errorData is Map && errorData['detail'] != null) {
-            errorMsg = errorData['detail'].toString();
-          }
-        } catch (_) {}
-        if (errorMsg.toLowerCase().contains('invalid username and password')) {
-          errorMsg = 'Invalid email/username or PIN';
-        }
+        final errorMsg = _normalizeLoginError(
+          _parseApiErrorMessage(response.body, 'Login failed'),
+        );
         emit(AuthError(message: errorMsg, source: 'login'));
       }
+    } on TimeoutException {
+      emit(
+        AuthError(
+          message: 'Connection timed out. Check your network and try again.',
+          source: 'login',
+        ),
+      );
+    } on SocketException {
+      emit(
+        AuthError(
+          message: 'Cannot reach the server. Check your connection.',
+          source: 'login',
+        ),
+      );
     } catch (e) {
-      emit(AuthError(message: e.toString(), source: 'login'));
+      emit(
+        AuthError(
+          message: 'Something went wrong. Please try again.',
+          source: 'login',
+        ),
+      );
     }
   }
 
@@ -475,11 +550,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         return;
       }
 
-      final response = await http.post(
-        Uri.parse('${AppConfig.backendUrl}/api/v1/auth/refresh'),
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({'refresh_token': refreshToken}),
-      );
+      final response = await http
+          .post(
+            Uri.parse('${AppConfig.backendUrl}/api/v1/auth/refresh'),
+            headers: {'Content-Type': 'application/json'},
+            body: json.encode({'refresh_token': refreshToken}),
+          )
+          .timeout(AppConfig.networkTimeout);
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -493,10 +570,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         await tokenService.updateToken(newTokenModel);
 
         // Fetch updated user data
-        final userResponse = await http.get(
-          Uri.parse('${AppConfig.backendUrl}/api/v1/user/me'),
-          headers: await _getAuthHeaders(),
-        );
+        final userResponse = await http
+            .get(
+              Uri.parse('${AppConfig.backendUrl}/api/v1/user/me'),
+              headers: await _getAuthHeaders(),
+            )
+            .timeout(AppConfig.networkTimeout);
 
         if (userResponse.statusCode == 200) {
           final userData = json.decode(userResponse.body);
@@ -528,6 +607,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         } catch (_) {}
         emit(TokenRefreshFailed(message: errorMsg));
       }
+    } on TimeoutException {
+      emit(
+        SessionExpired(
+          message: 'Connection timed out. Please sign in again.',
+        ),
+      );
     } catch (e) {
       emit(TokenRefreshFailed(message: 'Token refresh error: $e'));
     }

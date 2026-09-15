@@ -1,4 +1,8 @@
 import 'package:autobus/barrel.dart';
+import 'package:autobus/common_design/light_screen_theme.dart';
+import 'package:autobus/common_design/widgets/app_bottom_nav.dart';
+import 'package:autobus/common_design/widgets/light_list_card.dart';
+import 'package:autobus/common_design/widgets/light_screen_scaffold.dart';
 
 String _orderHistoryTitle(Map<String, dynamic> o) {
   final name = (o['item_name'] ?? '').toString().trim();
@@ -77,37 +81,23 @@ class _AllOrdersHistoryState extends State<AllOrdersHistory> {
     );
   }
 
-  Widget _orderTile(BuildContext context, Map<String, dynamic> o) {
-    return GestureDetector(
+  Widget _orderTile(double scale, Map<String, dynamic> o) {
+    return LightListCard(
+      scale: scale,
       onTap: () => _openOrder(context, o),
-      behavior: HitTestBehavior.opaque,
-      child: Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        border: Border.all(color: const Color(0xFF3F1163), width: 1),
-        borderRadius: BorderRadius.circular(30),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             _orderHistoryTitle(o),
-            style: GoogleFonts.outfit(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.w400,
-            ),
+            style: LightScreenTheme.listTitle(scale),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8 * scale),
           Text(
             (o['order_status'] ?? '').toString(),
-            style: GoogleFonts.outfit(
-              color: Colors.white.withValues(alpha: 0.55),
-              fontSize: 12,
-              fontWeight: FontWeight.w300,
-            ),
+            style: LightScreenTheme.listSubtitle(scale),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12 * scale),
           Row(
             children: [
               Expanded(
@@ -115,142 +105,80 @@ class _AllOrdersHistoryState extends State<AllOrdersHistory> {
                   _orderHistorySubtitleId(o),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.outfit(
-                    color: Colors.white.withValues(alpha: 0.45),
-                    fontSize: 11,
-                    fontWeight: FontWeight.w300,
-                  ),
+                  style: LightScreenTheme.listSubtitle(scale),
                 ),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: 12 * scale),
               Text(
                 _formatOrderHistoryDate(o),
-                style: GoogleFonts.outfit(
-                  color: Colors.white.withValues(alpha: 0.45),
-                  fontSize: 11,
-                  fontWeight: FontWeight.w300,
-                ),
+                style: LightScreenTheme.listSubtitle(scale),
               ),
             ],
           ),
         ],
-      ),
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          const DecoratedBox(
-            decoration: ManageScreenStyle.homeDashboardBodyDecoration,
-          ),
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const ManageScreenBackButton(),
-                      const SizedBox(width: 18),
-                      Expanded(
-                        child: Text(
-                          'All Orders',
-                          style: ManageScreenStyle.headerTitleStyle(),
+    final scale = MediaQuery.sizeOf(context).width / appShellDesignWidth;
+
+    return LightScreenScaffold(
+      title: 'All Orders',
+      creditCategory: CreditCategory.server,
+      body: _loading
+          ? Center(child: CircularProgressIndicator(color: LightScreenTheme.accent))
+          : _loadError != null
+          ? Center(
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: 28 * scale),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      _loadError!,
+                      textAlign: TextAlign.center,
+                      style: LightScreenTheme.emptyState(scale),
+                    ),
+                    SizedBox(height: 16 * scale),
+                    TextButton(
+                      onPressed: _loadOrders,
+                      child: Text(
+                        'Retry',
+                        style: LightScreenTheme.listTitle(scale).copyWith(
+                          color: LightScreenTheme.accent,
                         ),
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 32),
-                  Expanded(
-                    child: _loading
-                        ? const Center(
-                            child:                             const AutobusLoadingIndicator(size: 32),
-                          )
-                        : _loadError != null
-                        ? Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                  ),
-                                  child: Text(
-                                    _loadError!,
-                                    textAlign: TextAlign.center,
-                                    style: GoogleFonts.outfit(
-                                      color: Colors.white.withValues(
-                                        alpha: 0.75,
-                                      ),
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(height: 16),
-                                TextButton(
-                                  onPressed: _loadOrders,
-                                  child: Text(
-                                    'Retry',
-                                    style: GoogleFonts.outfit(
-                                      color: const Color(0xFFA855F7),
-                                      fontSize: 16,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          )
-                        : RefreshIndicator(
-                            color: const Color(0xFFA855F7),
-                            onRefresh: _loadOrders,
-                            child: _orders.isEmpty
-                                ? ListView(
-                                    physics:
-                                        const AlwaysScrollableScrollPhysics(),
-                                    children: [
-                                      SizedBox(
-                                        height:
-                                            MediaQuery.sizeOf(context).height *
-                                            0.25,
-                                      ),
-                                      Center(
-                                        child: Text(
-                                          'No orders yet',
-                                          style: GoogleFonts.outfit(
-                                            color: Colors.white.withValues(
-                                              alpha: 0.6,
-                                            ),
-                                            fontSize: 16,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  )
-                                : ListView.separated(
-                                    physics:
-                                        const AlwaysScrollableScrollPhysics(),
-                                    itemCount: _orders.length,
-                                    separatorBuilder: (_, __) =>
-                                        const SizedBox(height: 16),
-                                    itemBuilder: (context, index) {
-                                      return _orderTile(context, _orders[index]);
-                                    },
-                                  ),
-                          ),
-                  ),
-                ],
+                    ),
+                  ],
+                ),
               ),
+            )
+          : RefreshIndicator(
+              color: LightScreenTheme.accent,
+              onRefresh: _loadOrders,
+              child: _orders.isEmpty
+                  ? ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: [
+                        SizedBox(height: MediaQuery.sizeOf(context).height * 0.32),
+                        Center(
+                          child: Text(
+                            'No orders yet',
+                            style: LightScreenTheme.emptyState(scale),
+                          ),
+                        ),
+                      ],
+                    )
+                  : ListView.separated(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: EdgeInsets.fromLTRB(20 * scale, 20 * scale, 20 * scale, 32 * scale),
+                      itemCount: _orders.length,
+                      separatorBuilder: (_, __) => SizedBox(height: 12 * scale),
+                      itemBuilder: (context, index) => _orderTile(scale, _orders[index]),
+                    ),
             ),
-          ),
-        ],
-      ),
     );
   }
 }

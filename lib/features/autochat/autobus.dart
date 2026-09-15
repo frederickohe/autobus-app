@@ -75,9 +75,10 @@ class _AutoBusState extends State<AutoBus> {
                 backgroundColor: Colors.red,
               ),
             );
-            Navigator.of(
-              context,
-            ).pushNamedAndRemoveUntil('/signin', (route) => false);
+            Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute(builder: (_) => const AuthWrapper()),
+              (route) => false,
+            );
           } else if (state is TokenRefreshFailed) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(

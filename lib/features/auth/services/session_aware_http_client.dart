@@ -22,7 +22,9 @@ class SessionAwareHttpClient extends http.BaseClient {
     }
 
     // Send the request
-    var response = await _innerClient.send(request);
+    var response = await _innerClient
+        .send(request)
+        .timeout(AppConfig.networkTimeout);
 
     // If we get a 401, attempt token refresh and retry
     if (response.statusCode == 401) {
@@ -35,7 +37,9 @@ class SessionAwareHttpClient extends http.BaseClient {
             request.headers['Authorization'] = 'Bearer $newAccessToken';
             // Clone the request to resend it
             final clonedRequest = _cloneRequest(request);
-            response = await _innerClient.send(clonedRequest);
+            response = await _innerClient
+                .send(clonedRequest)
+                .timeout(AppConfig.networkTimeout);
           }
         }
       }
@@ -51,11 +55,13 @@ class SessionAwareHttpClient extends http.BaseClient {
           ? Uri.parse('$baseUrl/api/v1/auth/refresh')
           : Uri.parse('${AppConfig.backendUrl}/api/v1/auth/refresh');
 
-      final response = await http.post(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({'refresh_token': refreshToken}),
-      );
+      final response = await http
+          .post(
+            url,
+            headers: {'Content-Type': 'application/json'},
+            body: json.encode({'refresh_token': refreshToken}),
+          )
+          .timeout(AppConfig.networkTimeout);
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);

@@ -295,6 +295,8 @@ class ApiService {
     bool? smsNotifications,
     // Business / membership
     String? company,
+    String? description,
+    String? industry,
     String? currentBranch,
     String? address,
     String? location,
@@ -328,6 +330,8 @@ class ApiService {
         body['sms_notifications'] = smsNotifications;
 
       if (company != null) body['company'] = company;
+      if (description != null) body['description'] = description;
+      if (industry != null) body['industry'] = industry;
       if (currentBranch != null) body['current_branch'] = currentBranch;
       if (address != null) body['address'] = address;
       if (location != null) body['location'] = location;

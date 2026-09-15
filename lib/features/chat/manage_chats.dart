@@ -1,4 +1,9 @@
 import 'package:autobus/barrel.dart';
+import 'package:autobus/common_design/light_screen_theme.dart';
+import 'package:autobus/common_design/widgets/app_bottom_nav.dart';
+import 'package:autobus/common_design/widgets/light_hub_card.dart';
+import 'package:autobus/common_design/widgets/light_screen_scaffold.dart';
+import 'package:autobus/icons/home_figma_icons.dart';
 
 class ManageChats extends StatefulWidget {
   const ManageChats({super.key});
@@ -83,272 +88,203 @@ class _ManageChatsState extends State<ManageChats> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          const DecoratedBox(
-            decoration: ManageScreenStyle.homeDashboardBodyDecoration,
-          ),
-          SafeArea(
-            child: Column(
-              children: [
-                const ManageScreenHeader(
-                  title: 'Manage Inbox',
-                  creditCategory: CreditCategory.llm,
-                ),
-                Expanded(
-                  child: SingleChildScrollView(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: Column(
-                        children: [
-                          const SizedBox(height: 60),
-                          Text(
-                            'Welcome to Inbox',
-                            textAlign: TextAlign.center,
-                            style: GoogleFonts.montserrat(
-                              color: Colors.white,
-                              fontSize: 19,
-                              fontWeight: FontWeight.w500,
-                              letterSpacing: -0.3,
-                            ),
-                          ),
-                          const SizedBox(height: 24),
-                          Text(
-                            'Deliver instant, intelligent customer support with AI trained on your business data through linked social messaging channels.',
-                            textAlign: TextAlign.center,
-                            style: GoogleFonts.montserrat(
-                              color: Colors.white.withValues(alpha: 0.9),
-                              fontSize: 14,
-                              fontWeight: FontWeight.w300,
-                              height: 1.6,
-                            ),
-                          ),
-                          const SizedBox(height: 32),
-                          if (_loading) ...[
-                            const SizedBox(height: 8),
-                            const Center(
-                              child:                               const AutobusLoadingIndicator(size: 28),
-                            ),
-                            const SizedBox(height: 24),
-                          ] else if (_statusError != null) ...[
-                            _ChatwootMessagePanel(
-                              backgroundColor: Colors.amber.withValues(
-                                alpha: 0.12,
-                              ),
-                              borderColor: Colors.amber.withValues(alpha: 0.45),
-                              icon: Icons.cloud_off_outlined,
-                              iconColor: Colors.amber.shade300,
-                              trailing: IconButton(
-                                onPressed: _loadChannelIntegrationState,
-                                icon: Icon(
-                                  Icons.refresh,
-                                  color: Colors.white.withValues(alpha: 0.85),
-                                  size: 22,
-                                ),
-                                padding: EdgeInsets.zero,
-                                constraints: const BoxConstraints(
-                                  minWidth: 32,
-                                  minHeight: 32,
-                                ),
-                              ),
-                              child: Text(
-                                'Could not load Chatwoot status. Check your connection and try again.\n${_shortError(_statusError!)}',
-                                style: GoogleFonts.montserrat(
-                                  color: Colors.white.withValues(alpha: 0.88),
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w400,
-                                  height: 1.45,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 32),
-                          ] else if (!_chatwootConfigured) ...[
-                            _ChatwootMessagePanel(
-                              backgroundColor: Colors.amber.withValues(
-                                alpha: 0.12,
-                              ),
-                              borderColor: Colors.amber.withValues(alpha: 0.45),
-                              icon: Icons.settings_suggest_outlined,
-                              iconColor: Colors.amber.shade300,
-                              child: Text(
-                                'Chat linking is not enabled on this server (Chatwoot is not configured).',
-                                style: GoogleFonts.montserrat(
-                                  color: Colors.white.withValues(alpha: 0.88),
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w400,
-                                  height: 1.45,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 32),
-                          ] else if (!_chatwootProvisioned) ...[
-                            _ChatwootMessagePanel(
-                              backgroundColor: const Color(
-                                0xFF581C87,
-                              ).withValues(alpha: 0.1),
-                              borderColor: const Color(
-                                0xFF9333EA,
-                              ).withValues(alpha: 0.5),
-                              icon: Icons.warning_rounded,
-                              iconColor: Colors.red.shade400,
-                              child: Text(
-                                'No Chatwoot workspace is linked to your account yet. An active subscription provisions your workspace.',
-                                style: GoogleFonts.montserrat(
-                                  color: Colors.white.withValues(alpha: 0.85),
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w400,
-                                  height: 1.45,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 32),
-                          ] else if (!_subscriptionActive) ...[
-                            _ChatwootMessagePanel(
-                              backgroundColor: Colors.amber.withValues(
-                                alpha: 0.12,
-                              ),
-                              borderColor: Colors.amber.withValues(alpha: 0.45),
-                              icon: Icons.lock_outline,
-                              iconColor: Colors.amber.shade300,
-                              child: Text(
-                                'An active subscription is required to link messaging channels in Chatwoot.',
-                                style: GoogleFonts.montserrat(
-                                  color: Colors.white.withValues(alpha: 0.88),
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w400,
-                                  height: 1.45,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 32),
-                          ] else if (_inboxesFetchFailed) ...[
-                            _ChatwootMessagePanel(
-                              backgroundColor: Colors.amber.withValues(
-                                alpha: 0.12,
-                              ),
-                              borderColor: Colors.amber.withValues(alpha: 0.45),
-                              icon: Icons.cloud_off_outlined,
-                              iconColor: Colors.amber.shade300,
-                              trailing: IconButton(
-                                onPressed: _loadChannelIntegrationState,
-                                icon: Icon(
-                                  Icons.refresh,
-                                  color: Colors.white.withValues(alpha: 0.85),
-                                  size: 22,
-                                ),
-                                padding: EdgeInsets.zero,
-                                constraints: const BoxConstraints(
-                                  minWidth: 32,
-                                  minHeight: 32,
-                                ),
-                              ),
-                              child: Text(
-                                'Could not load your Chatwoot inboxes. Pull to refresh after reconnecting.',
-                                style: GoogleFonts.montserrat(
-                                  color: Colors.white.withValues(alpha: 0.88),
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w400,
-                                  height: 1.45,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 32),
-                          ] else if ((_linkedInboxTotal ?? 0) == 0) ...[
-                            _ChatwootMessagePanel(
-                              backgroundColor: const Color(
-                                0xFF581C87,
-                              ).withValues(alpha: 0.1),
-                              borderColor: const Color(
-                                0xFF9333EA,
-                              ).withValues(alpha: 0.5),
-                              icon: Icons.warning_rounded,
-                              iconColor: Colors.red.shade400,
-                              child: Text(
-                                'You have not linked any messaging channel in Chatwoot yet. Use Link Channel to add WhatsApp, Facebook, and other inboxes.',
-                                style: GoogleFonts.montserrat(
-                                  color: Colors.white.withValues(alpha: 0.85),
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w400,
-                                  height: 1.45,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 32),
-                          ] else
-                            const SizedBox(height: 8),
-                          const SizedBox(height: 40),
-                          GridView.count(
-                            crossAxisCount: 2,
-                            mainAxisSpacing: 16,
-                            crossAxisSpacing: 16,
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            childAspectRatio: 1.0,
-                            children: [
-                              _ChatActionCard(
-                                icon: Icons.link_outlined,
-                                label: 'Link Channel',
-                                onTap: () {
-                                  Navigator.push<void>(
-                                    context,
-                                    MaterialPageRoute<void>(
-                                      builder: (context) =>
-                                          const ManageChannels(),
-                                    ),
-                                  ).then((_) {
-                                    if (mounted) {
-                                      _loadChannelIntegrationState();
-                                    }
-                                  });
-                                },
-                              ),
-                              _ChatActionCard(
-                                icon: Icons.mark_chat_unread_outlined,
-                                label: 'Live Chats',
-                                onTap: () {
-                                  Navigator.push<void>(
-                                    context,
-                                    MaterialPageRoute<void>(
-                                      builder: (context) =>
-                                          const LiveChatsPage(),
-                                    ),
-                                  );
-                                },
-                              ),
-                              _ChatActionCard(
-                                icon: Icons.chat_bubble_outline,
-                                label: 'All Chats',
-                                onTap: () {
-                                  Navigator.push<void>(
-                                    context,
-                                    MaterialPageRoute<void>(
-                                      builder: (context) =>
-                                          const AllChatsPage(),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 40),
-                        ],
-                      ),
-                    ),
+    final scale = MediaQuery.sizeOf(context).width / appShellDesignWidth;
+
+    return LightScreenScaffold(
+      title: 'Manage Inbox',
+      titleFontSize: 16,
+      creditCategory: CreditCategory.llm,
+      body: SingleChildScrollView(
+        padding: EdgeInsets.fromLTRB(20 * scale, 30 * scale, 20 * scale, 32 * scale),
+        child: Column(
+          children: [
+            Text(
+              'Welcome to Inbox',
+              textAlign: TextAlign.center,
+              style: LightScreenTheme.hubTitle(scale),
+            ),
+            SizedBox(height: 16 * scale),
+            Text(
+              'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
+              textAlign: TextAlign.center,
+              style: LightScreenTheme.hubBody(scale).copyWith(
+                color: const Color(0xFF4E4E4E),
+              ),
+            ),
+            SizedBox(height: 30 * scale),
+            if (_loading) ...[
+              Center(
+                child: CircularProgressIndicator(color: LightScreenTheme.accent),
+              ),
+              SizedBox(height: 24 * scale),
+            ] else if (_statusError != null) ...[
+              _ChatwootMessagePanel(
+                scale: scale,
+                backgroundColor: LightScreenTheme.warning.withValues(alpha: 0.12),
+                borderColor: LightScreenTheme.warning.withValues(alpha: 0.45),
+                icon: HomeFigmaIcons.cloudOff,
+                iconColor: LightScreenTheme.warning,
+                trailing: IconButton(
+                  onPressed: _loadChannelIntegrationState,
+                  icon: HomeSfIcon(
+                    icon: HomeFigmaIcons.refresh,
+                    color: LightScreenTheme.accent,
+                    size: 22 * scale,
                   ),
+                  padding: EdgeInsets.zero,
+                  constraints: BoxConstraints(
+                    minWidth: 32 * scale,
+                    minHeight: 32 * scale,
+                  ),
+                ),
+                child: Text(
+                  'Could not load Chatwoot status. Check your connection and try again.\n${_shortError(_statusError!)}',
+                  style: LightScreenTheme.hubBody(scale).copyWith(fontSize: 12 * scale.clamp(0.9, 1.05)),
+                ),
+              ),
+              SizedBox(height: 16 * scale),
+            ] else if (!_chatwootConfigured) ...[
+              _ChatwootMessagePanel(
+                scale: scale,
+                backgroundColor: LightScreenTheme.warning.withValues(alpha: 0.12),
+                borderColor: LightScreenTheme.warning.withValues(alpha: 0.45),
+                icon: HomeFigmaIcons.settings,
+                iconColor: LightScreenTheme.warning,
+                child: Text(
+                  'Chat linking is not enabled on this server (Chatwoot is not configured).',
+                  style: LightScreenTheme.hubBody(scale).copyWith(fontSize: 12 * scale.clamp(0.9, 1.05)),
+                ),
+              ),
+              SizedBox(height: 16 * scale),
+            ] else if (!_chatwootProvisioned) ...[
+              _ChatwootMessagePanel(
+                scale: scale,
+                backgroundColor: LightScreenTheme.accent.withValues(alpha: 0.08),
+                borderColor: LightScreenTheme.accent.withValues(alpha: 0.35),
+                icon: HomeFigmaIcons.warning,
+                iconColor: LightScreenTheme.accent,
+                child: Text(
+                  'No Chatwoot workspace is linked to your account yet. An active subscription provisions your workspace.',
+                  style: LightScreenTheme.hubBody(scale).copyWith(fontSize: 12 * scale.clamp(0.9, 1.05)),
+                ),
+              ),
+              SizedBox(height: 16 * scale),
+            ] else if (!_subscriptionActive) ...[
+              _ChatwootMessagePanel(
+                scale: scale,
+                backgroundColor: LightScreenTheme.warning.withValues(alpha: 0.12),
+                borderColor: LightScreenTheme.warning.withValues(alpha: 0.45),
+                icon: HomeFigmaIcons.lock,
+                iconColor: LightScreenTheme.warning,
+                child: Text(
+                  'An active subscription is required to link messaging channels in Chatwoot.',
+                  style: LightScreenTheme.hubBody(scale).copyWith(fontSize: 12 * scale.clamp(0.9, 1.05)),
+                ),
+              ),
+              SizedBox(height: 16 * scale),
+            ] else if (_inboxesFetchFailed) ...[
+              _ChatwootMessagePanel(
+                scale: scale,
+                backgroundColor: LightScreenTheme.warning.withValues(alpha: 0.12),
+                borderColor: LightScreenTheme.warning.withValues(alpha: 0.45),
+                icon: HomeFigmaIcons.cloudOff,
+                iconColor: LightScreenTheme.warning,
+                trailing: IconButton(
+                  onPressed: _loadChannelIntegrationState,
+                  icon: HomeSfIcon(
+                    icon: HomeFigmaIcons.refresh,
+                    color: LightScreenTheme.accent,
+                    size: 22 * scale,
+                  ),
+                  padding: EdgeInsets.zero,
+                  constraints: BoxConstraints(
+                    minWidth: 32 * scale,
+                    minHeight: 32 * scale,
+                  ),
+                ),
+                child: Text(
+                  'Could not load your Chatwoot inboxes. Pull to refresh after reconnecting.',
+                  style: LightScreenTheme.hubBody(scale).copyWith(fontSize: 12 * scale.clamp(0.9, 1.05)),
+                ),
+              ),
+              SizedBox(height: 16 * scale),
+            ] else if ((_linkedInboxTotal ?? 0) == 0) ...[
+              _ChatwootMessagePanel(
+                scale: scale,
+                backgroundColor: LightScreenTheme.accent.withValues(alpha: 0.08),
+                borderColor: LightScreenTheme.accent.withValues(alpha: 0.35),
+                icon: HomeFigmaIcons.warning,
+                iconColor: LightScreenTheme.accent,
+                child: Text(
+                  'You have not linked any messaging channel in Chatwoot yet. Use Link Channel to add WhatsApp, Facebook, and other inboxes.',
+                  style: LightScreenTheme.hubBody(scale).copyWith(fontSize: 12 * scale.clamp(0.9, 1.05)),
+                ),
+              ),
+              SizedBox(height: 16 * scale),
+            ],
+            LightHubGrid(
+              scale: scale,
+              children: [
+                LightHubCard(
+                  scale: scale,
+                  title: 'Link Channel',
+                  subtitle: 'Connect socials',
+                  icon: HomeFigmaIcons.linkChannel,
+                  iconGradient: HomeFigmaIcons.linkChannelGradient,
+                  onTap: () {
+                    Navigator.push<void>(
+                      context,
+                      MaterialPageRoute<void>(
+                        builder: (context) => const ManageChannels(),
+                      ),
+                    ).then((_) {
+                      if (mounted) {
+                        _loadChannelIntegrationState();
+                      }
+                    });
+                  },
+                ),
+                LightHubCard(
+                  scale: scale,
+                  title: 'Live Chats',
+                  subtitle: 'Live chat from socials',
+                  icon: HomeFigmaIcons.liveChats,
+                  iconGradient: HomeFigmaIcons.liveChatsGradient,
+                  onTap: () {
+                    Navigator.push<void>(
+                      context,
+                      MaterialPageRoute<void>(
+                        builder: (context) => const LiveChatsPage(),
+                      ),
+                    );
+                  },
+                ),
+                LightHubCard(
+                  scale: scale,
+                  title: 'All Chats',
+                  subtitle: 'All chats from socials',
+                  icon: HomeFigmaIcons.allChats,
+                  iconGradient: HomeFigmaIcons.allChatsGradient,
+                  onTap: () {
+                    Navigator.push<void>(
+                      context,
+                      MaterialPageRoute<void>(
+                        builder: (context) => const AllChatsPage(),
+                      ),
+                    );
+                  },
                 ),
               ],
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 }
 
 class _ChatwootMessagePanel extends StatelessWidget {
+  final double scale;
   final Color backgroundColor;
   final Color borderColor;
   final IconData icon;
@@ -357,6 +293,7 @@ class _ChatwootMessagePanel extends StatelessWidget {
   final Widget child;
 
   const _ChatwootMessagePanel({
+    required this.scale,
     required this.backgroundColor,
     required this.borderColor,
     required this.icon,
@@ -369,61 +306,20 @@ class _ChatwootMessagePanel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: EdgeInsets.symmetric(horizontal: 16 * scale, vertical: 12 * scale),
       decoration: BoxDecoration(
         color: backgroundColor,
         border: Border.all(color: borderColor, width: 1.2),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(20 * scale),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: iconColor, size: 22),
-          const SizedBox(width: 12),
+          HomeSfIcon(icon: icon, color: iconColor, size: 22 * scale),
+          SizedBox(width: 12 * scale),
           Expanded(child: child),
           if (trailing != null) trailing!,
         ],
-      ),
-    );
-  }
-}
-
-class _ChatActionCard extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-
-  const _ChatActionCard({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          border: Border.all(color: const Color(0xFF3F1163), width: 1),
-          borderRadius: BorderRadius.circular(32),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: Colors.white, size: 28),
-            const SizedBox(height: 14),
-            Text(
-              label,
-              textAlign: TextAlign.center,
-              style: GoogleFonts.montserrat(
-                color: Colors.white.withValues(alpha: 0.9),
-                fontSize: 13,
-                fontWeight: FontWeight.w400,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

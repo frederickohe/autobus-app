@@ -1,5 +1,9 @@
 import 'package:autobus/barrel.dart';
-import 'package:autobus/features/marketing/outlet_catalog.dart';
+import 'package:autobus/common_design/light_screen_theme.dart';
+import 'package:autobus/common_design/widgets/app_bottom_nav.dart';
+import 'package:autobus/common_design/widgets/app_screen_header.dart';
+import 'package:autobus/common_design/widgets/light_hub_card.dart';
+import 'package:autobus/icons/home_figma_icons.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class ManageOutlets extends StatefulWidget {
@@ -109,15 +113,14 @@ class _ManageOutletsState extends State<ManageOutlets> {
       context: context,
       builder: (ctx) {
         return AlertDialog(
-          backgroundColor: const Color(0xFF1A1333),
+          backgroundColor: Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
-            side: const BorderSide(color: Color(0xFF3F1163)),
           ),
           title: Text(
             'Unlink ${item.outlet.label}?',
             style: GoogleFonts.montserrat(
-              color: Colors.white,
+              color: Colors.black,
               fontWeight: FontWeight.w600,
               fontSize: 18,
             ),
@@ -127,7 +130,7 @@ class _ManageOutletsState extends State<ManageOutlets> {
                 ? 'This removes ${item.subtitle} from Autobus. You can link it again later.'
                 : 'This removes all ${item.integrations.length} linked ${item.outlet.label} accounts. You can link again later.',
             style: GoogleFonts.montserrat(
-              color: Colors.white.withValues(alpha: 0.75),
+              color: LightScreenTheme.body,
               fontSize: 14,
               height: 1.45,
             ),
@@ -138,7 +141,7 @@ class _ManageOutletsState extends State<ManageOutlets> {
               child: Text(
                 'Cancel',
                 style: GoogleFonts.montserrat(
-                  color: Colors.white70,
+                  color: LightScreenTheme.muted,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -196,10 +199,9 @@ class _ManageOutletsState extends State<ManageOutlets> {
     if (_busy) return;
     final action = await showModalBottomSheet<String>(
       context: context,
-      backgroundColor: const Color(0xFF1A1333),
+      backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        side: BorderSide(color: Color(0xFF3F1163)),
       ),
       builder: (ctx) {
         return SafeArea(
@@ -213,7 +215,7 @@ class _ManageOutletsState extends State<ManageOutlets> {
                   item.outlet.label,
                   textAlign: TextAlign.center,
                   style: GoogleFonts.montserrat(
-                    color: Colors.white,
+                    color: Colors.black,
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                   ),
@@ -224,22 +226,30 @@ class _ManageOutletsState extends State<ManageOutlets> {
                     item.subtitle,
                     textAlign: TextAlign.center,
                     style: GoogleFonts.montserrat(
-                      color: Colors.white54,
+                      color: LightScreenTheme.muted,
                       fontSize: 12,
                     ),
                   ),
                 ],
                 const SizedBox(height: 16),
                 ListTile(
-                  leading: const Icon(Icons.link, color: Colors.white70),
+                  leading: HomeSfIcon(
+                    icon: HomeFigmaIcons.linkSocial,
+                    color: LightScreenTheme.accent,
+                    size: 22,
+                  ),
                   title: Text(
                     'Link another account',
-                    style: GoogleFonts.montserrat(color: Colors.white),
+                    style: GoogleFonts.montserrat(color: Colors.black87),
                   ),
                   onTap: () => Navigator.of(ctx).pop('link'),
                 ),
                 ListTile(
-                  leading: const Icon(Icons.link_off, color: Color(0xFFEF4444)),
+                  leading: const HomeSfIcon(
+                    icon: HomeFigmaIcons.unlink,
+                    color: Color(0xFFEF4444),
+                    size: 22,
+                  ),
                   title: Text(
                     'Unlink',
                     style: GoogleFonts.montserrat(
@@ -265,293 +275,187 @@ class _ManageOutletsState extends State<ManageOutlets> {
 
   @override
   Widget build(BuildContext context) {
+    final scale = MediaQuery.sizeOf(context).width / appShellDesignWidth;
+
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: LightScreenTheme.background,
       body: Stack(
         fit: StackFit.expand,
         children: [
-          const DecoratedBox(
-            decoration: ManageScreenStyle.homeDashboardBodyDecoration,
-          ),
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Row(
-                    children: [
-                      const ManageScreenBackButton(),
-                      const SizedBox(width: 18),
-                      Expanded(
-                        child: Text(
-                          'Link Social Media',
-                          style: ManageScreenStyle.headerTitleStyle(),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              AppScreenHeader(
+                scale: scale,
+                title: 'Link Channel',
+                titleFontSize: 16,
+                leading: AppScreenBackButton(scale: scale),
+                trailing: IconButton(
+                  onPressed: _loading || _busy ? null : _refreshIntegrations,
+                  padding: EdgeInsets.zero,
+                  constraints: BoxConstraints(
+                    minWidth: 32 * scale,
+                    minHeight: 32 * scale,
+                  ),
+                  icon: HomeSfIcon(
+                    icon: HomeFigmaIcons.refresh,
+                    color: Colors.black,
+                    size: 22 * scale.clamp(0.9, 1.0),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: _loading
+                    ? Center(
+                        child: CircularProgressIndicator(
+                          color: LightScreenTheme.accent,
+                        ),
+                      )
+                    : RefreshIndicator(
+                        color: LightScreenTheme.accent,
+                        onRefresh: _refreshIntegrations,
+                        child: SingleChildScrollView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: EdgeInsets.fromLTRB(
+                            20 * scale,
+                            30 * scale,
+                            20 * scale,
+                            32 * scale,
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              if (_loadError != null) ...[
+                                Text(
+                                  _loadError!,
+                                  textAlign: TextAlign.center,
+                                  style: GoogleFonts.montserrat(
+                                    color: LightScreenTheme.warning,
+                                    fontSize: 12 * scale.clamp(0.9, 1.05),
+                                  ),
+                                ),
+                                SizedBox(height: 16 * scale),
+                              ],
+                              Text(
+                                'Select to Link a Channel',
+                                textAlign: TextAlign.center,
+                                style: LightScreenTheme.hubTitle(scale),
+                              ),
+                              SizedBox(height: 16 * scale),
+                              Text(
+                                'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
+                                textAlign: TextAlign.center,
+                                style: LightScreenTheme.hubBody(scale).copyWith(
+                                  color: const Color(0xFF4E4E4E),
+                                ),
+                              ),
+                              SizedBox(height: 30 * scale),
+                              if (_unlinked.isEmpty)
+                                Padding(
+                                  padding: EdgeInsets.symmetric(
+                                    vertical: 12 * scale,
+                                  ),
+                                  child: Text(
+                                    'All available outlets are linked.',
+                                    textAlign: TextAlign.center,
+                                    style: LightScreenTheme.emptyState(scale),
+                                  ),
+                                )
+                              else
+                                _OutletGrid(
+                                  scale: scale,
+                                  children: [
+                                    for (final outlet in _unlinked)
+                                      _brandHubCard(
+                                        scale,
+                                        outlet,
+                                        onTap: _busy
+                                            ? () {}
+                                            : () => _linkOutlet(outlet),
+                                      ),
+                                  ],
+                                ),
+                              SizedBox(height: 40 * scale),
+                              Text(
+                                'Linked Outlets',
+                                style: LightScreenTheme.hubTitle(scale),
+                              ),
+                              if (_linked.isEmpty)
+                                Padding(
+                                  padding: EdgeInsets.only(top: 16 * scale),
+                                  child: Text(
+                                    'No outlets linked yet. Connect a channel above.',
+                                    textAlign: TextAlign.center,
+                                    style: LightScreenTheme.emptyState(scale),
+                                  ),
+                                )
+                              else ...[
+                                SizedBox(height: 16 * scale),
+                                _OutletGrid(
+                                  scale: scale,
+                                  children: [
+                                    for (final item in _linked)
+                                      _brandHubCard(
+                                        scale,
+                                        item.outlet,
+                                        subtitle: 'Linked successfully',
+                                        subtitleColor: const Color(0xFF659F0D),
+                                        onTap: () => _onLinkedTap(item),
+                                      ),
+                                  ],
+                                ),
+                              ],
+                            ],
+                          ),
                         ),
                       ),
-                      if (!_loading)
-                        IconButton(
-                          onPressed: _busy ? null : _refreshIntegrations,
-                          icon: const Icon(Icons.refresh, color: Colors.white70),
-                          tooltip: 'Refresh',
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  Expanded(
-                    child: _loading
-                        ? const Center(child: AutobusLoadingIndicator(size: 32))
-                        : RefreshIndicator(
-                            onRefresh: _refreshIntegrations,
-                            color: Colors.white,
-                            child: SingleChildScrollView(
-                              physics: const AlwaysScrollableScrollPhysics(),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  if (_loadError != null) ...[
-                                    Text(
-                                      _loadError!,
-                                      textAlign: TextAlign.center,
-                                      style: GoogleFonts.montserrat(
-                                        color: Colors.amber.shade200,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 16),
-                                  ],
-                                  Text(
-                                    'Linked Outlets',
-                                    textAlign: TextAlign.center,
-                                    style: GoogleFonts.montserrat(
-                                      color: Colors.white,
-                                      fontSize: 19,
-                                       fontWeight: FontWeight.w500,
-                                      letterSpacing: -0.3,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    'Tap a linked outlet to unlink or add another account.',
-                                    textAlign: TextAlign.center,
-                                    style: GoogleFonts.montserrat(
-                                      color: Colors.white.withValues(alpha: 0.55),
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w300,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 20),
-                                  if (_linked.isEmpty)
-                                    Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                      ),
-                                      child: Text(
-                                        'No outlets linked yet. Connect a channel below.',
-                                        textAlign: TextAlign.center,
-                                        style: GoogleFonts.montserrat(
-                                          color: Colors.white.withValues(
-                                            alpha: 0.55,
-                                          ),
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.w300,
-                                          height: 1.45,
-                                        ),
-                                      ),
-                                    )
-                                  else
-                                    _OutletGrid(
-                                      children: [
-                                        for (final item in _linked)
-                                          _OutletCard(
-                                            label: item.outlet.label,
-                                            subtitle: item.subtitle,
-                                            icon: FaIcon(item.outlet.icon),
-                                            iconColor: item.outlet.iconColor,
-                                            isLinked: true,
-                                            onTap: () => _onLinkedTap(item),
-                                          ),
-                                      ],
-                                    ),
-                                  const SizedBox(height: 28),
-                                  Text(
-                                    'Select to Link Social Media',
-                                    textAlign: TextAlign.center,
-                                    style: GoogleFonts.montserrat(
-                                      color: Colors.white.withValues(alpha: 0.9),
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w400,
-                                      height: 1.5,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 12),
-                                  Text(
-                                    'Linking opens Facebook, Instagram, TikTok, YouTube, or WhatsApp in your device browser. Finish there, then return here and pull to refresh.',
-                                    textAlign: TextAlign.center,
-                                    style: GoogleFonts.montserrat(
-                                      color: Colors.white.withValues(alpha: 0.65),
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w300,
-                                      height: 1.45,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 20),
-                                  if (_unlinked.isEmpty)
-                                    Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 12,
-                                      ),
-                                      child: Text(
-                                        'All available outlets are linked.',
-                                        textAlign: TextAlign.center,
-                                        style: GoogleFonts.montserrat(
-                                          color: Colors.white.withValues(
-                                            alpha: 0.55,
-                                          ),
-                                          fontSize: 13,
-                                        ),
-                                      ),
-                                    )
-                                  else
-                                    _OutletGrid(
-                                      children: [
-                                        for (final outlet in _unlinked)
-                                          _OutletCard(
-                                            label: outlet.label,
-                                            icon: FaIcon(outlet.icon),
-                                            iconColor: outlet.iconColor,
-                                            onTap: _busy
-                                                ? () {}
-                                                : () => _linkOutlet(outlet),
-                                          ),
-                                      ],
-                                    ),
-                                  const SizedBox(height: 24),
-                                ],
-                              ),
-                            ),
-                          ),
-                  ),
-                ],
               ),
-            ),
+            ],
           ),
           if (_busy)
-            const ColoredBox(
-              color: Color(0x66000000),
-              child: Center(child: AutobusLoadingIndicator(size: 32)),
+            ColoredBox(
+              color: Colors.black.withValues(alpha: 0.25),
+              child: Center(
+                child: CircularProgressIndicator(color: LightScreenTheme.accent),
+              ),
             ),
         ],
       ),
     );
   }
-}
 
-class _OutletGrid extends StatelessWidget {
-  final List<Widget> children;
-
-  const _OutletGrid({required this.children});
-
-  @override
-  Widget build(BuildContext context) {
-    return GridView.count(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisCount: 2,
-      crossAxisSpacing: 16,
-      mainAxisSpacing: 16,
-      childAspectRatio: 133 / 89,
-      children: children,
+  Widget _brandHubCard(
+    double scale,
+    OutletOption outlet, {
+    required VoidCallback onTap,
+    String? subtitle,
+    Color? subtitleColor,
+  }) {
+    return LightHubCard(
+      scale: scale,
+      title: outlet.label,
+      subtitle: subtitle ?? outlet.linkSubtitle,
+      subtitleColor: subtitleColor,
+      icon: HomeFigmaIcons.linkChannel,
+      iconTileColor: outlet.tileColor,
+      iconWidget: FaIcon(
+        outlet.icon,
+        color: Colors.white,
+        size: 22 * scale,
+      ),
+      onTap: onTap,
     );
   }
 }
 
-class _OutletCard extends StatelessWidget {
-  final String label;
-  final String? subtitle;
-  final Widget icon;
-  final Color iconColor;
-  final bool isLinked;
-  final VoidCallback onTap;
+class _OutletGrid extends StatelessWidget {
+  final double scale;
+  final List<Widget> children;
 
-  const _OutletCard({
-    required this.label,
-    required this.icon,
-    required this.iconColor,
-    required this.onTap,
-    this.subtitle,
-    this.isLinked = false,
-  });
+  const _OutletGrid({required this.scale, required this.children});
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          color: const Color(0xFF1A1333).withValues(alpha: 0.35),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isLinked ? const Color(0xFF22C55E) : const Color(0xFF3F1163),
-            width: isLinked ? 1.5 : 1,
-          ),
-        ),
-        child: Stack(
-          children: [
-            Center(
-              child: IconTheme(
-                data: IconThemeData(color: iconColor, size: 40),
-                child: icon,
-              ),
-            ),
-            if (isLinked)
-              const Positioned(
-                top: 8,
-                right: 8,
-                child: Icon(
-                  Icons.check_circle,
-                  color: Color(0xFF22C55E),
-                  size: 18,
-                ),
-              ),
-            Positioned(
-              left: 8,
-              right: 8,
-              bottom: 8,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    label,
-                    textAlign: TextAlign.center,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.montserrat(
-                      color: Colors.white.withValues(alpha: 0.88),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  if (subtitle != null && subtitle!.isNotEmpty) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle!,
-                      textAlign: TextAlign.center,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.montserrat(
-                        color: Colors.white.withValues(alpha: 0.55),
-                        fontSize: 10,
-                        fontWeight: FontWeight.w400,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+    return LightHubGrid(scale: scale, children: children);
   }
 }

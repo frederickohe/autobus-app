@@ -156,7 +156,13 @@ class SubscriptionGuard extends StatelessWidget {
   Widget build(BuildContext context) {
     print('=== SUBSCRIPTION GUARD BUILDING ===');
     return FutureBuilder<({bool subscribed, String email})>(
-      future: _resolve(context),
+      future: _resolve(context).timeout(
+        AppConfig.networkTimeout * 2,
+        onTimeout: () => (
+          subscribed: _isSubscribedFromUser(user),
+          email: _extractEmail(user),
+        ),
+      ),
       builder: (context, snap) {
         print(
           'ConnectionState: ${snap.connectionState}, hasData: ${snap.hasData}',
@@ -165,6 +171,10 @@ class SubscriptionGuard extends StatelessWidget {
           return const Scaffold(
             body: Center(child: AutobusLoadingIndicator()),
           );
+        }
+
+        if (snap.hasError) {
+          return SelectPlan(userEmail: _extractEmail(user));
         }
 
         final data = snap.data;

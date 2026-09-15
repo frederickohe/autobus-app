@@ -1,4 +1,7 @@
 import 'package:autobus/barrel.dart';
+import 'package:autobus/common_design/light_screen_theme.dart';
+import 'package:autobus/common_design/widgets/app_bottom_nav.dart';
+import 'package:autobus/common_design/widgets/light_screen_scaffold.dart';
 
 /// How the conversation screen was opened (controls which actions appear).
 enum ConversationScreenMode {
@@ -29,9 +32,6 @@ class ConversationDetailScreen extends StatefulWidget {
 }
 
 class _ConversationDetailScreenState extends State<ConversationDetailScreen> {
-  static const Color _bubbleUser = Color(0xFF3F1163);
-  static const Color _bubbleOther = Color(0xFF1E0A32);
-
   final _messageCtrl = TextEditingController();
   final _scrollCtrl = ScrollController();
 
@@ -234,71 +234,39 @@ class _ConversationDetailScreenState extends State<ConversationDetailScreen> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          const DecoratedBox(
-            decoration: ManageScreenStyle.homeDashboardBodyDecoration,
-          ),
-          SafeArea(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 18, 24, 0),
-                  child: Row(
-                    children: [
-                      const ManageScreenBackButton(),
-                      const SizedBox(width: 18),
-                      Expanded(
-                        child: Text(
-                          widget.title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: ManageScreenStyle.headerTitleStyle(),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                if (!_loading && _loadError == null) _buildControls(),
-                Expanded(child: _buildBody()),
-                if (_showComposer) _buildComposer(),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildControls() {
+  Widget _buildControls(double scale) {
     if (widget.mode == ConversationScreenMode.liveChat &&
         _interventionActive) {
       return Padding(
-        padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+        padding: EdgeInsets.fromLTRB(20 * scale, 12 * scale, 20 * scale, 0),
         child: SizedBox(
           width: double.infinity,
           child: FilledButton.icon(
             onPressed: _actionBusy ? null : _deactivateIntervention,
             style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFFA855F7),
+              backgroundColor: LightScreenTheme.accent,
               foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 14),
+              padding: EdgeInsets.symmetric(vertical: 14 * scale),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(20 * scale),
               ),
             ),
             icon: _actionBusy
-                ? const AutobusLoadingIndicator(size: 18)
-                : const Icon(Icons.smart_toy_outlined, size: 20),
+                ? SizedBox(
+                    width: 18 * scale,
+                    height: 18 * scale,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : Icon(Icons.smart_toy_outlined, size: 20 * scale),
             label: Text(
               'Turn off intervention',
-              style: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.w500),
+              style: GoogleFonts.montserrat(
+                fontSize: 15 * scale.clamp(0.9, 1.05),
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
         ),
@@ -308,17 +276,17 @@ class _ConversationDetailScreenState extends State<ConversationDetailScreen> {
     return const SizedBox.shrink();
   }
 
-  Widget _buildComposer() {
+  Widget _buildComposer(double scale) {
     final canSend = _messageCtrl.text.trim().isNotEmpty && !_sending;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+      padding: EdgeInsets.fromLTRB(16 * scale, 8 * scale, 16 * scale, 12 * scale),
       child: Container(
-        padding: const EdgeInsets.fromLTRB(16, 12, 8, 8),
+        padding: EdgeInsets.fromLTRB(16 * scale, 12 * scale, 8 * scale, 8 * scale),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: const Color(0xFF3F1163)),
+          color: LightScreenTheme.surface,
+          borderRadius: BorderRadius.circular(24 * scale),
+          border: Border.all(color: LightScreenTheme.hint.withValues(alpha: 0.5)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -326,19 +294,22 @@ class _ConversationDetailScreenState extends State<ConversationDetailScreen> {
             TextField(
               controller: _messageCtrl,
               enabled: !_sending,
-              cursorColor: const Color(0xFFA855F7),
+              cursorColor: LightScreenTheme.accent,
               keyboardType: TextInputType.multiline,
               textInputAction: TextInputAction.newline,
               minLines: 1,
               maxLines: 4,
               onChanged: (_) => setState(() {}),
               onSubmitted: canSend ? (_) => _sendMessage() : null,
-              style: GoogleFonts.outfit(color: Colors.white, fontSize: 14),
+              style: GoogleFonts.montserrat(
+                color: Colors.black87,
+                fontSize: 14 * scale.clamp(0.9, 1.05),
+              ),
               decoration: InputDecoration(
                 hintText: 'Reply as agent…',
-                hintStyle: GoogleFonts.outfit(
-                  color: Colors.white.withValues(alpha: 0.4),
-                  fontSize: 14,
+                hintStyle: GoogleFonts.montserrat(
+                  color: LightScreenTheme.hint,
+                  fontSize: 14 * scale.clamp(0.9, 1.05),
                 ),
                 border: InputBorder.none,
                 isDense: true,
@@ -351,12 +322,19 @@ class _ConversationDetailScreenState extends State<ConversationDetailScreen> {
                 IconButton(
                   onPressed: canSend ? _sendMessage : null,
                   icon: _sending
-                      ? const AutobusLoadingIndicator(size: 22)
+                      ? SizedBox(
+                          width: 22 * scale,
+                          height: 22 * scale,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: LightScreenTheme.accent,
+                          ),
+                        )
                       : Icon(
                           Icons.send_rounded,
                           color: canSend
-                              ? const Color(0xFFA855F7)
-                              : Colors.white.withValues(alpha: 0.25),
+                              ? LightScreenTheme.accent
+                              : LightScreenTheme.hint,
                         ),
                 ),
               ],
@@ -367,31 +345,30 @@ class _ConversationDetailScreenState extends State<ConversationDetailScreen> {
     );
   }
 
-  Widget _buildBody() {
+  Widget _buildBody(double scale) {
     if (_loading) {
-      return const Center(child: AutobusLoadingIndicator(size: 32));
+      return Center(child: CircularProgressIndicator(color: LightScreenTheme.accent));
     }
     if (_loadError != null) {
       return Center(
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: EdgeInsets.all(24 * scale),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
                 _loadError!,
                 textAlign: TextAlign.center,
-                style: GoogleFonts.outfit(
-                  color: Colors.white.withValues(alpha: 0.75),
-                  fontSize: 14,
-                ),
+                style: LightScreenTheme.emptyState(scale),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16 * scale),
               TextButton(
                 onPressed: _load,
                 child: Text(
                   'Retry',
-                  style: GoogleFonts.outfit(color: const Color(0xFFA855F7)),
+                  style: LightScreenTheme.listTitle(scale).copyWith(
+                    color: LightScreenTheme.accent,
+                  ),
                 ),
               ),
             ],
@@ -408,17 +385,14 @@ class _ConversationDetailScreenState extends State<ConversationDetailScreen> {
               ? 'No messages yet — send a reply below'
               : 'No messages in this conversation',
           textAlign: TextAlign.center,
-          style: GoogleFonts.outfit(
-            color: Colors.white.withValues(alpha: 0.6),
-            fontSize: 16,
-          ),
+          style: LightScreenTheme.emptyState(scale),
         ),
       );
     }
 
     return ListView.builder(
       controller: _scrollCtrl,
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+      padding: EdgeInsets.fromLTRB(20 * scale, 16 * scale, 20 * scale, 24 * scale),
       itemCount: history.length,
       itemBuilder: (context, index) {
         final msg = history[index];
@@ -426,61 +400,87 @@ class _ConversationDetailScreenState extends State<ConversationDetailScreen> {
         final content = (msg['content'] ?? '').toString();
         final isUser = role == 'user';
         return Padding(
-          padding: const EdgeInsets.only(bottom: 12),
+          padding: EdgeInsets.only(bottom: 12 * scale),
           child: Align(
             alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
-            child: _messageBubble(content, isUser: isUser, role: role),
+            child: _messageBubble(scale, content, isUser: isUser, role: role),
           ),
         );
       },
     );
   }
 
-  Widget _messageBubble(String text, {required bool isUser, required String role}) {
-    final bg = isUser ? _bubbleUser : _bubbleOther;
+  Widget _messageBubble(
+    double scale,
+    String text, {
+    required bool isUser,
+    required String role,
+  }) {
+    final bg = isUser ? LightScreenTheme.accent : LightScreenTheme.surface;
+    final fg = isUser ? Colors.white : LightScreenTheme.body;
+
     return ConstrainedBox(
       constraints: BoxConstraints(
         maxWidth: MediaQuery.sizeOf(context).width * 0.78,
       ),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        padding: EdgeInsets.symmetric(horizontal: 14 * scale, vertical: 10 * scale),
         decoration: BoxDecoration(
           color: bg,
           borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(isUser ? 16 : 4),
-            topRight: Radius.circular(isUser ? 4 : 16),
-            bottomLeft: const Radius.circular(16),
-            bottomRight: const Radius.circular(16),
+            topLeft: Radius.circular(isUser ? 16 * scale : 4 * scale),
+            topRight: Radius.circular(isUser ? 4 * scale : 16 * scale),
+            bottomLeft: Radius.circular(16 * scale),
+            bottomRight: Radius.circular(16 * scale),
           ),
-          border: Border.all(
-            color: const Color(0xFF3F1163).withValues(alpha: 0.6),
-          ),
+          border: isUser
+              ? null
+              : Border.all(color: LightScreenTheme.hint.withValues(alpha: 0.4)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (role == 'human')
               Padding(
-                padding: const EdgeInsets.only(bottom: 4),
+                padding: EdgeInsets.only(bottom: 4 * scale),
                 child: Text(
                   'Agent',
-                  style: GoogleFonts.outfit(
-                    color: const Color(0xFFA855F7),
-                    fontSize: 10,
+                  style: GoogleFonts.montserrat(
+                    color: LightScreenTheme.accent,
+                    fontSize: 10 * scale.clamp(0.9, 1.05),
                     fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
             Text(
               text,
-              style: GoogleFonts.outfit(
-                color: Colors.white,
-                fontSize: 14,
+              style: GoogleFonts.montserrat(
+                color: fg,
+                fontSize: 14 * scale.clamp(0.9, 1.05),
                 height: 1.35,
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scale = MediaQuery.sizeOf(context).width / appShellDesignWidth;
+
+    return LightScreenScaffold(
+      title: widget.title,
+      creditCategory: CreditCategory.llm,
+      resizeToAvoidBottomInset: true,
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (!_loading && _loadError == null) _buildControls(scale),
+          Expanded(child: _buildBody(scale)),
+          if (_showComposer) _buildComposer(scale),
+        ],
       ),
     );
   }

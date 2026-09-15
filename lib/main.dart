@@ -15,9 +15,9 @@ void main() async {
   await AppConfig.init();
   print('✓ AppConfig initialized');
 
-  // Initialize Google Fonts
-  await GoogleFonts.pendingFonts([GoogleFonts.montserrat()]);
-  print('✓ Google Fonts loaded');
+  // Load fonts in the background so the first frame is not blocked.
+  unawaited(GoogleFonts.pendingFonts([GoogleFonts.montserrat()]));
+  print('✓ Google Fonts loading in background');
 
   // Initialize session handling services
   _tokenService = TokenService();

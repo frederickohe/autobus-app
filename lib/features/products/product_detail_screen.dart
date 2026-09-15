@@ -1,6 +1,8 @@
 import 'package:autobus/barrel.dart';
+import 'package:autobus/common_design/light_screen_theme.dart';
+import 'package:autobus/common_design/widgets/app_bottom_nav.dart';
+import 'package:autobus/common_design/widgets/light_screen_scaffold.dart';
 import 'package:autobus/features/products/product_existing_gallery.dart';
-
 class ProductDetailScreen extends StatefulWidget {
   final String productId;
   final String? initialName;
@@ -148,35 +150,44 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     }
   }
 
-  InputDecoration _fieldDecoration(String label, {String? hint}) {
+  InputDecoration _fieldDecoration(double scale, String label, {String? hint}) {
     return InputDecoration(
       labelText: label,
       hintText: hint,
-      labelStyle: GoogleFonts.outfit(
-        color: Colors.white.withValues(alpha: 0.7),
-        fontSize: 13,
+      labelStyle: GoogleFonts.montserrat(
+        color: LightScreenTheme.muted,
+        fontSize: 13 * scale.clamp(0.9, 1.05),
       ),
-      hintStyle: GoogleFonts.outfit(
-        color: Colors.white.withValues(alpha: 0.35),
-        fontSize: 13,
+      hintStyle: GoogleFonts.montserrat(
+        color: LightScreenTheme.hint,
+        fontSize: 13 * scale.clamp(0.9, 1.05),
       ),
       filled: true,
-      fillColor: Colors.white.withValues(alpha: 0.06),
+      fillColor: LightScreenTheme.field,
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(16 * scale),
         borderSide: BorderSide.none,
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide(
-          color: const Color(0xFF3F1163).withValues(alpha: 0.8),
-        ),
+        borderRadius: BorderRadius.circular(16 * scale),
+        borderSide: BorderSide.none,
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: Color(0xFFA855F7)),
+        borderRadius: BorderRadius.circular(16 * scale),
+        borderSide: BorderSide(color: LightScreenTheme.accent, width: 1.2),
       ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16 * scale),
+        borderSide: BorderSide(color: Colors.red.shade400),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16 * scale),
+        borderSide: BorderSide(color: Colors.red.shade400, width: 1.2),
+      ),
+      contentPadding: EdgeInsets.symmetric(
+        horizontal: 14 * scale,
+        vertical: 12 * scale,
+      ),
     );
   }
 
@@ -220,7 +231,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       setState(() => _saving = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Product saved', style: GoogleFonts.outfit()),
+          content: Text('Product saved', style: GoogleFonts.montserrat()),
         ),
       );
       Navigator.pop(context, true);
@@ -296,28 +307,37 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1E0A32),
+        backgroundColor: LightScreenTheme.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
         title: Text(
           'Delete product?',
-          style: GoogleFonts.outfit(color: Colors.white),
+          style: GoogleFonts.montserrat(
+            color: Colors.black,
+            fontWeight: FontWeight.w600,
+          ),
         ),
         content: Text(
           'Remove "$name" permanently? This cannot be undone.',
-          style: GoogleFonts.outfit(
-            color: Colors.white.withValues(alpha: 0.8),
+          style: GoogleFonts.montserrat(
+            color: LightScreenTheme.muted,
             fontSize: 14,
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: Text('Cancel', style: GoogleFonts.outfit(color: Colors.white70)),
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.montserrat(color: LightScreenTheme.muted),
+            ),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
             child: Text(
               'Delete',
-              style: GoogleFonts.outfit(color: Colors.redAccent),
+              style: GoogleFonts.montserrat(color: const Color(0xFFE11D48)),
             ),
           ),
         ],
@@ -331,7 +351,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       await api.deleteProduct(widget.productId);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Product deleted', style: GoogleFonts.outfit())),
+        SnackBar(
+          content: Text('Product deleted', style: GoogleFonts.montserrat()),
+        ),
       );
       Navigator.pop(context, true);
     } catch (e) {
@@ -347,74 +369,47 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final scale = MediaQuery.sizeOf(context).width / appShellDesignWidth;
     final title = widget.initialName?.trim().isNotEmpty == true
         ? widget.initialName!.trim()
         : 'Product';
 
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: Stack(
-        fit: StackFit.expand,
+    return LightScreenScaffold(
+      title: title,
+      creditCategory: CreditCategory.storageMb,
+      resizeToAvoidBottomInset: true,
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const DecoratedBox(
-            decoration: ManageScreenStyle.homeDashboardBodyDecoration,
-          ),
-          SafeArea(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 18, 24, 0),
-                  child: Row(
-                    children: [
-                      const ManageScreenBackButton(),
-                      const SizedBox(width: 18),
-                      Expanded(
-                        child: Text(
-                          title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: ManageScreenStyle.headerTitleStyle(),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Expanded(child: _buildBody()),
-                if (!_loading && _loadError == null) _buildActions(),
-              ],
-            ),
-          ),
+          Expanded(child: _buildBody(scale)),
+          if (!_loading && _loadError == null) _buildActions(scale),
         ],
       ),
     );
   }
 
-  Widget _buildBody() {
+  Widget _buildBody(double scale) {
     if (_loading) {
       return const Center(child: AutobusLoadingIndicator(size: 32));
     }
     if (_loadError != null) {
       return Center(
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: EdgeInsets.all(24 * scale),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
                 _loadError!,
                 textAlign: TextAlign.center,
-                style: GoogleFonts.outfit(
-                  color: Colors.white.withValues(alpha: 0.75),
-                  fontSize: 14,
-                ),
+                style: LightScreenTheme.emptyState(scale),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16 * scale),
               TextButton(
                 onPressed: _load,
                 child: Text(
                   'Retry',
-                  style: GoogleFonts.outfit(color: const Color(0xFFA855F7)),
+                  style: GoogleFonts.montserrat(color: LightScreenTheme.accent),
                 ),
               ),
             ],
@@ -426,17 +421,19 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     return Form(
       key: _formKey,
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
+        padding: EdgeInsets.fromLTRB(
+          20 * scale,
+          20 * scale,
+          20 * scale,
+          16 * scale,
+        ),
         children: [
           if (_inventoryId != null && _inventoryId!.isNotEmpty)
             Padding(
-              padding: const EdgeInsets.only(bottom: 16),
+              padding: EdgeInsets.only(bottom: 16 * scale),
               child: Text(
                 'SKU: $_inventoryId',
-                style: GoogleFonts.outfit(
-                  color: Colors.white.withValues(alpha: 0.45),
-                  fontSize: 12,
-                ),
+                style: LightScreenTheme.listSubtitle(scale),
               ),
             ),
           ProductExistingGallery(
@@ -445,21 +442,24 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             onAddPhotos: _addPhotos,
             onPhotoTap: _onPhotoTap,
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: 20 * scale),
           _textField(
+            scale: scale,
             controller: _nameCtrl,
             label: 'Name',
             validator: (v) =>
                 (v == null || v.trim().isEmpty) ? 'Name is required' : null,
           ),
-          const SizedBox(height: 14),
+          SizedBox(height: 14 * scale),
           _textField(
+            scale: scale,
             controller: _descriptionCtrl,
             label: 'Description',
             maxLines: 3,
           ),
-          const SizedBox(height: 14),
+          SizedBox(height: 14 * scale),
           _textField(
+            scale: scale,
             controller: _priceCtrl,
             label: 'Price',
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
@@ -469,30 +469,41 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               return null;
             },
           ),
-          const SizedBox(height: 14),
-          _textField(controller: _categoryCtrl, label: 'Category'),
-          const SizedBox(height: 14),
+          SizedBox(height: 14 * scale),
           _textField(
+            scale: scale,
+            controller: _categoryCtrl,
+            label: 'Category',
+          ),
+          SizedBox(height: 14 * scale),
+          _textField(
+            scale: scale,
             controller: _conditionCtrl,
             label: 'Condition',
             validator: (v) => (v == null || v.trim().isEmpty)
                 ? 'Condition is required'
                 : null,
           ),
-          const SizedBox(height: 14),
+          SizedBox(height: 14 * scale),
           _textField(
+            scale: scale,
             controller: _stockCtrl,
             label: 'Stock quantity',
             keyboardType: TextInputType.number,
           ),
-          const SizedBox(height: 14),
-          _textField(controller: _linkCtrl, label: 'Product link'),
+          SizedBox(height: 14 * scale),
+          _textField(
+            scale: scale,
+            controller: _linkCtrl,
+            label: 'Product link',
+          ),
         ],
       ),
     );
   }
 
   Widget _textField({
+    required double scale,
     required TextEditingController controller,
     required String label,
     String? Function(String?)? validator,
@@ -506,54 +517,69 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       keyboardType: keyboardType,
       maxLines: maxLines,
       onChanged: onChanged,
-      style: GoogleFonts.outfit(color: Colors.white, fontSize: 14),
-      cursorColor: const Color(0xFFA855F7),
-      decoration: _fieldDecoration(label),
+      style: GoogleFonts.montserrat(
+        color: Colors.black,
+        fontSize: 14 * scale.clamp(0.9, 1.05),
+      ),
+      cursorColor: LightScreenTheme.button,
+      decoration: _fieldDecoration(scale, label),
     );
   }
 
-  Widget _buildActions() {
+  Widget _buildActions(double scale) {
+    final bottomInset = MediaQuery.viewPaddingOf(context).bottom;
+
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+      padding: EdgeInsets.fromLTRB(
+        20 * scale,
+        0,
+        20 * scale,
+        24 * scale + bottomInset,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           FilledButton(
             onPressed: _saving ? null : _save,
             style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFFA855F7),
+              backgroundColor: LightScreenTheme.button,
+              disabledBackgroundColor:
+                  LightScreenTheme.button.withValues(alpha: 0.5),
               foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 14),
+              padding: EdgeInsets.symmetric(vertical: 14 * scale),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(20 * scale),
               ),
+              elevation: 0,
             ),
             child: _saving
                 ? const AutobusLoadingIndicator(size: 22)
                 : Text(
                     'Save changes',
-                    style: GoogleFonts.outfit(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w500,
+                    style: GoogleFonts.montserrat(
+                      fontSize: 15 * scale.clamp(0.9, 1.05),
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12 * scale),
           OutlinedButton(
             onPressed: _saving ? null : _confirmDelete,
             style: OutlinedButton.styleFrom(
-              foregroundColor: Colors.redAccent,
-              side: BorderSide(color: Colors.redAccent.withValues(alpha: 0.7)),
-              padding: const EdgeInsets.symmetric(vertical: 14),
+              foregroundColor: const Color(0xFFE11D48),
+              side: BorderSide(
+                color: const Color(0xFFE11D48).withValues(alpha: 0.7),
+              ),
+              padding: EdgeInsets.symmetric(vertical: 14 * scale),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(20 * scale),
               ),
             ),
             child: Text(
               'Delete product',
-              style: GoogleFonts.outfit(
-                fontSize: 15,
-                fontWeight: FontWeight.w500,
+              style: GoogleFonts.montserrat(
+                fontSize: 15 * scale.clamp(0.9, 1.05),
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),

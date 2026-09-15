@@ -1,5 +1,8 @@
 import 'package:autobus/barrel.dart';
-
+import 'package:autobus/common_design/light_screen_theme.dart';
+import 'package:autobus/common_design/widgets/app_bottom_nav.dart';
+import 'package:autobus/common_design/widgets/light_list_card.dart';
+import 'package:autobus/common_design/widgets/light_screen_scaffold.dart';
 class ViewProductsPage extends StatefulWidget {
   const ViewProductsPage({super.key});
 
@@ -114,7 +117,9 @@ class _ViewProductsPageState extends State<ViewProductsPage> {
         _expandedIndex = null;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Deleted "$name"', style: GoogleFonts.outfit())),
+        SnackBar(
+          content: Text('Deleted "$name"', style: GoogleFonts.montserrat()),
+        ),
       );
     } catch (e) {
       if (!mounted) return;
@@ -122,24 +127,19 @@ class _ViewProductsPageState extends State<ViewProductsPage> {
         SnackBar(
           content: Text(
             e.toString().replaceFirst('Exception: ', ''),
-            style: GoogleFonts.outfit(),
+            style: GoogleFonts.montserrat(),
           ),
         ),
       );
     }
   }
 
-  Widget _sectionTitle(String text) {
+  Widget _sectionTitle(double scale, String text) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: EdgeInsets.only(bottom: 12 * scale),
       child: Text(
         text,
-        style: GoogleFonts.montserrat(
-          color: Colors.white.withValues(alpha: 0.9),
-          fontSize: 13,
-          fontWeight: FontWeight.w500,
-          letterSpacing: 0.2,
-        ),
+        style: LightScreenTheme.hubTitle(scale),
       ),
     );
   }
@@ -160,71 +160,53 @@ class _ViewProductsPageState extends State<ViewProductsPage> {
     });
   }
 
-  Widget _productCard(Map<String, dynamic> p) {
+  Widget _productCard(double scale, Map<String, dynamic> p) {
     final category = _productCategory(p);
     final stock = _stockLabel(p);
-    return GestureDetector(
-      onTap: () => _openProduct(context, p),
-      behavior: HitTestBehavior.opaque,
-      child: Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        border: Border.all(color: const Color(0xFF3F1163), width: 1),
-        borderRadius: BorderRadius.circular(26),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            _productName(p),
-            style: GoogleFonts.outfit(
-              color: Colors.white,
-              fontSize: 17,
-              fontWeight: FontWeight.w400,
+    return Padding(
+      padding: EdgeInsets.only(bottom: 12 * scale),
+      child: LightListCard(
+        scale: scale,
+        onTap: () => _openProduct(context, p),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              _productName(p),
+              style: LightScreenTheme.listTitle(scale),
             ),
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              Text(
-                _productPriceLabel(p),
-                style: GoogleFonts.outfit(
-                  color: const Color(0xFFA855F7),
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              if (stock != null) ...[
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Text(
-                    stock,
-                    textAlign: TextAlign.end,
-                    style: GoogleFonts.outfit(
-                      color: Colors.white.withValues(alpha: 0.5),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w300,
-                    ),
+            SizedBox(height: 10 * scale),
+            Row(
+              children: [
+                Text(
+                  _productPriceLabel(p),
+                  style: GoogleFonts.montserrat(
+                    color: LightScreenTheme.accent,
+                    fontSize: 15 * scale.clamp(0.9, 1.05),
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
+                if (stock != null) ...[
+                  SizedBox(width: 14 * scale),
+                  Expanded(
+                    child: Text(
+                      stock,
+                      textAlign: TextAlign.end,
+                      style: LightScreenTheme.listSubtitle(scale),
+                    ),
+                  ),
+                ],
               ],
-            ],
-          ),
-          if (category != null) ...[
-            const SizedBox(height: 8),
-            Text(
-              category,
-              style: GoogleFonts.outfit(
-                color: Colors.white.withValues(alpha: 0.45),
-                fontSize: 11,
-                fontWeight: FontWeight.w300,
-              ),
             ),
+            if (category != null) ...[
+              SizedBox(height: 8 * scale),
+              Text(
+                category,
+                style: LightScreenTheme.listSubtitle(scale),
+              ),
+            ],
           ],
-        ],
-      ),
+        ),
       ),
     );
   }
@@ -236,59 +218,54 @@ class _ViewProductsPageState extends State<ViewProductsPage> {
 
   String? get _blockingError => _productsError ?? _loadError;
 
-  Widget _emptyStateList() {
+  Widget _emptyStateList(double scale) {
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
+      padding: EdgeInsets.symmetric(horizontal: 20 * scale),
       children: [
         SizedBox(height: MediaQuery.sizeOf(context).height * 0.25),
         Center(
           child: Text(
             'No products yet',
-            style: GoogleFonts.outfit(
-              color: Colors.white.withValues(alpha: 0.6),
-              fontSize: 16,
-            ),
+            style: LightScreenTheme.emptyState(scale),
           ),
         ),
       ],
     );
   }
 
-  List<Widget> _productSectionChildren() {
+  List<Widget> _productSectionChildren(double scale) {
     if (_products.isEmpty) return [];
     return [
-      _sectionTitle('Products'),
-      ..._products.map(_productCard),
-      const SizedBox(height: 8),
+      _sectionTitle(scale, 'Products'),
+      ..._products.map((p) => _productCard(scale, p)),
+      SizedBox(height: 8 * scale),
     ];
   }
 
-  List<Widget> _catalogueSectionChildren() {
+  List<Widget> _catalogueSectionChildren(double scale) {
     if (_documents.isEmpty && _loadError == null) return [];
     return [
-      _sectionTitle('Catalogue files'),
+      _sectionTitle(scale, 'Catalogue files'),
       if (_loadError != null)
         Padding(
-          padding: const EdgeInsets.only(bottom: 12),
+          padding: EdgeInsets.only(bottom: 12 * scale),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
                 child: Text(
                   _loadError!,
-                  style: GoogleFonts.outfit(
-                    color: Colors.white.withValues(alpha: 0.65),
-                    fontSize: 13,
-                  ),
+                  style: LightScreenTheme.emptyState(scale),
                 ),
               ),
               TextButton(
                 onPressed: _loadAll,
                 child: Text(
                   'Retry',
-                  style: GoogleFonts.outfit(
-                    color: const Color(0xFFA855F7),
-                    fontSize: 14,
+                  style: GoogleFonts.montserrat(
+                    color: LightScreenTheme.accent,
+                    fontSize: 14 * scale.clamp(0.9, 1.05),
                   ),
                 ),
               ),
@@ -303,86 +280,64 @@ class _ViewProductsPageState extends State<ViewProductsPage> {
           final isExpanded = _expandedIndex == index;
 
           return Padding(
-            padding: const EdgeInsets.only(bottom: 16),
-            child: GestureDetector(
+            padding: EdgeInsets.only(bottom: 12 * scale),
+            child: LightListCard(
+              scale: scale,
+              padding: EdgeInsets.all(isExpanded ? 24 * scale : 20 * scale),
               onTap: () {
                 setState(() {
                   _expandedIndex = isExpanded ? null : index;
                 });
               },
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                padding: EdgeInsets.all(isExpanded ? 32 : 24),
-                decoration: BoxDecoration(
-                  border: Border.all(color: const Color(0xFF3F1163), width: 1),
-                  borderRadius: BorderRadius.circular(isExpanded ? 38 : 30),
-                ),
-                child: isExpanded
-                    ? Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
+              child: isExpanded
+                  ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          name,
+                          style: LightScreenTheme.listTitle(scale),
+                        ),
+                        if (key != null) ...[
+                          SizedBox(height: 12 * scale),
                           Text(
-                            name,
-                            style: GoogleFonts.outfit(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w400,
-                            ),
-                          ),
-                          if (key != null) ...[
-                            const SizedBox(height: 12),
-                            Text(
-                              key,
-                              style: GoogleFonts.outfit(
-                                color: Colors.white.withValues(alpha: 0.65),
-                                fontSize: 11,
-                                fontWeight: FontWeight.w300,
-                              ),
-                            ),
-                          ],
-                          const SizedBox(height: 16),
-                          Center(
-                            child: TextButton(
-                              onPressed: () => _deleteAt(index),
-                              child: Text(
-                                'Delete file',
-                                style: GoogleFonts.outfit(
-                                  color: Colors.white.withValues(alpha: 0.75),
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w300,
-                                ),
-                              ),
-                            ),
+                            key,
+                            style: LightScreenTheme.listSubtitle(scale),
                           ),
                         ],
-                      )
-                    : Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            name,
-                            style: GoogleFonts.outfit(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.w400,
-                            ),
-                          ),
-                          if (key != null) ...[
-                            const SizedBox(height: 6),
-                            Text(
-                              key,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.outfit(
-                                color: Colors.white.withValues(alpha: 0.45),
-                                fontSize: 11,
-                                fontWeight: FontWeight.w300,
+                        SizedBox(height: 16 * scale),
+                        Center(
+                          child: TextButton(
+                            onPressed: () => _deleteAt(index),
+                            child: Text(
+                              'Delete file',
+                              style: GoogleFonts.montserrat(
+                                color: LightScreenTheme.muted,
+                                fontSize: 13 * scale.clamp(0.9, 1.05),
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
-                          ],
+                          ),
+                        ),
+                      ],
+                    )
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          name,
+                          style: LightScreenTheme.listTitle(scale),
+                        ),
+                        if (key != null) ...[
+                          SizedBox(height: 6 * scale),
+                          Text(
+                            key,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: LightScreenTheme.listSubtitle(scale),
+                          ),
                         ],
-                      ),
-              ),
+                      ],
+                    ),
             ),
           );
         }),
@@ -391,92 +346,55 @@ class _ViewProductsPageState extends State<ViewProductsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          const DecoratedBox(
-            decoration: ManageScreenStyle.homeDashboardBodyDecoration,
-          ),
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const ManageScreenBackButton(),
-                      const SizedBox(width: 18),
-                      Expanded(
-                        child: Text(
-                          'Product catalogue',
-                          style: ManageScreenStyle.headerTitleStyle(),
+    final scale = MediaQuery.sizeOf(context).width / appShellDesignWidth;
+
+    return LightScreenScaffold(
+      title: 'Product catalogue',
+      creditCategory: CreditCategory.storageMb,
+      body: Padding(
+        padding: EdgeInsets.fromLTRB(20 * scale, 20 * scale, 20 * scale, 24 * scale),
+        child: _loading
+            ? const Center(child: AutobusLoadingIndicator(size: 32))
+            : _blockingError != null && _hasNothingToShow
+            ? Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 16 * scale),
+                      child: Text(
+                        _blockingError!,
+                        textAlign: TextAlign.center,
+                        style: LightScreenTheme.emptyState(scale),
+                      ),
+                    ),
+                    SizedBox(height: 16 * scale),
+                    TextButton(
+                      onPressed: _loadAll,
+                      child: Text(
+                        'Retry',
+                        style: GoogleFonts.montserrat(
+                          color: LightScreenTheme.accent,
+                          fontSize: 16 * scale.clamp(0.9, 1.05),
                         ),
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 32),
-                  Expanded(
-                    child: _loading
-                        ? const Center(
-                            child:                             const AutobusLoadingIndicator(size: 32),
-                          )
-                        : _blockingError != null && _hasNothingToShow
-                        ? Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                  ),
-                                  child: Text(
-                                    _blockingError!,
-                                    textAlign: TextAlign.center,
-                                    style: GoogleFonts.outfit(
-                                      color: Colors.white.withValues(
-                                        alpha: 0.75,
-                                      ),
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(height: 16),
-                                TextButton(
-                                  onPressed: _loadAll,
-                                  child: Text(
-                                    'Retry',
-                                    style: GoogleFonts.outfit(
-                                      color: const Color(0xFFA855F7),
-                                      fontSize: 16,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          )
-                        : RefreshIndicator(
-                            color: const Color(0xFFA855F7),
-                            onRefresh: _loadAll,
-                            child: _showEmptyState
-                                ? _emptyStateList()
-                                : ListView(
-                                    physics:
-                                        const AlwaysScrollableScrollPhysics(),
-                                    children: [
-                                      ..._productSectionChildren(),
-                                      ..._catalogueSectionChildren(),
-                                    ],
-                                  ),
-                          ),
-                  ),
-                ],
+                    ),
+                  ],
+                ),
+              )
+            : RefreshIndicator(
+                color: LightScreenTheme.accent,
+                onRefresh: _loadAll,
+                child: _showEmptyState
+                    ? _emptyStateList(scale)
+                    : ListView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        children: [
+                          ..._productSectionChildren(scale),
+                          ..._catalogueSectionChildren(scale),
+                        ],
+                      ),
               ),
-            ),
-          ),
-        ],
       ),
     );
   }

@@ -1,4 +1,8 @@
 import 'package:autobus/barrel.dart';
+import 'package:autobus/common_design/light_screen_theme.dart';
+import 'package:autobus/common_design/widgets/app_bottom_nav.dart';
+import 'package:autobus/common_design/widgets/light_list_card.dart';
+import 'package:autobus/common_design/widgets/light_screen_scaffold.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -68,20 +72,25 @@ class _SettingsPageState extends State<SettingsPage> {
     return 'Renews today';
   }
 
+  String _usernameFromState(AuthState state) {
+    if (state is Authenticated) {
+      return state.user['fullname'] ?? state.user['email'] ?? 'User';
+    }
+    return 'Guest';
+  }
+
   @override
   Widget build(BuildContext context) {
+    final scale = MediaQuery.sizeOf(context).width / appShellDesignWidth;
+
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
-        // Handle unauthenticated state (successful logout)
         if (state is Unauthenticated) {
-          // Navigate to signin page and remove all previous routes
           Navigator.of(context).pushAndRemoveUntil(
             MaterialPageRoute(builder: (_) => const LogorSign()),
             (route) => false,
           );
-        }
-        // Handle logout errors
-        else if (state is AuthError && state.source == 'logout') {
+        } else if (state is AuthError && state.source == 'logout') {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
@@ -93,73 +102,21 @@ class _SettingsPageState extends State<SettingsPage> {
           );
         }
       },
-      child: Scaffold(
-        body: _SettingsBackground(
-          child: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 18),
+      child: BlocBuilder<AuthBloc, AuthState>(
+        builder: (context, state) {
+          return LightScreenScaffold(
+            title: _usernameFromState(state),
+            body: SingleChildScrollView(
+              padding: EdgeInsets.fromLTRB(
+                20 * scale,
+                20 * scale,
+                20 * scale,
+                32 * scale,
+              ),
               child: Column(
                 children: [
-                  const SizedBox(height: 20),
-
-                  /// 🔝 Top Bar
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      /// Back Button
-                      GestureDetector(
-                        onTap: () => Navigator.pop(context),
-                        child: Container(
-                          width: 48,
-                          height: 48,
-                          decoration: const BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: CustColors.mainCol,
-                          ),
-                          child: const Icon(
-                            Icons.arrow_back_ios_new,
-                            color: Colors.white,
-                            size: 18,
-                          ),
-                        ),
-                      ),
-
-                      /// Company Name / Username
-                      BlocBuilder<AuthBloc, AuthState>(
-                        builder: (context, state) {
-                          String username = 'Guest';
-                          if (state is Authenticated) {
-                            username =
-                                state.user['fullname'] ??
-                                state.user['email'] ??
-                                'User';
-                          }
-                          return Text(
-                            username,
-                            style: GoogleFonts.montserrat(
-                              color: Colors.black,
-                              fontSize: 20,
-                              fontWeight: FontWeight.w400,
-                            ),
-                          );
-                        },
-                      ),
-
-                      /// Share Icon
-                      _circleIcon(Icons.share_outlined),
-                    ],
-                  ),
-
-                  const SizedBox(height: 40),
-
-                  /// Subscription summary (under top bar)
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.75),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
+                  LightListCard(
+                    scale: scale,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -167,79 +124,60 @@ class _SettingsPageState extends State<SettingsPage> {
                           _subscriptionTitle(),
                           style: GoogleFonts.montserrat(
                             color: Colors.black87,
-                            fontSize: 20,
+                            fontSize: 20 * scale.clamp(0.9, 1.05),
                             fontWeight: FontWeight.w800,
                             height: 1.2,
                           ),
                         ),
-                        const SizedBox(height: 6),
+                        SizedBox(height: 6 * scale),
                         Text(
                           _subscriptionSubtitle(),
-                          style: GoogleFonts.montserrat(
-                            color: Colors.black54,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w400,
-                          ),
+                          style: LightScreenTheme.listSubtitle(scale),
                         ),
                       ],
                     ),
                   ),
-
-                  const SizedBox(height: 20),
-
-                  /// ⚙️ Settings Card
-                  Container(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.6),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
+                  SizedBox(height: 12 * scale),
+                  LightListCard(
+                    scale: scale,
+                    padding: EdgeInsets.symmetric(vertical: 4 * scale),
                     child: Column(
                       children: _buildMenuItems()
-                          .map((item) => _SettingsMenuTile(item: item))
+                          .map((item) => _SettingsMenuTile(
+                                scale: scale,
+                                item: item,
+                              ))
                           .toList(),
                     ),
                   ),
-
-                  const SizedBox(height: 26),
-
-                  /// 🚪 Logout Card with loading state
+                  SizedBox(height: 12 * scale),
                   BlocBuilder<AuthBloc, AuthState>(
-                    builder: (context, state) {
-                      bool isLoading = state is AuthLoading;
+                    builder: (context, authState) {
+                      final isLoading = authState is AuthLoading;
 
-                      return GestureDetector(
+                      return LightListCard(
+                        scale: scale,
                         onTap: isLoading ? null : () => _handleLogout(context),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 18,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.6),
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                isLoading ? 'Logging out...' : "Logout",
-                                style: GoogleFonts.montserrat(
-                                  color: isLoading ? Colors.grey : Colors.red,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w400,
-                                ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              isLoading ? 'Logging out...' : 'Logout',
+                              style: GoogleFonts.montserrat(
+                                color: isLoading ? Colors.grey : Colors.red,
+                                fontSize: 14 * scale.clamp(0.9, 1.05),
+                                fontWeight: FontWeight.w500,
                               ),
-                              if (isLoading)
-                                const AutobusLoadingIndicator(size: 20)
-                              else
-                                const Icon(
-                                  Icons.logout,
-                                  color: Colors.red,
-                                  size: 20,
-                                ),
-                            ],
-                          ),
+                            ),
+                            if (isLoading)
+                              const AutobusLoadingIndicator(size: 20)
+                            else
+                              const Icon(
+                                Icons.logout,
+                                color: Colors.red,
+                                size: 20,
+                              ),
+                          ],
                         ),
                       );
                     },
@@ -247,8 +185,8 @@ class _SettingsPageState extends State<SettingsPage> {
                 ],
               ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }
@@ -377,7 +315,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     Expanded(
                       child: ElevatedButton(
                         onPressed: () {
-                          Navigator.pop(context); // Close dialog
+                          Navigator.pop(context);
                           context.read<AuthBloc>().add(LogoutEvent());
                         },
                         style: ElevatedButton.styleFrom(
@@ -408,35 +346,26 @@ class _SettingsPageState extends State<SettingsPage> {
       },
     );
   }
-
-  Widget _circleIcon(IconData icon) {
-    return Container(
-      width: 54,
-      height: 54,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        border: Border.all(color: Colors.white24),
-      ),
-      child: Icon(icon, color: Colors.white70, size: 18),
-    );
-  }
 }
 
 class _SettingsMenuTile extends StatelessWidget {
+  final double scale;
   final SettingsMenuItem item;
 
-  const _SettingsMenuTile({required this.item});
+  const _SettingsMenuTile({required this.scale, required this.item});
 
   @override
   Widget build(BuildContext context) {
     return ListTile(
       onTap: item.onTap,
-      leading: Icon(item.icon, color: Colors.black87),
-      title: Text(
-        item.title,
-        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+      contentPadding: EdgeInsets.symmetric(horizontal: 8 * scale),
+      leading: Icon(item.icon, color: Colors.black87, size: 22 * scale),
+      title: Text(item.title, style: LightScreenTheme.listTitle(scale)),
+      trailing: Icon(
+        Icons.chevron_right,
+        color: LightScreenTheme.muted,
+        size: 20 * scale,
       ),
-      trailing: const Icon(Icons.chevron_right, color: Colors.black54),
     );
   }
 }
@@ -447,27 +376,4 @@ class SettingsMenuItem {
   final VoidCallback onTap;
 
   SettingsMenuItem(this.title, this.icon, this.onTap);
-}
-
-class _SettingsBackground extends StatelessWidget {
-  final Widget child;
-  const _SettingsBackground({required this.child});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            Color.fromARGB(255, 244, 244, 244),
-            Color.fromARGB(255, 240, 240, 240),
-            Color.fromARGB(255, 236, 236, 236),
-          ],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-        ),
-      ),
-      child: child,
-    );
-  }
 }

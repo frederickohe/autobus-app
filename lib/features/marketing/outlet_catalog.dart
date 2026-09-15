@@ -5,8 +5,10 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 /// Marketing outlet shown on Link Social Media; matched to Postiz `identifier` values.
 class OutletOption {
   final String label;
-  final IconData icon;
+  final FaIconData icon;
   final Color iconColor;
+  final Color tileColor;
+  final String linkSubtitle;
   final Set<String> postizIdentifiers;
 
   /// Postiz connect path slug (`facebook`, `instagram`, `whatsapp`, …).
@@ -16,6 +18,8 @@ class OutletOption {
     required this.label,
     required this.icon,
     required this.iconColor,
+    required this.tileColor,
+    required this.linkSubtitle,
     this.postizIdentifiers = const {},
     this.connectSlug,
   });
@@ -51,39 +55,58 @@ class OutletCatalog {
 
   static const List<OutletOption> all = [
     OutletOption(
-      label: 'Facebook',
-      icon: FontAwesomeIcons.facebookF,
-      iconColor: Color(0xFF1877F2),
-      postizIdentifiers: {'facebook'},
-      connectSlug: 'facebook',
-    ),
-    OutletOption(
-      label: 'WhatsApp Status',
-      icon: FontAwesomeIcons.whatsapp,
-      iconColor: Color(0xFF25D366),
-      postizIdentifiers: {'whatsapp'},
-      connectSlug: 'whatsapp',
-    ),
-    OutletOption(
       label: 'Instagram',
       icon: FontAwesomeIcons.instagram,
-      iconColor: Color(0xFFDD2A7B),
+      iconColor: Color(0xFFE60B51),
+      tileColor: Color(0xFFE60B51),
+      linkSubtitle: 'Link instagram',
       postizIdentifiers: {'instagram', 'instagram-standalone'},
       connectSlug: 'instagram',
     ),
     OutletOption(
       label: 'YouTube',
       icon: FontAwesomeIcons.youtube,
-      iconColor: Color(0xFFFF0000),
+      iconColor: Color(0xFFED1F1F),
+      tileColor: Color(0xFFED1F1F),
+      linkSubtitle: 'Link youtube',
       postizIdentifiers: {'youtube'},
       connectSlug: 'youtube',
     ),
     OutletOption(
-      label: 'TikTok',
+      label: 'Tiktok',
       icon: FontAwesomeIcons.tiktok,
-      iconColor: Color(0xFF69C9D0),
+      iconColor: Colors.black,
+      tileColor: Colors.black,
+      linkSubtitle: 'Link tiktok',
       postizIdentifiers: {'tiktok'},
       connectSlug: 'tiktok',
+    ),
+    OutletOption(
+      label: 'Facebook',
+      icon: FontAwesomeIcons.facebookF,
+      iconColor: Color(0xFF3D5A98),
+      tileColor: Color(0xFF3D5A98),
+      linkSubtitle: 'Link facebook',
+      postizIdentifiers: {'facebook'},
+      connectSlug: 'facebook',
+    ),
+    OutletOption(
+      label: 'LinkedIn',
+      icon: FontAwesomeIcons.linkedinIn,
+      iconColor: Color(0xFF0076B2),
+      tileColor: Color(0xFF0076B2),
+      linkSubtitle: 'Link linkedin',
+      postizIdentifiers: {'linkedin'},
+      connectSlug: 'linkedin',
+    ),
+    OutletOption(
+      label: 'WhatsApp Status',
+      icon: FontAwesomeIcons.whatsapp,
+      iconColor: Color(0xFF25D366),
+      tileColor: Color(0xFF25D366),
+      linkSubtitle: 'Link whatsapp',
+      postizIdentifiers: {'whatsapp'},
+      connectSlug: 'whatsapp',
     ),
   ];
 
