@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:autobus/config/app_config.dart';
+import 'package:autobus/common_design/user_facing_error.dart';
 import 'assistant_event.dart';
 import 'assistant_state.dart';
 
@@ -36,14 +37,10 @@ class AssistantBloc extends Bloc<AssistantEvent, AssistantState> {
         final reply = (data['response'] ?? data['message'] ?? '').toString();
         emit(AssistantSuccess(response: reply));
       } else {
-        emit(
-          AssistantError(
-            message: 'Error ${response.statusCode}: ${response.body}',
-          ),
-        );
+        emit(AssistantError(message: AppUserMessages.generic));
       }
     } catch (e) {
-      emit(AssistantError(message: e.toString()));
+      emit(AssistantError(message: userFacingError(e)));
     }
   }
 }

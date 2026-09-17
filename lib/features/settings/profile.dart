@@ -5,6 +5,7 @@ import 'package:autobus/common_design/light_screen_theme.dart';
 import 'package:autobus/common_design/widgets/app_bottom_nav.dart';
 import 'package:autobus/common_design/widgets/light_list_card.dart';
 import 'package:autobus/common_design/widgets/light_screen_scaffold.dart';
+import 'package:autobus/icons/home_figma_icons.dart';
 
 class Profile extends StatefulWidget {
   const Profile({super.key});
@@ -98,7 +99,7 @@ class _ProfileState extends State<Profile> {
       final g = (user['gender'] ?? '').toString().trim();
       _gender = g.isEmpty ? null : g;
     } catch (e) {
-      if (mounted) setState(() => _error = e.toString());
+      if (mounted) setState(() => _error = userFacingError(e, fallback: AppUserMessages.load));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -171,7 +172,11 @@ class _ProfileState extends State<Profile> {
         children: [
           Row(
             children: [
-              const Icon(Icons.task_alt, size: 18, color: CustColors.mainCol),
+              const HomeSfIcon(
+                icon: HomeFigmaIcons.checkmark,
+                size: 18,
+                color: CustColors.mainCol,
+              ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -325,7 +330,7 @@ class _ProfileState extends State<Profile> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Failed to save: $e'),
+          content: Text(userFacingError(e, fallback: AppUserMessages.save)),
           backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
         ),
@@ -349,12 +354,18 @@ class _ProfileState extends State<Profile> {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.photo_camera_outlined),
+              leading: const HomeSfIcon(
+                icon: HomeFigmaIcons.camera,
+                size: 22,
+              ),
               title: const Text('Take photo'),
               onTap: () => Navigator.pop(context, ImageSource.camera),
             ),
             ListTile(
-              leading: const Icon(Icons.photo_library_outlined),
+              leading: const HomeSfIcon(
+                icon: HomeFigmaIcons.photoLibrary,
+                size: 22,
+              ),
               title: const Text('Choose from gallery'),
               onTap: () => Navigator.pop(context, ImageSource.gallery),
             ),
@@ -400,7 +411,7 @@ class _ProfileState extends State<Profile> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Photo upload failed: $e'),
+          content: Text(userFacingError(e, fallback: AppUserMessages.upload)),
           backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
         ),

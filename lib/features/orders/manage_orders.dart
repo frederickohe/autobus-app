@@ -16,7 +16,7 @@ class ManageOrders extends StatelessWidget {
       title: 'Manage Orders',
       creditCategory: CreditCategory.server,
       body: SingleChildScrollView(
-        padding: EdgeInsets.fromLTRB(20 * scale, 28 * scale, 20 * scale, 32 * scale),
+        padding: LightScreenTheme.hubPagePadding(scale),
         child: Column(
           children: [
             Text(
@@ -24,21 +24,24 @@ class ManageOrders extends StatelessWidget {
               textAlign: TextAlign.center,
               style: LightScreenTheme.hubTitle(scale),
             ),
-            SizedBox(height: 16 * scale),
+            SizedBox(height: LightScreenTheme.hubTitleGap * scale),
             Text(
-              'Track, manage, and automate order processing with smart AI assistance.',
+              'Track pending work, completed orders, and your full order history.',
               textAlign: TextAlign.center,
-              style: LightScreenTheme.hubBody(scale),
+              style: LightScreenTheme.hubBody(scale).copyWith(
+                color: const Color(0xFF4E4E4E),
+              ),
             ),
-            SizedBox(height: 32 * scale),
+            SizedBox(height: LightScreenTheme.hubToCards * scale),
             LightHubGrid(
               scale: scale,
               children: [
                 LightHubCard(
                   scale: scale,
                   title: 'Pending Orders',
+                  subtitle: 'Start creating',
                   icon: HomeFigmaIcons.pendingOrders,
-                  iconGradient: HomeFigmaIcons.ordersGradient,
+                  iconGradient: HomeFigmaIcons.pendingOrdersGradient,
                   onTap: () {
                     Navigator.push<void>(
                       context,
@@ -50,9 +53,28 @@ class ManageOrders extends StatelessWidget {
                 ),
                 LightHubCard(
                   scale: scale,
-                  title: 'All Orders',
+                  title: 'Completed Orders',
+                  subtitle: 'Connect socials',
+                  icon: HomeFigmaIcons.completedOrders,
+                  iconGradient: HomeFigmaIcons.completedOrdersGradient,
+                  onTap: () {
+                    Navigator.push<void>(
+                      context,
+                      MaterialPageRoute<void>(
+                        builder: (_) => const AllOrdersHistory(
+                          orderStatus: 'completed',
+                          title: 'Completed Orders',
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                LightHubCard(
+                  scale: scale,
+                  title: 'All orders',
+                  subtitle: 'View campaigns',
                   icon: HomeFigmaIcons.allOrders,
-                  iconGradient: HomeFigmaIcons.ordersGradient,
+                  iconGradient: HomeFigmaIcons.allOrdersGradient,
                   onTap: () {
                     Navigator.push<void>(
                       context,

@@ -2,6 +2,7 @@ import 'package:autobus/barrel.dart';
 import 'package:autobus/common_design/light_screen_theme.dart';
 import 'package:autobus/common_design/widgets/app_bottom_nav.dart';
 import 'package:autobus/common_design/widgets/light_screen_scaffold.dart';
+import 'package:autobus/icons/home_figma_icons.dart';
 
 /// How the conversation screen was opened (controls which actions appear).
 enum ConversationScreenMode {
@@ -132,7 +133,7 @@ class _ConversationDetailScreenState extends State<ConversationDetailScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _loadError = e.toString().replaceFirst('Exception: ', '');
+        _loadError = userFacingError(e);
         _loading = false;
       });
     }
@@ -194,7 +195,7 @@ class _ConversationDetailScreenState extends State<ConversationDetailScreen> {
       if (!mounted) return;
       setState(() => _actionBusy = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+        SnackBar(content: Text(userFacingError(e))),
       );
     }
   }
@@ -229,7 +230,7 @@ class _ConversationDetailScreenState extends State<ConversationDetailScreen> {
       if (!mounted) return;
       setState(() => _sending = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+        SnackBar(content: Text(userFacingError(e))),
       );
     }
   }
@@ -260,7 +261,11 @@ class _ConversationDetailScreenState extends State<ConversationDetailScreen> {
                       color: Colors.white,
                     ),
                   )
-                : Icon(Icons.smart_toy_outlined, size: 20 * scale),
+                : HomeSfIcon(
+                    icon: HomeFigmaIcons.ai,
+                    size: 20 * scale,
+                    color: Colors.white,
+                  ),
             label: Text(
               'Turn off intervention',
               style: GoogleFonts.montserrat(

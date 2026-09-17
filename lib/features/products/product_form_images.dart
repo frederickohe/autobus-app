@@ -39,7 +39,7 @@ class ProductFormImageSection extends StatelessWidget {
             Expanded(
               child: Text(
                 'Product photos',
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.montserrat(
                   color: Colors.white.withValues(alpha: 0.9),
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
@@ -49,7 +49,7 @@ class ProductFormImageSection extends StatelessWidget {
             if (_filledCount > 0)
               Text(
                 '$_filledCount selected',
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.montserrat(
                   color: Colors.white.withValues(alpha: 0.45),
                   fontSize: 12,
                 ),
@@ -59,7 +59,7 @@ class ProductFormImageSection extends StatelessWidget {
         const SizedBox(height: 6),
         Text(
           'Add one or more images. The first photo is used as the cover.',
-          style: GoogleFonts.outfit(
+          style: GoogleFonts.montserrat(
             color: Colors.white.withValues(alpha: 0.5),
             fontSize: 12,
             height: 1.4,
@@ -162,7 +162,7 @@ class _FormThumb extends StatelessWidget {
                 ),
                 child: Text(
                   'Cover',
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.montserrat(
                     color: Colors.white,
                     fontSize: 9,
                     fontWeight: FontWeight.w600,
@@ -235,7 +235,7 @@ class _AddPhotosButton extends StatelessWidget {
                   Text(
                     'Add photos',
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.montserrat(
                       color: const Color(0xFFA855F7).withValues(alpha: 0.85),
                       fontSize: 10,
                       fontWeight: FontWeight.w500,

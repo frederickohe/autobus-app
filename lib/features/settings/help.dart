@@ -3,6 +3,7 @@ import 'package:autobus/common_design/light_screen_theme.dart';
 import 'package:autobus/common_design/widgets/app_bottom_nav.dart';
 import 'package:autobus/common_design/widgets/light_list_card.dart';
 import 'package:autobus/common_design/widgets/light_screen_scaffold.dart';
+import 'package:autobus/icons/home_figma_icons.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class HelpPage extends StatelessWidget {
@@ -36,12 +37,7 @@ class HelpPage extends StatelessWidget {
       title: 'Help & Support',
       creditCategory: CreditCategory.server,
       body: SingleChildScrollView(
-        padding: EdgeInsets.fromLTRB(
-          20 * scale,
-          20 * scale,
-          20 * scale,
-          32 * scale,
-        ),
+        padding: LightScreenTheme.listPagePadding(scale),
         child: LightListCard(
           scale: scale,
           padding: EdgeInsets.symmetric(vertical: 4 * scale),
@@ -50,8 +46,8 @@ class HelpPage extends StatelessWidget {
               ListTile(
                 onTap: _launchEmail,
                 contentPadding: EdgeInsets.symmetric(horizontal: 8 * scale),
-                leading: Icon(
-                  Icons.email_outlined,
+                leading: HomeSfIcon(
+                  icon: HomeFigmaIcons.inbox,
                   color: Colors.black87,
                   size: 22 * scale,
                 ),
@@ -64,8 +60,8 @@ class HelpPage extends StatelessWidget {
               ListTile(
                 onTap: _launchWebsite,
                 contentPadding: EdgeInsets.symmetric(horizontal: 8 * scale),
-                leading: Icon(
-                  Icons.language_outlined,
+                leading: HomeSfIcon(
+                  icon: HomeFigmaIcons.website,
                   color: Colors.black87,
                   size: 22 * scale,
                 ),

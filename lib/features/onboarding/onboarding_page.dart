@@ -1,4 +1,6 @@
 import 'package:autobus/barrel.dart';
+import 'package:autobus/icons/figma_icons.dart';
+import 'package:autobus/icons/home_figma_icons.dart';
 
 /// First-run onboarding — Figma ONBOARDING 402×874.
 class OnboardingPage extends StatelessWidget {
@@ -8,98 +10,100 @@ class OnboardingPage extends StatelessWidget {
 
   static const _designWidth = 402.0;
   static const _designHeight = 874.0;
-  static const _backgroundColor = Color(0xFFF3F3F7);
+  static const _backgroundColor = Colors.white;
   static const _buttonColor = Color(0xFF2D0C51);
 
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.sizeOf(context);
     final scale = size.width / _designWidth;
+    final vScale = size.height / _designHeight;
 
     final imageWidth = 268.18 * scale;
     final imageHeight = 226 * scale;
     final buttonWidth = 333 * scale;
     final buttonHeight = 64 * scale;
+    final titleSize = (20 * scale).clamp(18.0, 22.0);
+    final bodySize = (14 * scale).clamp(13.0, 16.0);
+    final ctaSize = (16 * scale).clamp(15.0, 18.0);
 
     return Scaffold(
       backgroundColor: _backgroundColor,
       body: SafeArea(
         child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: 24 * scale),
+          padding: EdgeInsets.symmetric(horizontal: 35 * scale),
           child: Column(
-                children: [
-                  SizedBox(height: 264 * scale),
-                  Center(
-                    child: Image.asset(
-                      'assets/img/welcomeai.png',
-                      width: imageWidth,
-                      height: imageHeight,
-                      fit: BoxFit.contain,
-                    ),
-                  ),
-                  SizedBox(height: 35 * scale),
-                  Text(
-                    'Run your whole business from one app',
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.montserrat(
-                      fontSize: 20 * scale.clamp(0.85, 1.15),
-                      fontWeight: FontWeight.w600,
-                      height: 1.35,
-                      color: Colors.black,
-                    ),
-                  ),
-                  SizedBox(height: 24 * scale),
-                  Text(
-                    'Chats, orders, marketing, and an AI that knows your '
-                    'business — all in one place.',
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.montserrat(
-                      fontSize: 14 * scale.clamp(0.9, 1.1),
-                      fontWeight: FontWeight.w400,
-                      height: 1.55,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  const Spacer(),
-                  Center(
-                    child: Material(
-                      color: _buttonColor,
-                      borderRadius: BorderRadius.circular(30 * scale),
-                      child: InkWell(
-                        onTap: onFinished,
-                        borderRadius: BorderRadius.circular(30 * scale),
-                        child: SizedBox(
-                          width: buttonWidth,
-                          height: buttonHeight,
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                'Get started',
-                                style: GoogleFonts.montserrat(
-                                  fontSize: 16 * scale.clamp(0.9, 1.1),
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.white,
-                                ),
-                              ),
-                              SizedBox(width: 10 * scale),
-                              Transform.rotate(
-                                angle: -1.5708,
-                                child: const Icon(
-                                  Icons.arrow_downward,
-                                  color: Colors.white,
-                                  size: 20,
-                                ),
-                              ),
-                            ],
+            children: [
+              const Spacer(flex: 3),
+              Center(
+                child: Image.asset(
+                  FigmaImages.onboardingHero,
+                  width: imageWidth,
+                  height: imageHeight,
+                  fit: BoxFit.contain,
+                ),
+              ),
+              SizedBox(height: 71 * vScale),
+              Text(
+                'Run your whole business\nfrom one app',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.montserrat(
+                  fontSize: titleSize,
+                  fontWeight: FontWeight.w600,
+                  height: 1.5,
+                  color: Colors.black,
+                ),
+              ),
+              SizedBox(height: 24 * vScale),
+              Text(
+                'Chats, orders, marketing, and an AI that knows your '
+                'business — all in one place.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.montserrat(
+                  fontSize: bodySize,
+                  fontWeight: FontWeight.w400,
+                  height: 1.55,
+                  color: Colors.black,
+                ),
+              ),
+              const Spacer(flex: 2),
+              Center(
+                child: Material(
+                  color: _buttonColor,
+                  borderRadius: BorderRadius.circular(30 * scale),
+                  child: InkWell(
+                    onTap: onFinished,
+                    borderRadius: BorderRadius.circular(30 * scale),
+                    child: SizedBox(
+                      width: buttonWidth,
+                      height: buttonHeight,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Get started',
+                            style: GoogleFonts.montserrat(
+                              fontSize: ctaSize,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
                           ),
-                        ),
+                          SizedBox(width: 10 * scale),
+                          FigmaSvgIcon(
+                            FigmaIcons.arrowDown,
+                            size: 20 * scale.clamp(0.9, 1.1),
+                            color: Colors.white,
+                            chevronRight: true,
+                          ),
+                        ],
                       ),
                     ),
                   ),
-                  SizedBox(height: 64 * (size.height / _designHeight)),
-                ],
+                ),
               ),
+              SizedBox(height: 64 * vScale),
+            ],
+          ),
         ),
       ),
     );

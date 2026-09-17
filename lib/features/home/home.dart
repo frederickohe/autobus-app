@@ -2,8 +2,8 @@ import 'package:autobus/barrel.dart';
 import 'package:autobus/common_design/widgets/ai_sparkle_icon.dart';
 import 'package:autobus/common_design/widgets/app_bottom_nav.dart';
 import 'package:autobus/common_design/widgets/app_shell_navigation.dart';
-import 'package:autobus/common_design/widgets/brand_grid_background.dart';
 import 'package:autobus/features/home/widgets/home_youtube_embed.dart';
+import 'package:autobus/icons/figma_icons.dart';
 import 'package:autobus/icons/home_figma_icons.dart';
 
 class Home extends StatefulWidget {
@@ -49,7 +49,6 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
-  static const _backgroundColor = Color(0xFFF3F3F7);
   static const _surfaceColor = Color(0xFFF8FAFC);
 
   Future<int>? _unreadCountFuture;
@@ -78,16 +77,6 @@ class _HomeState extends State<Home> {
       onAiTap: () => AppShellNavigation.openChatbot(context),
       body: Stack(
         children: [
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: BrandGridBackground(
-              scale: scale,
-              fadeToColor: _backgroundColor,
-              height: 348,
-            ),
-          ),
           SafeArea(
             bottom: false,
             child: SingleChildScrollView(
@@ -197,7 +186,7 @@ class _HomeState extends State<Home> {
                     children: const [
                       _HomeToolCard(
                         title: 'Messaging',
-                        icon: HomeFigmaIcons.wechat,
+                        iconAsset: FigmaIcons.wechat,
                         gradient: LinearGradient(
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
@@ -217,7 +206,7 @@ class _HomeState extends State<Home> {
                       ),
                       _HomeToolCard(
                         title: 'Marketing',
-                        icon: HomeFigmaIcons.affiliateMarketing,
+                        iconAsset: FigmaIcons.marketing,
                         gradient: LinearGradient(
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
@@ -227,7 +216,7 @@ class _HomeState extends State<Home> {
                       ),
                       _HomeToolCard(
                         title: 'Customers',
-                        icon: HomeFigmaIcons.customers,
+                        iconAsset: FigmaIcons.customers,
                         gradient: LinearGradient(
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
@@ -237,7 +226,7 @@ class _HomeState extends State<Home> {
                       ),
                       _HomeToolCard(
                         title: 'Products',
-                        icon: HomeFigmaIcons.bag2,
+                        iconAsset: FigmaIcons.bag,
                         gradient: LinearGradient(
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
@@ -271,13 +260,15 @@ enum _HomeToolRoute { inbox, messaging, marketing, customers, products, orders }
 
 class _HomeToolCard extends StatelessWidget {
   final String title;
-  final IconData icon;
+  final IconData? icon;
+  final String? iconAsset;
   final Gradient gradient;
   final _HomeToolRoute route;
 
   const _HomeToolCard({
     required this.title,
-    required this.icon,
+    this.icon,
+    this.iconAsset,
     required this.gradient,
     required this.route,
   });
@@ -326,11 +317,17 @@ class _HomeToolCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12 * scale),
                 ),
                 alignment: Alignment.center,
-                child: HomeSfIcon(
-                  icon: icon,
-                  size: 20 * scale.clamp(0.9, 1.05),
-                  color: Colors.white,
-                ),
+                child: iconAsset != null
+                    ? FigmaSvgIcon(
+                        iconAsset!,
+                        size: 22 * scale.clamp(0.9, 1.05),
+                        color: Colors.white,
+                      )
+                    : HomeSfIcon(
+                        icon: icon!,
+                        size: 20 * scale.clamp(0.9, 1.05),
+                        color: Colors.white,
+                      ),
               ),
               SizedBox(height: 12 * scale),
               Expanded(
@@ -383,10 +380,9 @@ class _NotificationBell extends StatelessWidget {
             clipBehavior: Clip.none,
             alignment: Alignment.center,
             children: [
-              HomeSfIcon(
-                icon: HomeFigmaIcons.notificationBing,
-                size: 22 * scale.clamp(0.9, 1.05),
-                color: const Color(0xFF0A0A0A),
+              FigmaSvgIcon(
+                FigmaIcons.notificationBing,
+                size: 24 * scale.clamp(0.9, 1.05),
               ),
               if (unreadCount > 0)
                 Positioned(

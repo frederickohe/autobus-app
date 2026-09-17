@@ -53,7 +53,7 @@ class _FromEmailPageState extends State<FromEmailPage> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _loadError = e.toString().replaceFirst('Exception: ', '');
+        _loadError = userFacingError(e);
         _loading = false;
       });
     }
@@ -82,7 +82,7 @@ class _FromEmailPageState extends State<FromEmailPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            e.toString().replaceFirst('Exception: ', ''),
+            userFacingError(e),
             style: GoogleFonts.montserrat(),
           ),
           backgroundColor: Colors.red.shade700,

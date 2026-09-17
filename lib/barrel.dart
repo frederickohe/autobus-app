@@ -133,6 +133,7 @@ export 'package:iconify_flutter/icons/uim.dart';
 export 'package:autobus/icons/fluent.dart';
 
 // Design Imports
+export 'package:autobus/common_design/user_facing_error.dart';
 export 'package:autobus/common_design/colors.dart';
 export 'package:autobus/common_design/widgets/appbutton.dart';
 export 'package:page_transition/page_transition.dart';

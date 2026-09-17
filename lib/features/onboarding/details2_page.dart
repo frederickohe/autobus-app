@@ -1,4 +1,5 @@
 import 'package:autobus/barrel.dart';
+import 'package:autobus/icons/figma_icons.dart';
 import 'package:flutter/services.dart';
 
 enum _SetupInputType { text, industrySelection, phone, url }
@@ -553,11 +554,10 @@ class _Details2PageState extends State<Details2Page> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Image.asset(
-                          'assets/img/aibot.png',
-                          width: 70 * scale,
-                          height: 70 * scale,
-                          fit: BoxFit.contain,
+                        FigmaSvgIcon(
+                          FigmaIcons.ai,
+                          size: 70 * scale,
+                          color: const Color(0xFF7F03B9),
                         ),
                         SizedBox(height: 10 * scale),
                         Text(

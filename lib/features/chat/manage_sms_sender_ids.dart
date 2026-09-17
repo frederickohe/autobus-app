@@ -40,7 +40,7 @@ class _ManageSmsSenderIdsState extends State<ManageSmsSenderIds> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _loadError = e.toString().replaceFirst('Exception: ', '');
+        _loadError = userFacingError(e);
         _rows = const [];
         _loading = false;
       });
@@ -84,7 +84,7 @@ class _ManageSmsSenderIdsState extends State<ManageSmsSenderIds> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            e.toString().replaceFirst('Exception: ', ''),
+            userFacingError(e),
             style: GoogleFonts.montserrat(),
           ),
         ),

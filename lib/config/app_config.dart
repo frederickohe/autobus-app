@@ -4,6 +4,9 @@ class AppConfig {
   /// Default timeout for backend HTTP calls (auth refresh, profile, etc.).
   static const Duration networkTimeout = Duration(seconds: 10);
 
+  /// LLM / start-dialog calls often need longer than a normal REST read.
+  static const Duration agentTimeout = Duration(seconds: 90);
+
   static late String _backendUrl;
   static late String paystackPublicKey;
   static late String paystackCallbackUrl;

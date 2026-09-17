@@ -64,7 +64,7 @@ class _CustomerPickerSheetState extends State<_CustomerPickerSheet> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _loadError = e.toString().replaceFirst('Exception: ', '');
+        _loadError = userFacingError(e);
         _loading = false;
       });
     }

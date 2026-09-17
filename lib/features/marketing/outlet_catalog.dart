@@ -1,4 +1,5 @@
 import 'package:autobus/features/marketing/models/postiz_integration.dart';
+import 'package:autobus/icons/figma_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
@@ -6,6 +7,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 class OutletOption {
   final String label;
   final FaIconData icon;
+  final String? iconAsset;
   final Color iconColor;
   final Color tileColor;
   final String linkSubtitle;
@@ -17,6 +19,7 @@ class OutletOption {
   const OutletOption({
     required this.label,
     required this.icon,
+    this.iconAsset,
     required this.iconColor,
     required this.tileColor,
     required this.linkSubtitle,
@@ -57,6 +60,7 @@ class OutletCatalog {
     OutletOption(
       label: 'Instagram',
       icon: FontAwesomeIcons.instagram,
+      iconAsset: FigmaIcons.instagram,
       iconColor: Color(0xFFE60B51),
       tileColor: Color(0xFFE60B51),
       linkSubtitle: 'Link instagram',
@@ -66,6 +70,7 @@ class OutletCatalog {
     OutletOption(
       label: 'YouTube',
       icon: FontAwesomeIcons.youtube,
+      iconAsset: FigmaIcons.youtube,
       iconColor: Color(0xFFED1F1F),
       tileColor: Color(0xFFED1F1F),
       linkSubtitle: 'Link youtube',
@@ -75,6 +80,7 @@ class OutletCatalog {
     OutletOption(
       label: 'Tiktok',
       icon: FontAwesomeIcons.tiktok,
+      iconAsset: FigmaIcons.tiktok,
       iconColor: Colors.black,
       tileColor: Colors.black,
       linkSubtitle: 'Link tiktok',
@@ -84,6 +90,7 @@ class OutletCatalog {
     OutletOption(
       label: 'Facebook',
       icon: FontAwesomeIcons.facebookF,
+      iconAsset: FigmaIcons.facebook,
       iconColor: Color(0xFF3D5A98),
       tileColor: Color(0xFF3D5A98),
       linkSubtitle: 'Link facebook',
@@ -93,6 +100,7 @@ class OutletCatalog {
     OutletOption(
       label: 'LinkedIn',
       icon: FontAwesomeIcons.linkedinIn,
+      iconAsset: FigmaIcons.linkedin,
       iconColor: Color(0xFF0076B2),
       tileColor: Color(0xFF0076B2),
       linkSubtitle: 'Link linkedin',
@@ -127,5 +135,12 @@ class OutletCatalog {
     }
 
     return (linked: linked, unlinked: unlinked);
+  }
+
+  static String? iconAssetFor(FaIconData icon) {
+    for (final outlet in all) {
+      if (outlet.icon == icon) return outlet.iconAsset;
+    }
+    return null;
   }
 }

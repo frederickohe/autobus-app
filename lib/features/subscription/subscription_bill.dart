@@ -1,4 +1,5 @@
 import 'package:autobus/barrel.dart';
+import 'package:autobus/icons/figma_icons.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:autobus/features/onboarding/onboarding_storage.dart';
@@ -291,7 +292,7 @@ class _SubscriptionBillPageState extends State<SubscriptionBillPage> {
     }
     if (!result.success) {
       messenger.showSnackBar(
-        SnackBar(content: Text(result.error ?? 'App Store purchase failed.')),
+        SnackBar(content: Text(userFacingError(result.error, fallback: AppUserMessages.payment))),
       );
       return;
     }
@@ -379,9 +380,7 @@ class _SubscriptionBillPageState extends State<SubscriptionBillPage> {
       if (!skipPaystack && AppConfig.paystackCallbackUrl.isEmpty) {
         messenger.showSnackBar(
           const SnackBar(
-            content: Text(
-              'Missing PAYSTACK_CALLBACK_URL. Set it in .env and ensure it matches your Paystack dashboard redirect/callback.',
-            ),
+            content: Text(AppUserMessages.payment),
           ),
         );
       }
@@ -457,7 +456,11 @@ class _SubscriptionBillPageState extends State<SubscriptionBillPage> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('An error occurred: $e')));
+        ).showSnackBar(
+          SnackBar(
+            content: Text(userFacingError(e, fallback: AppUserMessages.payment)),
+          ),
+        );
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -481,7 +484,11 @@ class _SubscriptionBillPageState extends State<SubscriptionBillPage> {
                 Row(
                   children: [
                     IconButton(
-                      icon: const Icon(Icons.arrow_back, color: Colors.white),
+                      icon: FigmaSvgIcon(
+                        FigmaIcons.back,
+                        size: 22,
+                        color: Colors.white,
+                      ),
                       onPressed: () => Navigator.of(context).pop(),
                     ),
                     Expanded(
@@ -791,13 +798,7 @@ class _BottomCta extends StatelessWidget {
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              Row(
-                children: const [
-                  Icon(Icons.chevron_right, color: Colors.white, size: 18),
-                  Icon(Icons.chevron_right, color: Colors.white54, size: 18),
-                  Icon(Icons.chevron_right, color: Colors.white38, size: 18),
-                ],
-              ),
+              const FigmaChevronTrail(),
             ],
           ),
         ),

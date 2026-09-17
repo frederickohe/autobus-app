@@ -14,10 +14,9 @@ class ManageMarketing extends StatelessWidget {
 
     return LightScreenScaffold(
       title: 'Manage Marketing',
-      titleFontSize: 16,
       creditCategory: CreditCategory.imageGen,
       body: SingleChildScrollView(
-        padding: EdgeInsets.fromLTRB(20 * scale, 30 * scale, 20 * scale, 32 * scale),
+        padding: LightScreenTheme.hubPagePadding(scale),
         child: Column(
           children: [
             Text(
@@ -25,15 +24,15 @@ class ManageMarketing extends StatelessWidget {
               textAlign: TextAlign.center,
               style: LightScreenTheme.hubTitle(scale),
             ),
-            SizedBox(height: 16 * scale),
+            SizedBox(height: LightScreenTheme.hubTitleGap * scale),
             Text(
-              'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
+              'Create campaigns, link your outlets, and publish marketing content from Autobus.',
               textAlign: TextAlign.center,
               style: LightScreenTheme.hubBody(scale).copyWith(
                 color: const Color(0xFF4E4E4E),
               ),
             ),
-            SizedBox(height: 30 * scale),
+            SizedBox(height: LightScreenTheme.hubToCards * scale),
             LightHubGrid(
               scale: scale,
               children: [

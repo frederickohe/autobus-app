@@ -2,17 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:autobus/common_design/colors.dart';
 import 'package:autobus/common_design/credit_category.dart';
+import 'package:autobus/common_design/user_facing_error.dart';
 import 'package:autobus/common_design/light_screen_theme.dart';
 import 'package:autobus/common_design/widgets/app_bottom_nav.dart';
 import 'package:autobus/common_design/widgets/autobus_loading_indicator.dart';
-import 'package:autobus/common_design/widgets/light_list_card.dart';
 import 'package:autobus/common_design/widgets/light_screen_scaffold.dart';
 import 'package:autobus/features/home/services/api_service.dart';
-import 'package:autobus/features/subscription/data/apple_iap_ids.dart';
-import 'package:autobus/features/subscription/services/apple_iap_service.dart';
 import 'package:autobus/features/subscription/userplan.dart';
+import 'package:autobus/icons/figma_icons.dart';
 
 /// [RouteSettings.name] for [Navigator.popUntil] after plan purchase from this flow.
 const String kManageSubscriptionRouteName = 'ManageSubscription';
@@ -25,8 +23,32 @@ class ManageSubscriptionPage extends StatefulWidget {
 }
 
 class _ManageSubscriptionPageState extends State<ManageSubscriptionPage> {
+  static const _heroPurple = Color(0xFF2D0C51);
+  static const _actionBg = Color(0xFFF8FAFC);
+  static const _actionInk = Color(0xFF0E0E0E);
+  static const _historyMuted = Color(0xFF727272);
+  static const _historyCredits = Color(0xFF555555);
+  static const _pricePurple = Color(0xFF7F03B9);
+  static const _rule = Color(0xFFE6E6E6);
+
+  static const _months = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
+
   Map<String, dynamic>? _status;
   Map<String, dynamic>? _credits;
+  List<_CreditHistoryItem> _history = const [];
   bool _loading = true;
   String _userEmail = '';
 
@@ -37,7 +59,12 @@ class _ManageSubscriptionPageState extends State<ManageSubscriptionPage> {
   }
 
   Future<void> _bootstrap() async {
-    await Future.wait([_loadEmail(), _loadStatus(), _loadCredits()]);
+    await Future.wait([
+      _loadEmail(),
+      _loadStatus(),
+      _loadCredits(),
+      _loadHistory(),
+    ]);
   }
 
   Future<void> _loadEmail() async {
@@ -82,114 +109,124 @@ class _ManageSubscriptionPageState extends State<ManageSubscriptionPage> {
     }
   }
 
-  Future<void> _refreshAll() async {
-    await Future.wait([_loadStatus(), _loadCredits()]);
+  Future<void> _loadHistory() async {
+    try {
+      final api = context.read<ApiService>();
+      final results = await Future.wait([
+        api.getFinancials(page: 1, pageSize: 50),
+        api.listBillings(page: 0, size: 50),
+      ]);
+      if (!mounted) return;
+      final financials = results[0];
+      final billings = results[1];
+      final items = <_CreditHistoryItem>[];
+
+      for (final row in financials) {
+        final item = _itemFromFinancial(row);
+        if (item != null) items.add(item);
+      }
+      for (final row in billings) {
+        final source = (row['source_type'] ?? '').toString().toUpperCase();
+        if (source == 'ORDER') continue;
+        final item = _itemFromBilling(row);
+        if (item != null) items.add(item);
+      }
+
+      items.sort((a, b) {
+        final at = a.at ?? DateTime.fromMillisecondsSinceEpoch(0);
+        final bt = b.at ?? DateTime.fromMillisecondsSinceEpoch(0);
+        return bt.compareTo(at);
+      });
+
+      setState(() => _history = items);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _history = const []);
+    }
   }
 
-  String _formatCreditValue(String type, dynamic remaining) {
-    final v = remaining is num
-        ? remaining.toDouble()
-        : double.tryParse(remaining?.toString() ?? '') ?? 0;
-    if (type == CreditCategory.storageMb) {
-      if (v >= 1024) return '${(v / 1024).toStringAsFixed(1)} GB';
-      return '${v.toStringAsFixed(0)} MB';
+  _CreditHistoryItem? _itemFromFinancial(Map<String, dynamic> row) {
+    final title = (row['description'] ??
+            row['narration'] ??
+            row['title'] ??
+            row['type'] ??
+            '')
+        .toString()
+        .trim();
+    final amount = _nullableDouble(row['amount'] ?? row['total'] ?? row['value']);
+    final at = DateTime.tryParse(
+      (row['created_at'] ?? row['paid_at'] ?? row['date'] ?? '').toString(),
+    );
+    final credits = _nullableDouble(
+      row['credits'] ?? row['credit_amount'] ?? row['quantity'],
+    );
+    if (title.isEmpty && amount == null && at == null) return null;
+    return _CreditHistoryItem(
+      title: title.isEmpty ? 'Purchase of ${_displayPlanName.toLowerCase()}' : title,
+      at: at,
+      creditsLabel: credits == null ? null : '${_formatNumber(credits)} credits',
+      amount: amount,
+    );
+  }
+
+  _CreditHistoryItem? _itemFromBilling(Map<String, dynamic> row) {
+    final title = (row['description'] ??
+            row['narration'] ??
+            row['reference'] ??
+            '')
+        .toString()
+        .trim();
+    final amount = _nullableDouble(row['amount'] ?? row['total']);
+    final at = DateTime.tryParse(
+      (row['created_at'] ?? row['paid_at'] ?? '').toString(),
+    );
+    if (title.isEmpty && amount == null && at == null) return null;
+    return _CreditHistoryItem(
+      title: title.isEmpty ? 'Purchase of ${_displayPlanName.toLowerCase()}' : title,
+      at: at,
+      creditsLabel: null,
+      amount: amount,
+    );
+  }
+
+  Future<void> _refreshAll() async {
+    await Future.wait([_loadStatus(), _loadCredits(), _loadHistory()]);
+  }
+
+  Map<String, dynamic>? get _preferredCredit {
+    final creditsMap = _credits?['credits'];
+    if (creditsMap is! Map) return null;
+    final preferred =
+        creditsMap[CreditCategory.server] ?? creditsMap[CreditCategory.llm];
+    if (preferred is Map) return Map<String, dynamic>.from(preferred);
+    for (final value in creditsMap.values) {
+      if (value is Map) return Map<String, dynamic>.from(value);
     }
+    return null;
+  }
+
+  double? _nullableDouble(dynamic v) {
+    if (v == null) return null;
+    if (v is num) return v.toDouble();
+    return double.tryParse(v.toString());
+  }
+
+  String _formatNumber(double v) {
     if (v >= 1000000) return '${(v / 1000000).toStringAsFixed(1)}M';
     if (v >= 1000) return '${(v / 1000).toStringAsFixed(1)}K';
     return v.toStringAsFixed(v == v.roundToDouble() ? 0 : 1);
   }
 
-  Widget _buildCreditsSection(double scale) {
-    final creditsMap = _credits?['credits'];
-    if (creditsMap is! Map || creditsMap.isEmpty) {
-      return const SizedBox.shrink();
-    }
+  String get _remainingLabel {
+    final rem = _nullableDouble(_preferredCredit?['remaining']);
+    if (rem == null) return '0';
+    return _formatNumber(rem);
+  }
 
-    final entries = creditsMap.entries.toList()
-      ..sort((a, b) {
-        final la = CreditCategory.labelFor(a.key);
-        final lb = CreditCategory.labelFor(b.key);
-        return la.compareTo(lb);
-      });
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(height: 20 * scale),
-        Text(
-          'Credits remaining',
-          style: GoogleFonts.montserrat(
-            fontSize: 16 * scale.clamp(0.9, 1.05),
-            fontWeight: FontWeight.w700,
-            color: Colors.black87,
-          ),
-        ),
-        SizedBox(height: 10 * scale),
-        ...entries.map((entry) {
-          final key = entry.key.toString();
-          final item = entry.value;
-          if (item is! Map) return const SizedBox.shrink();
-          final allocated = item['allocated'];
-          final remaining = item['remaining'];
-          final label = (item['label'] ?? CreditCategory.labelFor(key))
-              .toString();
-          final allocNum = allocated is num
-              ? allocated.toDouble()
-              : double.tryParse(allocated?.toString() ?? '') ?? 0;
-          final remNum = remaining is num
-              ? remaining.toDouble()
-              : double.tryParse(remaining?.toString() ?? '') ?? 0;
-          final progress =
-              allocNum > 0 ? (remNum / allocNum).clamp(0.0, 1.0) : 0.0;
-
-          return Padding(
-            padding: EdgeInsets.only(bottom: 10 * scale),
-            child: LightListCard(
-              scale: scale,
-              padding: EdgeInsets.all(14 * scale),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          label,
-                          style: LightScreenTheme.listTitle(scale),
-                        ),
-                      ),
-                      Text(
-                        '${_formatCreditValue(key, remaining)} left',
-                        style: GoogleFonts.montserrat(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 13 * scale.clamp(0.9, 1.05),
-                          color: CustColors.mainCol,
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 8 * scale),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(4 * scale),
-                    child: LinearProgressIndicator(
-                      value: progress,
-                      minHeight: 6,
-                      backgroundColor: Colors.black12,
-                      color: CustColors.mainCol,
-                    ),
-                  ),
-                  SizedBox(height: 4 * scale),
-                  Text(
-                    '${_formatCreditValue(key, allocated)} monthly allocation',
-                    style: LightScreenTheme.listSubtitle(scale),
-                  ),
-                ],
-              ),
-            ),
-          );
-        }),
-      ],
-    );
+  String get _allocatedLabel {
+    final alloc = _nullableDouble(_preferredCredit?['allocated']);
+    if (alloc == null || alloc <= 0) return '—';
+    return _formatNumber(alloc);
   }
 
   bool get _isAppleIap {
@@ -207,11 +244,8 @@ class _ManageSubscriptionPageState extends State<ManageSubscriptionPage> {
       ? '—'
       : (_status!['plan_name']).toString();
 
-  int get _daysRemaining {
-    final v = _status?['days_remaining'];
-    if (v is int) return v;
-    return int.tryParse(v?.toString() ?? '0') ?? 0;
-  }
+  String get _displayPlanName =>
+      _planName == '—' ? 'No active plan' : _planName;
 
   double? get _planPrice {
     final v = _status?['plan_price'];
@@ -219,30 +253,46 @@ class _ManageSubscriptionPageState extends State<ManageSubscriptionPage> {
     return double.tryParse(v?.toString() ?? '');
   }
 
-  String _renewalLine() {
-    if (!_hasActive) return 'Choose a plan to unlock premium features.';
-    final d = _daysRemaining;
-    if (d > 1) return '$d days until renewal';
-    if (d == 1) return '1 day until renewal';
-    return 'Renews today';
+  List<_CreditHistoryItem> get _visibleHistory {
+    if (_history.isNotEmpty) return _history;
+    if (!_hasActive) return const [];
+    final at = DateTime.tryParse(
+      (_status?['started_at'] ??
+              _status?['created_at'] ??
+              _status?['expires_at'] ??
+              '')
+          .toString(),
+    );
+    final alloc = _nullableDouble(_preferredCredit?['allocated']);
+    return [
+      _CreditHistoryItem(
+        title: 'Purchase of ${_planName.toLowerCase()}',
+        at: at,
+        creditsLabel: alloc == null ? null : '${_formatNumber(alloc)} credits',
+        amount: _planPrice,
+      ),
+    ];
   }
 
-  String? _expiresLine() {
-    final raw = _status?['expires_at']?.toString();
-    if (raw == null || raw.isEmpty) return null;
-    try {
-      final dt = DateTime.tryParse(raw);
-      if (dt == null) return 'Renews on $raw';
-      final local = dt.toLocal();
-      final mm = local.month.toString().padLeft(2, '0');
-      final dd = local.day.toString().padLeft(2, '0');
-      return 'Renewal date: ${local.year}-$mm-$dd';
-    } catch (_) {
-      return null;
-    }
+  String _formatHistoryDate(DateTime? at) {
+    if (at == null) return '';
+    final local = at.toLocal();
+    final hh = local.hour.toString().padLeft(2, '0');
+    final mm = local.minute.toString().padLeft(2, '0');
+    return '${local.day} ${_months[local.month - 1]} . $hh:$mm';
   }
 
-  Future<void> _openPlanPicker({required bool upgrade}) async {
+  String _formatMoney(double amount) {
+    final shown = amount == amount.roundToDouble()
+        ? amount.toStringAsFixed(0)
+        : amount.toStringAsFixed(2);
+    return '\$$shown';
+  }
+
+  Future<void> _openPlanPicker({
+    required bool upgrade,
+    bool renewStyle = false,
+  }) async {
     var email = _userEmail.trim();
     if (email.isEmpty) {
       try {
@@ -267,33 +317,22 @@ class _ManageSubscriptionPageState extends State<ManageSubscriptionPage> {
         builder: (_) => SelectPlan(
           userEmail: email,
           upgradeFromActivePlan: upgrade,
-          minExclusivePlanPrice: upgrade ? _planPrice : null,
+          minExclusivePlanPrice: upgrade && !renewStyle ? _planPrice : null,
           successPopUntilRouteName: kManageSubscriptionRouteName,
+          topUpStyle: !renewStyle,
+          renewStyle: renewStyle,
+          remainingCreditsLabel: renewStyle
+              ? '$_remainingLabel credits left'
+              : null,
         ),
       ),
     );
     if (mounted) await _refreshAll();
   }
 
-  Future<void> _restoreApplePurchases() async {
-    setState(() => _loading = true);
-    try {
-      final result = await AppleIapService.instance.restoreActiveSubscription();
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            result.success
-                ? 'Apple subscription restored.'
-                : (result.error ?? 'No Apple subscription to restore.'),
-          ),
-        ),
-      );
-      if (result.success) await _refreshAll();
-    } finally {
-      if (mounted) setState(() => _loading = false);
-    }
-  }
+  Future<void> _onTopup() => _openPlanPicker(upgrade: _hasActive);
+
+  Future<void> _onRenew() => _openPlanPicker(upgrade: false, renewStyle: true);
 
   Future<void> _openAppleSubscriptions() async {
     final uri = Uri.parse('https://apps.apple.com/account/subscriptions');
@@ -364,7 +403,9 @@ class _ManageSubscriptionPageState extends State<ManageSubscriptionPage> {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Could not cancel: $e')));
+      ).showSnackBar(
+        SnackBar(content: Text(userFacingError(e, fallback: AppUserMessages.save))),
+      );
     }
   }
 
@@ -373,123 +414,53 @@ class _ManageSubscriptionPageState extends State<ManageSubscriptionPage> {
     final scale = MediaQuery.sizeOf(context).width / appShellDesignWidth;
 
     return LightScreenScaffold(
-      title: 'Subscription',
-      creditCategory: CreditCategory.server,
+      title: 'Credits',
+      backgroundColor: Colors.white,
       body: RefreshIndicator(
-        color: LightScreenTheme.accent,
+        color: _heroPurple,
         onRefresh: _refreshAll,
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: EdgeInsets.fromLTRB(
-            20 * scale,
-            20 * scale,
-            20 * scale,
-            32 * scale,
-          ),
+          padding: LightScreenTheme.listPagePadding(scale),
           children: [
             if (_loading)
               Padding(
                 padding: EdgeInsets.all(48 * scale),
-                child: const Center(
-                  child: AutobusLoadingIndicator(size: 36),
-                ),
+                child: const Center(child: AutobusLoadingIndicator(size: 36)),
               )
             else ...[
-              LightListCard(
-                scale: scale,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _hasActive ? _planName : 'No active plan',
-                      style: GoogleFonts.montserrat(
-                        fontSize: 22 * scale.clamp(0.9, 1.05),
-                        fontWeight: FontWeight.w800,
-                        color: Colors.black87,
-                      ),
-                    ),
-                    SizedBox(height: 8 * scale),
-                    Text(
-                      _renewalLine(),
-                      style: LightScreenTheme.hubBody(scale),
-                    ),
-                    if (_expiresLine() != null) ...[
-                      SizedBox(height: 4 * scale),
-                      Text(
-                        _expiresLine()!,
-                        style: LightScreenTheme.listSubtitle(scale),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              _buildCreditsSection(scale),
-              SizedBox(height: 18 * scale),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _hasActive
-                      ? () => _openPlanPicker(upgrade: true)
-                      : () => _openPlanPicker(upgrade: false),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: CustColors.mainCol,
-                    foregroundColor: Colors.white,
-                    padding: EdgeInsets.symmetric(vertical: 14 * scale),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12 * scale),
-                    ),
-                  ),
+              _heroCard(scale),
+              SizedBox(height: 12 * scale),
+              _actionsCard(scale),
+              SizedBox(height: 20 * scale),
+              _historyHeader(scale),
+              SizedBox(height: 10 * scale),
+              if (_visibleHistory.isEmpty)
+                Padding(
+                  padding: EdgeInsets.symmetric(vertical: 24 * scale),
                   child: Text(
-                    _hasActive ? 'Upgrade or change plan' : 'Choose a plan',
+                    'No credit purchases yet.',
                     style: GoogleFonts.montserrat(
-                      fontWeight: FontWeight.w600,
+                      fontSize: 13 * scale.clamp(0.9, 1.05),
+                      color: _historyMuted,
                     ),
                   ),
-                ),
-              ),
+                )
+              else
+                ..._visibleHistory.map((item) => _historyRow(scale, item)),
               if (_hasActive) ...[
-                SizedBox(height: 12 * scale),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton(
+                SizedBox(height: 20 * scale),
+                Center(
+                  child: TextButton(
                     onPressed: _confirmCancel,
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.red.shade800,
-                      side: BorderSide(color: Colors.red.shade200),
-                      padding: EdgeInsets.symmetric(vertical: 14 * scale),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12 * scale),
-                      ),
-                    ),
                     child: Text(
                       _isAppleIap
                           ? 'Manage on Apple ID'
                           : 'Cancel subscription',
                       style: GoogleFonts.montserrat(
+                        fontSize: 13 * scale.clamp(0.9, 1.05),
                         fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-              if (AppleIapIds.isSupported) ...[
-                SizedBox(height: 12 * scale),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton(
-                    onPressed: _loading ? null : _restoreApplePurchases,
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: CustColors.mainCol,
-                      side: const BorderSide(color: CustColors.mainCol),
-                      padding: EdgeInsets.symmetric(vertical: 14 * scale),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12 * scale),
-                      ),
-                    ),
-                    child: Text(
-                      'Restore Purchases',
-                      style: GoogleFonts.montserrat(
-                        fontWeight: FontWeight.w600,
+                        color: Colors.red.shade700,
                       ),
                     ),
                   ),
@@ -501,4 +472,234 @@ class _ManageSubscriptionPageState extends State<ManageSubscriptionPage> {
       ),
     );
   }
+
+  Widget _heroCard(double scale) {
+    return Container(
+      width: double.infinity,
+      height: 174 * scale,
+      padding: EdgeInsets.fromLTRB(
+        16 * scale,
+        21 * scale,
+        16 * scale,
+        33 * scale,
+      ),
+      decoration: BoxDecoration(
+        color: _heroPurple,
+        borderRadius: BorderRadius.circular(15 * scale),
+      ),
+      child: Column(
+        children: [
+          SizedBox(
+            height: 20 * scale,
+            child: Text(
+              _displayPlanName,
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.montserrat(
+                color: Colors.white,
+                fontSize: 14 * scale,
+                fontWeight: FontWeight.w500,
+                height: 20 / 14,
+              ),
+            ),
+          ),
+          SizedBox(height: 9 * scale),
+          SizedBox(
+            height: 63 * scale,
+            child: Center(
+              child: Text(
+                _remainingLabel,
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                style: GoogleFonts.montserrat(
+                  color: Colors.white,
+                  fontSize: 48 * scale,
+                  fontWeight: FontWeight.w700,
+                  height: 1,
+                ),
+              ),
+            ),
+          ),
+          SizedBox(height: 8 * scale),
+          SizedBox(
+            height: 20 * scale,
+            child: Text(
+              'Out of $_allocatedLabel credits left',
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.montserrat(
+                color: Colors.white,
+                fontSize: 12 * scale,
+                fontWeight: FontWeight.w400,
+                height: 20 / 12,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _actionsCard(double scale) {
+    return Container(
+      height: 74 * scale,
+      decoration: BoxDecoration(
+        color: _actionBg,
+        borderRadius: BorderRadius.circular(15 * scale),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 24,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: _actionButton(
+              scale: scale,
+              iconAsset: FigmaIcons.tokenOutline,
+              label: 'Topup',
+              onTap: _onTopup,
+            ),
+          ),
+          Expanded(
+            child: _actionButton(
+              scale: scale,
+              iconAsset: FigmaIcons.refresh,
+              label: 'Renew',
+              onTap: _onRenew,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _actionButton({
+    required double scale,
+    required String iconAsset,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(15 * scale),
+        onTap: onTap,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            FigmaSvgIcon(
+              iconAsset,
+              size: 24 * scale,
+            ),
+            SizedBox(height: 4 * scale),
+            Text(
+              label,
+              style: GoogleFonts.montserrat(
+                color: _actionInk,
+                fontSize: 13 * scale.clamp(0.9, 1.05),
+                fontWeight: FontWeight.w400,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _historyHeader(double scale) {
+    return Row(
+      children: [
+        Text(
+          'History',
+          style: GoogleFonts.montserrat(
+            fontSize: 16 * scale.clamp(0.9, 1.05),
+            fontWeight: FontWeight.w600,
+            color: Colors.black,
+          ),
+        ),
+        SizedBox(width: 16 * scale),
+        Expanded(
+          child: Container(height: 1, color: _rule),
+        ),
+      ],
+    );
+  }
+
+  Widget _historyRow(double scale, _CreditHistoryItem item) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: 16 * scale),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          FigmaSvgIcon(
+            FigmaIcons.token,
+            size: 30 * scale,
+          ),
+          SizedBox(width: 18 * scale),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item.title,
+                  style: GoogleFonts.montserrat(
+                    fontSize: 14 * scale.clamp(0.9, 1.05),
+                    fontWeight: FontWeight.w500,
+                    color: const Color(0xFF161616),
+                  ),
+                ),
+                if (item.at != null)
+                  Text(
+                    _formatHistoryDate(item.at),
+                    style: GoogleFonts.montserrat(
+                      fontSize: 12 * scale.clamp(0.9, 1.05),
+                      fontWeight: FontWeight.w400,
+                      color: _historyMuted,
+                    ),
+                  ),
+                if (item.creditsLabel != null)
+                  Text(
+                    item.creditsLabel!,
+                    style: GoogleFonts.montserrat(
+                      fontSize: 12 * scale.clamp(0.9, 1.05),
+                      fontWeight: FontWeight.w400,
+                      color: _historyCredits,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          if (item.amount != null)
+            Text(
+              _formatMoney(item.amount!),
+              style: GoogleFonts.montserrat(
+                fontSize: 14 * scale.clamp(0.9, 1.05),
+                fontWeight: FontWeight.w600,
+                color: _pricePurple,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CreditHistoryItem {
+  final String title;
+  final DateTime? at;
+  final String? creditsLabel;
+  final double? amount;
+
+  const _CreditHistoryItem({
+    required this.title,
+    this.at,
+    this.creditsLabel,
+    this.amount,
+  });
 }

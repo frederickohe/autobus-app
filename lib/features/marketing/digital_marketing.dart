@@ -9,6 +9,7 @@ import 'package:autobus/common_design/widgets/light_list_card.dart';
 import 'package:autobus/common_design/widgets/light_screen_scaffold.dart';
 import 'package:autobus/features/marketing/marketing_media_download.dart';
 import 'package:autobus/features/marketing/platform_post_details.dart';
+import 'package:autobus/icons/figma_icons.dart';
 import 'package:autobus/icons/home_figma_icons.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
@@ -781,24 +782,17 @@ class _GenerateMediaPageState extends State<_GenerateMediaPage> {
       _scrollChat();
     } catch (e) {
       if (!mounted) return;
-      final message = e is Exception ? e.toString() : 'Media generation failed';
       setState(() {
         slot.genState = MediaGenState.idle;
         _completeLastAssistant(
-          text: message.contains('GOOGLE_API_KEY')
-              ? 'Image/Video generation is unavailable: server missing configuration.'
-              : 'I could not create that. Please try again.',
+          text: "I couldn't create that. Please try again.",
         );
       });
       _scrollChat();
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            message.contains('GOOGLE_API_KEY')
-                ? 'Image/Video generation is unavailable: server missing configuration.'
-                : 'Media generation failed: $message',
-          ),
+          content: Text(userFacingError(e, fallback: AppUserMessages.generic)),
           duration: const Duration(seconds: 5),
         ),
       );
@@ -1861,7 +1855,7 @@ class _MarketingInlineVideoPlayerState
       if (!mounted) return;
       setState(() {
         _failed = true;
-        _errorDetail = e.toString();
+        _errorDetail = userFacingError(e, fallback: AppUserMessages.load);
       });
     }
   }
@@ -2057,7 +2051,7 @@ class _MediaSlotPreviewDialogState extends State<_MediaSlotPreviewDialog> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Download failed: $e')),
+        SnackBar(content: Text(userFacingError(e, fallback: AppUserMessages.save))),
       );
     } finally {
       if (mounted) setState(() => _downloading = false);
@@ -3248,14 +3242,14 @@ class _SelectOutletPageState extends State<_SelectOutletPage> {
   }
 
   Widget _contentLeading(MarketingContent content) {
-    final FaIconData icon;
+    final IconData icon;
     switch (content.type) {
       case MarketingContentType.pictures:
-        icon = FontAwesomeIcons.image;
+        icon = HomeFigmaIcons.marketingPictures;
       case MarketingContentType.videos:
-        icon = FontAwesomeIcons.video;
+        icon = HomeFigmaIcons.marketingVideos;
       case MarketingContentType.text:
-        icon = FontAwesomeIcons.alignLeft;
+        icon = HomeFigmaIcons.marketingText;
     }
     return Container(
       width: 44,
@@ -3265,7 +3259,7 @@ class _SelectOutletPageState extends State<_SelectOutletPage> {
         borderRadius: BorderRadius.circular(12),
       ),
       alignment: Alignment.center,
-      child: FaIcon(icon, size: 16, color: Colors.white),
+      child: HomeSfIcon(icon: icon, size: 16, color: Colors.white),
     );
   }
 
@@ -3278,7 +3272,12 @@ class _SelectOutletPageState extends State<_SelectOutletPage> {
         borderRadius: BorderRadius.circular(12),
       ),
       alignment: Alignment.center,
-      child: FaIcon(outlet.icon, size: 18, color: Colors.white),
+      child: FigmaBrandIcon(
+        asset: outlet.iconAsset,
+        fallback: outlet.icon,
+        size: 18,
+        color: Colors.white,
+      ),
     );
   }
 
@@ -3465,7 +3464,7 @@ class _SelectOutletPageState extends State<_SelectOutletPage> {
                   selected: widget.campaign.aiWriteCaptions,
                   title: 'Let AI write captions',
                   subtitle:
-                      'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor',
+                      'Autobus writes captions from your campaign details.',
                   radioOnRight: false,
                   onTap: () => setState(
                     () => widget.campaign.aiWriteCaptions = true,
@@ -3477,7 +3476,7 @@ class _SelectOutletPageState extends State<_SelectOutletPage> {
                   selected: !widget.campaign.aiWriteCaptions,
                   title: 'I will write them',
                   subtitle:
-                      'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor',
+                      'Write your own captions before you publish.',
                   radioOnRight: false,
                   onTap: () => setState(
                     () => widget.campaign.aiWriteCaptions = false,
@@ -3958,7 +3957,12 @@ class _PostDetailsPageState extends State<_PostDetailsPage> {
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
               child: Row(
                 children: [
-                  FaIcon(icon, size: 18, color: color),
+                  FigmaBrandIcon(
+                    asset: OutletCatalog.iconAssetFor(icon),
+                    fallback: icon,
+                    size: 18,
+                    color: color,
+                  ),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Column(
@@ -4373,9 +4377,7 @@ class _PostDetailsPageState extends State<_PostDetailsPage> {
             );
             publishedCount++;
           } catch (e) {
-            errors.add(
-              'Instagram: ${e.toString().replaceFirst('Exception: ', '')}',
-            );
+            errors.add(userFacingError(e, fallback: AppUserMessages.save));
           }
         }
       }
@@ -4461,7 +4463,7 @@ class _PostDetailsPageState extends State<_PostDetailsPage> {
       messenger.showSnackBar(
         SnackBar(
           content: Text(
-            'Publish failed: ${e.toString().replaceFirst('Exception: ', '')}',
+            userFacingError(e, fallback: AppUserMessages.save),
             style: GoogleFonts.montserrat(color: Colors.white, fontSize: 13),
           ),
           backgroundColor: Colors.red,

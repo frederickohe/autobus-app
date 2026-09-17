@@ -296,7 +296,7 @@ Future<void> openPlatformConnectInBrowser(
   } catch (e) {
     if (!context.mounted) return;
     messenger.showSnackBar(
-      SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+      SnackBar(content: Text(userFacingError(e))),
     );
   }
 }
@@ -325,7 +325,7 @@ Future<void> openEmbeddedPlatformSession(
   } catch (e) {
     if (!context.mounted) return;
     messenger.showSnackBar(
-      SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+      SnackBar(content: Text(userFacingError(e))),
     );
   }
 }

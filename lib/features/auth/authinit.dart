@@ -11,7 +11,10 @@ class AuthWrapper extends StatelessWidget {
         // Handle session expiration
         if (state is SessionExpired) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.message), backgroundColor: Colors.red),
+            SnackBar(
+              content: Text(userFacingError(state.message)),
+              backgroundColor: Colors.red,
+            ),
           );
           Navigator.of(context).pushAndRemoveUntil(
             MaterialPageRoute(builder: (_) => const AuthWrapper()),
@@ -22,7 +25,7 @@ class AuthWrapper extends StatelessWidget {
         else if (state is TokenRefreshFailed) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Session error: ${state.message}'),
+              content: Text(userFacingError(state.message)),
               backgroundColor: Colors.red,
             ),
           );
@@ -60,7 +63,9 @@ class AuthWrapper extends StatelessWidget {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               ScaffoldMessenger.of(
                 context,
-              ).showSnackBar(SnackBar(content: Text(state.message)));
+              ).showSnackBar(
+                SnackBar(content: Text(userFacingError(state.message))),
+              );
             });
             // Render relevant page based on error source
             if (state.source == 'signup') {

@@ -100,7 +100,7 @@ class _IntelligenceWebsitesPageState extends State<IntelligenceWebsitesPage> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _loadError = e.toString();
+        _loadError = userFacingError(e, fallback: AppUserMessages.load);
         _loading = false;
       });
     }
@@ -149,14 +149,7 @@ class _IntelligenceWebsitesPageState extends State<IntelligenceWebsitesPage> {
   }
 
   String _indexErrorMessage(Object e) {
-    final raw = e.toString();
-    if (raw.contains('403')) {
-      return 'Upload blocked: an active subscription is required for RAG documents.';
-    }
-    if (raw.contains('Session expired') || raw.contains('401')) {
-      return 'Session expired. Please sign in again.';
-    }
-    return raw.replaceFirst('Exception: ', '');
+    return userFacingError(e, fallback: AppUserMessages.upload);
   }
 
   Future<void> _deleteWebsite(int index) async {
@@ -215,7 +208,7 @@ class _IntelligenceWebsitesPageState extends State<IntelligenceWebsitesPage> {
       });
       _showSnack('Deleted "${_websiteTitle(doc)}"');
     } catch (e) {
-      _showSnack(e.toString().replaceFirst('Exception: ', ''));
+      _showSnack(userFacingError(e));
     }
   }
 
@@ -726,7 +719,7 @@ class _WebsitesRagProgressDialogState extends State<_WebsitesRagProgressDialog> 
       if (!mounted) return;
       setState(() {
         _failed = true;
-        _message = e.toString().replaceFirst('Exception: ', '');
+        _message = userFacingError(e);
         _progress = 100;
       });
       await Future<void>.delayed(const Duration(milliseconds: 900));

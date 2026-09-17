@@ -48,7 +48,7 @@ class _ManageProductsState extends State<ManageProducts> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _loadError = e.toString();
+        _loadError = userFacingError(e, fallback: AppUserMessages.load);
         _loading = false;
         _hasCatalogueFiles = false;
       });
@@ -69,15 +69,9 @@ class _ManageProductsState extends State<ManageProducts> {
 
     return LightScreenScaffold(
       title: 'Manage Products',
-      titleFontSize: 16,
       creditCategory: CreditCategory.storageMb,
       body: SingleChildScrollView(
-        padding: EdgeInsets.fromLTRB(
-          20 * scale,
-          30 * scale,
-          20 * scale,
-          32 * scale,
-        ),
+        padding: LightScreenTheme.hubPagePadding(scale),
         child: Column(
           children: [
             Text(
@@ -85,15 +79,15 @@ class _ManageProductsState extends State<ManageProducts> {
               textAlign: TextAlign.center,
               style: LightScreenTheme.hubTitle(scale),
             ),
-            SizedBox(height: 16 * scale),
+            SizedBox(height: LightScreenTheme.hubTitleGap * scale),
             Text(
-              'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
+              'Add products, manage stock, and share them to your catalog and social channels.',
               textAlign: TextAlign.center,
               style: LightScreenTheme.hubBody(scale).copyWith(
                 color: const Color(0xFF4E4E4E),
               ),
             ),
-            SizedBox(height: 20 * scale),
+            SizedBox(height: LightScreenTheme.hubToCards * scale),
             if (_loading) ...[
               Padding(
                 padding: EdgeInsets.symmetric(vertical: 8 * scale),
@@ -101,7 +95,7 @@ class _ManageProductsState extends State<ManageProducts> {
                   child: AutobusLoadingIndicator(size: 28),
                 ),
               ),
-              SizedBox(height: 24 * scale),
+              SizedBox(height: LightScreenTheme.sectionGap * scale),
             ] else if (_loadError != null) ...[
               _ProductNoticePanel(
                 scale: scale,
@@ -130,7 +124,7 @@ class _ManageProductsState extends State<ManageProducts> {
                   ),
                 ),
               ),
-              SizedBox(height: 30 * scale),
+              SizedBox(height: LightScreenTheme.hubToCards * scale),
             ] else if (!_hasCatalogueFiles) ...[
               _ProductNoticePanel(
                 scale: scale,
@@ -145,9 +139,9 @@ class _ManageProductsState extends State<ManageProducts> {
                   ),
                 ),
               ),
-              SizedBox(height: 30 * scale),
+              SizedBox(height: LightScreenTheme.hubToCards * scale),
             ] else
-              SizedBox(height: 10 * scale),
+              SizedBox(height: LightScreenTheme.rowGap * scale),
             LightHubGrid(
               scale: scale,
               children: [

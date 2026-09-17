@@ -47,8 +47,12 @@ class _ManageReportsState extends State<ManageReports> {
         api.getLowStockInventory(),
         api.listMyConversations(skip: 0, limit: 100),
         api.listInterventions(limit: 100),
-        api.listDigitalMarketingAssets(limit: 50, offset: 0),
-        api.getMySentEmails(limit: 50),
+        api.listDigitalMarketingAssets(limit: 50, offset: 0).catchError(
+          (_) => <String, dynamic>{'items': <dynamic>[], 'total': 0},
+        ),
+        api.getMySentEmails(limit: 50).catchError(
+          (_) => <String, dynamic>{'emails': <dynamic>[], 'total_returned': 0},
+        ),
       ]);
 
       final conversations =
@@ -94,7 +98,7 @@ class _ManageReportsState extends State<ManageReports> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _loadError = e.toString().replaceFirst('Exception: ', '');
+        _loadError = userFacingError(e);
         _loading = false;
         _snapshot = ReportsSnapshot(period: _period, error: _loadError);
       });

@@ -3,8 +3,8 @@ import 'package:autobus/common_design/light_screen_theme.dart';
 import 'package:autobus/common_design/widgets/app_bottom_nav.dart';
 import 'package:autobus/common_design/widgets/app_screen_header.dart';
 import 'package:autobus/common_design/widgets/light_hub_card.dart';
+import 'package:autobus/icons/figma_icons.dart';
 import 'package:autobus/icons/home_figma_icons.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class ManageOutlets extends StatefulWidget {
   const ManageOutlets({super.key});
@@ -79,7 +79,7 @@ class _ManageOutletsState extends State<ManageOutlets> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _loadError = e.toString().replaceFirst('Exception: ', '');
+        _loadError = userFacingError(e);
         _linked = [];
         _unlinked = OutletCatalog.all;
         _loading = false;
@@ -187,7 +187,7 @@ class _ManageOutletsState extends State<ManageOutlets> {
       if (!mounted) return;
       messenger.showSnackBar(
         SnackBar(
-          content: Text(e.toString().replaceFirst('Exception: ', '')),
+          content: Text(userFacingError(e)),
         ),
       );
     } finally {
@@ -288,7 +288,6 @@ class _ManageOutletsState extends State<ManageOutlets> {
               AppScreenHeader(
                 scale: scale,
                 title: 'Link Channel',
-                titleFontSize: 16,
                 leading: AppScreenBackButton(scale: scale),
                 trailing: IconButton(
                   onPressed: _loading || _busy ? null : _refreshIntegrations,
@@ -316,12 +315,7 @@ class _ManageOutletsState extends State<ManageOutlets> {
                         onRefresh: _refreshIntegrations,
                         child: SingleChildScrollView(
                           physics: const AlwaysScrollableScrollPhysics(),
-                          padding: EdgeInsets.fromLTRB(
-                            20 * scale,
-                            30 * scale,
-                            20 * scale,
-                            32 * scale,
-                          ),
+                          padding: LightScreenTheme.hubPagePadding(scale),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
@@ -343,7 +337,7 @@ class _ManageOutletsState extends State<ManageOutlets> {
                               ),
                               SizedBox(height: 16 * scale),
                               Text(
-                                'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
+                                'Connect a social account so you can publish and share from Autobus.',
                                 textAlign: TextAlign.center,
                                 style: LightScreenTheme.hubBody(scale).copyWith(
                                   color: const Color(0xFF4E4E4E),
@@ -438,8 +432,9 @@ class _ManageOutletsState extends State<ManageOutlets> {
       subtitleColor: subtitleColor,
       icon: HomeFigmaIcons.linkChannel,
       iconTileColor: outlet.tileColor,
-      iconWidget: FaIcon(
-        outlet.icon,
+      iconWidget: FigmaBrandIcon(
+        asset: outlet.iconAsset,
+        fallback: outlet.icon,
         color: Colors.white,
         size: 22 * scale,
       ),

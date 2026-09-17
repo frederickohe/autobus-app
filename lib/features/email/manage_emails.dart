@@ -1,8 +1,8 @@
 import 'package:autobus/barrel.dart';
+import 'package:autobus/common_design/light_screen_theme.dart';
 import 'package:autobus/common_design/widgets/app_bottom_nav.dart';
-import 'package:autobus/common_design/widgets/app_screen_header.dart';
-import 'package:autobus/common_design/widgets/credits_pill.dart';
 import 'package:autobus/common_design/widgets/light_hub_card.dart';
+import 'package:autobus/common_design/widgets/light_screen_scaffold.dart';
 import 'package:autobus/icons/home_figma_icons.dart';
 /// Manage Messaging hub — Figma ANALYTICS frame 3240:3170.
 class ManageEmails extends StatefulWidget {
@@ -13,7 +13,6 @@ class ManageEmails extends StatefulWidget {
 }
 
 class _ManageEmailsState extends State<ManageEmails> {
-  static const _backgroundColor = Color(0xFFF3F3F7);
   static const _surfaceColor = Color(0xFFF8FAFC);
   static const _accentColor = Color(0xFF7F03B9);
   static const _mutedColor = Color(0xFF64748B);
@@ -50,7 +49,7 @@ class _ManageEmailsState extends State<ManageEmails> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _loadError = e.toString();
+        _loadError = userFacingError(e, fallback: AppUserMessages.load);
         _loading = false;
         _profileEmail = '';
       });
@@ -77,56 +76,30 @@ class _ManageEmailsState extends State<ManageEmails> {
   Widget build(BuildContext context) {
     final scale = MediaQuery.sizeOf(context).width / appShellDesignWidth;
 
-    return Scaffold(
-      backgroundColor: _backgroundColor,
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          AppScreenHeader(
-            scale: scale,
-            title: 'Manage messaging',
-            leading: AppScreenBackButton(scale: scale),
-            trailing: CreditsPill(
-              scale: scale,
-              creditCategory: CreditCategory.email,
-            ),
-          ),
-          Expanded(
-            child: RefreshIndicator(
-              color: _accentColor,
-              onRefresh: _loadProfileEmail,
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: EdgeInsets.fromLTRB(
-                  20 * scale,
-                  20 * scale,
-                  20 * scale,
-                  32 * scale,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text(
-                      'Welcome to Messaging',
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.montserrat(
-                        color: Colors.black,
-                        fontSize: 16 * scale.clamp(0.9, 1.05),
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    SizedBox(height: 16 * scale),
-                    Text(
-                      'Send emails to customers for support, updates, promotions, and notifications — with your AI assistant.',
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.montserrat(
-                        color: _bodyColor,
-                        fontSize: 13 * scale.clamp(0.9, 1.05),
-                        fontWeight: FontWeight.w400,
-                        height: 1.5,
-                      ),
-                    ),
-                    SizedBox(height: 24 * scale),
+    return LightScreenScaffold(
+      title: 'Manage messaging',
+      creditCategory: CreditCategory.email,
+      body: RefreshIndicator(
+        color: LightScreenTheme.accent,
+        onRefresh: _loadProfileEmail,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: LightScreenTheme.hubPagePadding(scale),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'Welcome to Messaging',
+                textAlign: TextAlign.center,
+                style: LightScreenTheme.hubTitle(scale),
+              ),
+              SizedBox(height: LightScreenTheme.hubTitleGap * scale),
+              Text(
+                'Send emails to customers for support, updates, promotions, and notifications — with your AI assistant.',
+                textAlign: TextAlign.center,
+                style: LightScreenTheme.hubBody(scale),
+              ),
+              SizedBox(height: LightScreenTheme.hubToCards * scale),
                     if (_loading)
                       Padding(
                         padding: EdgeInsets.symmetric(vertical: 12 * scale),
@@ -176,14 +149,9 @@ class _ManageEmailsState extends State<ManageEmails> {
                         ),
                       ),
                     if (!_loading) ...[
-                      SizedBox(height: 24 * scale),
-                      GridView.count(
-                        crossAxisCount: 2,
-                        mainAxisSpacing: 12 * scale,
-                        crossAxisSpacing: 12 * scale,
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        childAspectRatio: LightHubCard.tileAspectRatio,
+                      SizedBox(height: LightScreenTheme.sectionGap * scale),
+                      LightHubGrid(
+                        scale: scale,
                         children: [
                           _MessagingHubCard(
                             scale: scale,
@@ -228,12 +196,9 @@ class _ManageEmailsState extends State<ManageEmails> {
                         ],
                       ),
                     ],
-                  ],
-                ),
-              ),
-            ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

@@ -54,7 +54,7 @@ class ProductExistingGallery extends StatelessWidget {
             Expanded(
               child: Text(
                 'Product photos',
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.montserrat(
                   color: Colors.white.withValues(alpha: 0.9),
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
@@ -64,7 +64,7 @@ class ProductExistingGallery extends StatelessWidget {
             if (photos.isNotEmpty)
               Text(
                 '${photos.length} image${photos.length == 1 ? '' : 's'}',
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.montserrat(
                   color: Colors.white.withValues(alpha: 0.45),
                   fontSize: 12,
                 ),
@@ -74,7 +74,7 @@ class ProductExistingGallery extends StatelessWidget {
         const SizedBox(height: 6),
         Text(
           'Tap a photo to set cover or remove it. Add multiple images at once.',
-          style: GoogleFonts.outfit(
+          style: GoogleFonts.montserrat(
             color: Colors.white.withValues(alpha: 0.5),
             fontSize: 12,
             height: 1.4,
@@ -160,7 +160,7 @@ class _ExistingThumb extends StatelessWidget {
                 ),
                 child: Text(
                   'Cover',
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.montserrat(
                     color: Colors.white,
                     fontSize: 9,
                     fontWeight: FontWeight.w600,
@@ -206,7 +206,7 @@ class _AddPhotosButton extends StatelessWidget {
             Text(
               'Add photos',
               textAlign: TextAlign.center,
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.montserrat(
                 color: const Color(0xFFA855F7).withValues(alpha: 0.85),
                 fontSize: 10,
                 fontWeight: FontWeight.w500,
@@ -239,7 +239,7 @@ Future<String?> showProductPhotoActionsSheet(
               leading: const Icon(Icons.star_outline, color: Colors.white70),
               title: Text(
                 'Set as cover',
-                style: GoogleFonts.outfit(color: Colors.white),
+                style: GoogleFonts.montserrat(color: Colors.white),
               ),
               onTap: () => Navigator.pop(ctx, 'primary'),
             ),
@@ -248,7 +248,7 @@ Future<String?> showProductPhotoActionsSheet(
               leading: const Icon(Icons.delete_outline, color: Colors.redAccent),
               title: Text(
                 'Remove',
-                style: GoogleFonts.outfit(color: Colors.redAccent),
+                style: GoogleFonts.montserrat(color: Colors.redAccent),
               ),
               onTap: () => Navigator.pop(ctx, 'delete'),
             ),

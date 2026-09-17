@@ -3,6 +3,7 @@ import 'package:autobus/common_design/light_screen_theme.dart';
 import 'package:autobus/common_design/widgets/app_bottom_nav.dart';
 import 'package:autobus/common_design/widgets/light_list_card.dart';
 import 'package:autobus/common_design/widgets/light_screen_scaffold.dart';
+import 'package:autobus/icons/home_figma_icons.dart';
 
 const List<String> kOrderStatuses = [
   'pending',
@@ -69,7 +70,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _loadError = e.toString().replaceFirst('Exception: ', '');
+        _loadError = userFacingError(e);
         _loading = false;
       });
     }
@@ -99,7 +100,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       if (!mounted) return;
       setState(() => _actionBusy = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+        SnackBar(content: Text(userFacingError(e))),
       );
     }
   }
@@ -213,7 +214,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                   color: LightScreenTheme.accent,
                 ),
               )
-            : Icon(Icons.task_alt_outlined, size: 20 * scale),
+            : HomeSfIcon(
+                icon: HomeFigmaIcons.checkmark,
+                size: 20 * scale,
+              ),
         label: Text(
           'Apply status',
           style: GoogleFonts.montserrat(
@@ -246,7 +250,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       if (!mounted) return;
       setState(() => _invoiceBusy = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+        SnackBar(content: Text(userFacingError(e))),
       );
     }
   }
@@ -269,7 +273,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                   color: LightScreenTheme.accent,
                 ),
               )
-            : Icon(Icons.receipt_long_outlined, size: 20 * scale),
+            : HomeSfIcon(
+                icon: HomeFigmaIcons.analyticsInvoices,
+                size: 20 * scale,
+              ),
         label: Text(
           'Send invoice to customer',
           style: GoogleFonts.montserrat(

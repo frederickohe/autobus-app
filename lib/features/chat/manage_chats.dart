@@ -71,7 +71,7 @@ class _ManageChatsState extends State<ManageChats> {
       if (!mounted) return;
       setState(() {
         _loading = false;
-        _statusError = e.toString();
+        _statusError = userFacingError(e, fallback: AppUserMessages.load);
         _linkedInboxTotal = null;
         _inboxesFetchFailed = false;
       });
@@ -92,10 +92,9 @@ class _ManageChatsState extends State<ManageChats> {
 
     return LightScreenScaffold(
       title: 'Manage Inbox',
-      titleFontSize: 16,
       creditCategory: CreditCategory.llm,
       body: SingleChildScrollView(
-        padding: EdgeInsets.fromLTRB(20 * scale, 30 * scale, 20 * scale, 32 * scale),
+        padding: LightScreenTheme.hubPagePadding(scale),
         child: Column(
           children: [
             Text(
@@ -103,15 +102,15 @@ class _ManageChatsState extends State<ManageChats> {
               textAlign: TextAlign.center,
               style: LightScreenTheme.hubTitle(scale),
             ),
-            SizedBox(height: 16 * scale),
+            SizedBox(height: LightScreenTheme.hubTitleGap * scale),
             Text(
-              'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
+              'Open live chats, review conversations, and stay on top of customer messages.',
               textAlign: TextAlign.center,
               style: LightScreenTheme.hubBody(scale).copyWith(
                 color: const Color(0xFF4E4E4E),
               ),
             ),
-            SizedBox(height: 30 * scale),
+            SizedBox(height: LightScreenTheme.hubToCards * scale),
             if (_loading) ...[
               Center(
                 child: CircularProgressIndicator(color: LightScreenTheme.accent),

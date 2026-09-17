@@ -1,4 +1,5 @@
 import 'package:autobus/features/chat/models/chatwoot_inbox.dart';
+import 'package:autobus/icons/figma_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
@@ -7,6 +8,7 @@ class ChannelOption {
   final String label;
   final String apiSlug;
   final FaIconData icon;
+  final String? iconAsset;
   final Color iconColor;
   final Color tileColor;
   final String linkSubtitle;
@@ -17,6 +19,7 @@ class ChannelOption {
     required this.label,
     required this.apiSlug,
     required this.icon,
+    this.iconAsset,
     required this.iconColor,
     required this.tileColor,
     required this.linkSubtitle,
@@ -54,6 +57,7 @@ class ChannelCatalog {
       label: 'Instagram',
       apiSlug: 'instagram',
       icon: FontAwesomeIcons.instagram,
+      iconAsset: FigmaIcons.instagram,
       iconColor: Color(0xFFE60B51),
       tileColor: Color(0xFFE60B51),
       linkSubtitle: 'Link instagram',

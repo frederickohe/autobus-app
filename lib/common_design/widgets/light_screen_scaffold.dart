@@ -22,7 +22,7 @@ class LightScreenScaffold extends StatelessWidget {
     this.leading,
     this.trailing,
     this.creditCategory,
-    this.titleFontSize = 20,
+    this.titleFontSize = LightScreenTheme.headerTitleSize,
     this.resizeToAvoidBottomInset = false,
     this.backgroundColor,
   });

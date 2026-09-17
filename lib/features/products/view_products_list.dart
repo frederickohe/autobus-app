@@ -93,8 +93,12 @@ class _ViewProductsPageState extends State<ViewProductsPage> {
     setState(() {
       _products = products;
       _documents = docs;
-      _productsError = productsErr?.toString().replaceFirst('Exception: ', '');
-      _loadError = docsErr?.toString().replaceFirst('Exception: ', '');
+      _productsError = productsErr == null
+          ? null
+          : userFacingError(productsErr, fallback: AppUserMessages.load);
+      _loadError = docsErr == null
+          ? null
+          : userFacingError(docsErr, fallback: AppUserMessages.load);
       _loading = false;
       _expandedIndex = null;
     });
@@ -126,7 +130,7 @@ class _ViewProductsPageState extends State<ViewProductsPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            e.toString().replaceFirst('Exception: ', ''),
+            userFacingError(e),
             style: GoogleFonts.montserrat(),
           ),
         ),

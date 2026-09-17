@@ -3,7 +3,6 @@ import 'package:autobus/features/products/product_requirements_sheet.dart';
 import 'package:autobus/features/products/product_chat_image_attachments.dart';
 import 'package:autobus/features/products/product_form_images.dart';
 import 'dart:io';
-import 'package:http/http.dart' as http;
 import 'package:file_picker/file_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'services/autochat_repository.dart';
@@ -82,7 +81,7 @@ class _AutoBusState extends State<AutoBus> {
           } else if (state is TokenRefreshFailed) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('Session error: ${state.message}'),
+                content: Text(userFacingError(state.message)),
                 backgroundColor: Colors.orange,
               ),
             );
@@ -123,7 +122,7 @@ class _AutoBusState extends State<AutoBus> {
   }
 
   Widget _buildAuthenticatedAutoBus(dynamic user) {
-    final repo = AutoChatRepository(client: http.Client());
+    final repo = AutoChatRepository(client: context.read<ApiService>().httpClient);
 
     final ctx =
         widget.webhookContext ??
@@ -278,7 +277,7 @@ class _AutoBusChatUIState extends State<_AutoBusChatUI> {
           if (!mounted) return;
           setState(() => _productImageBusy = false);
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(e.toString())),
+            SnackBar(content: Text(userFacingError(e, fallback: AppUserMessages.upload))),
           );
           return;
         }
@@ -446,7 +445,7 @@ class _AutoBusChatUIState extends State<_AutoBusChatUI> {
                 setSheetState(() {
                   uploading = false;
                   uploadSuccess = false;
-                  uploadError = e.toString();
+                  uploadError = userFacingError(e, fallback: AppUserMessages.upload);
                 });
               }
             }

@@ -1,3 +1,4 @@
+import 'package:autobus/icons/figma_icons.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_sficon/flutter_sficon.dart';
 
@@ -14,8 +15,8 @@ class HomeFigmaIcons {
   /// Messaging tool card.
   static const wechat = SFIcons.sf_bubble_left_and_bubble_right_fill;
 
-  /// Inbox tool card.
-  static const inbox = SFIcons.sf_envelope_fill;
+  /// Inbox tool card — Figma HOME uses SF `envelope.badge`.
+  static const inbox = SFIcons.sf_envelope_badge;
 
   /// Marketing tool card.
   static const affiliateMarketing =
@@ -27,8 +28,8 @@ class HomeFigmaIcons {
   /// Products tool card.
   static const bag2 = SFIcons.sf_bag_fill;
 
-  /// Orders tool card.
-  static const orders = SFIcons.sf_receipt_fill;
+  /// Orders tool card — Figma HOME uses SF `book.pages`.
+  static const orders = SFIcons.sf_book_pages;
 
   /// Intelligence header — info in speech bubble.
   static const info = SFIcons.sf_info_bubble_fill;
@@ -67,7 +68,16 @@ class HomeFigmaIcons {
   static const viewProducts = SFIcons.sf_archivebox_fill;
 
   static const pendingOrders = SFIcons.sf_clock_fill;
-  static const allOrders = SFIcons.sf_receipt_fill;
+  static const completedOrders = SFIcons.sf_clipboard_fill;
+  static const allOrders = SFIcons.sf_document_on_document_fill;
+
+  static const switchBusiness = SFIcons.sf_arrow_left_arrow_right;
+  static const profileMenu = SFIcons.sf_person_fill;
+  static const terms = SFIcons.sf_text_document_fill;
+  static const privacy = SFIcons.sf_checkmark_shield_fill;
+  static const wallet = SFIcons.sf_wallet_bifold;
+  static const renew = SFIcons.sf_arrow_counterclockwise;
+  static const coupon = SFIcons.sf_ticket_fill;
 
   static const createCampaign = SFIcons.sf_megaphone_fill;
   static const linkSocial = SFIcons.sf_link;
@@ -122,6 +132,11 @@ class HomeFigmaIcons {
   static const schedule = SFIcons.sf_calendar;
   static const addCircle = SFIcons.sf_plus_circle;
   static const brokenImage = SFIcons.sf_photo_badge_exclamationmark;
+  static const logout = SFIcons.sf_rectangle_portrait_and_arrow_forward;
+  static const search = SFIcons.sf_magnifyingglass;
+  static const contacts = SFIcons.sf_person_crop_rectangle_stack;
+  static const twoFactor = SFIcons.sf_lock_shield_fill;
+  static const errorCircle = SFIcons.sf_exclamationmark_circle;
 
   // —— Hub card gradients (match home dashboard) ——
 
@@ -183,6 +198,24 @@ class HomeFigmaIcons {
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
     colors: [Color(0xFF22D3EE), Color(0xFF0891B2)],
+  );
+
+  static const pendingOrdersGradient = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [Color(0xFFA6DD57), Color(0xFF4D7C0B)],
+  );
+
+  static const completedOrdersGradient = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [Color(0xFF969696), Color(0xFF0A0103)],
+  );
+
+  static const allOrdersGradient = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [Color(0xFFACDED8), Color(0xFF17897A)],
   );
 
   static const filesGradient = LinearGradient(
@@ -278,11 +311,97 @@ class HomeSfIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (icon == HomeFigmaIcons.chevronUp) {
+      return FigmaSvgIcon(
+        FigmaIcons.chevronDown,
+        size: size,
+        color: color,
+        chevronUp: true,
+      );
+    }
+    final asset = figmaAssetFor(icon);
+    if (asset != null) {
+      return FigmaSvgIcon(
+        asset,
+        size: size,
+        color: color,
+        chevronRight: asset == FigmaIcons.arrowDown ||
+            icon == HomeFigmaIcons.chevronRight,
+      );
+    }
     return SFIcon(
       icon,
       fontSize: size,
       color: color,
       fontWeight: fontWeight,
     );
+  }
+
+  static String? figmaAssetFor(IconData icon) {
+    if (icon == HomeFigmaIcons.addCustomer) return FigmaIcons.addProfile;
+    if (icon == HomeFigmaIcons.viewCustomers) return FigmaIcons.contactBook;
+    if (icon == HomeFigmaIcons.addProduct) return FigmaIcons.addProduct;
+    if (icon == HomeFigmaIcons.viewProducts) return FigmaIcons.archive;
+    if (icon == HomeFigmaIcons.pendingOrders) return FigmaIcons.pending;
+    if (icon == HomeFigmaIcons.completedOrders) return FigmaIcons.clipboard;
+    if (icon == HomeFigmaIcons.allOrders) return FigmaIcons.documents;
+    if (icon == HomeFigmaIcons.createCampaign) return FigmaIcons.socialMedia;
+    if (icon == HomeFigmaIcons.linkSocial) return FigmaIcons.link;
+    if (icon == HomeFigmaIcons.linkChannel) return FigmaIcons.link;
+    if (icon == HomeFigmaIcons.recentCampaigns) {
+      return FigmaIcons.onlineAdvertising;
+    }
+    if (icon == HomeFigmaIcons.liveChats) return FigmaIcons.liveChats;
+    if (icon == HomeFigmaIcons.allChats) return FigmaIcons.allChats;
+    if (icon == HomeFigmaIcons.sendMail) return FigmaIcons.messageSent;
+    if (icon == HomeFigmaIcons.sentEmails) return FigmaIcons.sentMail;
+    if (icon == HomeFigmaIcons.fromEmail) return FigmaIcons.at;
+    if (icon == HomeFigmaIcons.startInteraction) return FigmaIcons.chat;
+    if (icon == HomeFigmaIcons.viewInteractions) return FigmaIcons.pending;
+    if (icon == HomeFigmaIcons.marketingText) return FigmaIcons.documents;
+    if (icon == HomeFigmaIcons.refresh) return FigmaIcons.refresh;
+    if (icon == HomeFigmaIcons.analyticsRefresh) return FigmaIcons.refresh;
+    if (icon == HomeFigmaIcons.analyticsFilter) return FigmaIcons.filter;
+    if (icon == HomeFigmaIcons.analyticsRevenue) return FigmaIcons.revenue;
+    if (icon == HomeFigmaIcons.analyticsFinancial) return FigmaIcons.revenueSm;
+    if (icon == HomeFigmaIcons.analyticsOrdersReport) return FigmaIcons.documents;
+    if (icon == HomeFigmaIcons.analyticsInvoices) return FigmaIcons.invoice;
+    if (icon == HomeFigmaIcons.analyticsInventory) return FigmaIcons.cardboard;
+    if (icon == HomeFigmaIcons.analyticsEngagement) return FigmaIcons.chat;
+    if (icon == HomeFigmaIcons.warning) return FigmaIcons.danger;
+    if (icon == HomeFigmaIcons.errorCircle) return FigmaIcons.danger;
+    if (icon == HomeFigmaIcons.cloudOff) return FigmaIcons.danger;
+    if (icon == HomeFigmaIcons.files) return FigmaIcons.files;
+    if (icon == HomeFigmaIcons.website) return FigmaIcons.website;
+    if (icon == HomeFigmaIcons.token) return FigmaIcons.token;
+    if (icon == HomeFigmaIcons.wallet) return FigmaIcons.tokenOutline;
+    if (icon == HomeFigmaIcons.coupon) return FigmaIcons.token;
+    if (icon == HomeFigmaIcons.renew) return FigmaIcons.refresh;
+    if (icon == HomeFigmaIcons.terms) return FigmaIcons.documents;
+    if (icon == HomeFigmaIcons.privacy) return FigmaIcons.documents;
+    if (icon == HomeFigmaIcons.info) return FigmaIcons.infoHeader;
+    if (icon == HomeFigmaIcons.ai) return FigmaIcons.ai;
+    if (icon == HomeFigmaIcons.lock) return FigmaIcons.password;
+    if (icon == HomeFigmaIcons.twoFactor) return FigmaIcons.password;
+    if (icon == HomeFigmaIcons.unlink) return FigmaIcons.danger;
+    if (icon == HomeFigmaIcons.share) return FigmaIcons.link;
+    if (icon == HomeFigmaIcons.download) return FigmaIcons.archive;
+    if (icon == HomeFigmaIcons.schedule) return FigmaIcons.pending;
+    if (icon == HomeFigmaIcons.logout) return FigmaIcons.switchBusiness;
+    if (icon == HomeFigmaIcons.contacts) return FigmaIcons.contactBook;
+    if (icon == HomeFigmaIcons.notificationBing) {
+      return FigmaIcons.notificationBing;
+    }
+    if (icon == HomeFigmaIcons.wechat) return FigmaIcons.wechat;
+    if (icon == HomeFigmaIcons.affiliateMarketing) return FigmaIcons.marketing;
+    if (icon == HomeFigmaIcons.customers) return FigmaIcons.customers;
+    if (icon == HomeFigmaIcons.bag2) return FigmaIcons.bag;
+    if (icon == HomeFigmaIcons.profileMenu) return FigmaIcons.profile;
+    if (icon == HomeFigmaIcons.switchBusiness) return FigmaIcons.switchBusiness;
+    if (icon == HomeFigmaIcons.arrowForward) return FigmaIcons.arrowDown;
+    if (icon == HomeFigmaIcons.chevronDown) return FigmaIcons.chevronDown;
+    if (icon == HomeFigmaIcons.chevronRight) return FigmaIcons.chevronDown;
+    if (icon == HomeFigmaIcons.chevronLeft) return FigmaIcons.back;
+    return null;
   }
 }

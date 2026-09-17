@@ -1,4 +1,5 @@
 import 'package:autobus/barrel.dart';
+import 'package:autobus/icons/figma_icons.dart';
 
 class AutobusWordmark extends StatelessWidget {
   const AutobusWordmark({
@@ -112,13 +113,11 @@ class AutobusBranding extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        AutobusWordmark(
-          fontSize: wordmarkFontSize,
-          baseColor: wordmarkBaseColor,
-          accentColor: wordmarkAccentColor,
+        Image.asset(
+          FigmaImages.splashLogo,
+          height: (wordmarkFontSize + markCircleSize) * 1.35,
+          fit: BoxFit.contain,
         ),
-        SizedBox(height: spacing),
-        AutobusMark(circleSize: markCircleSize),
       ],
     );
   }

@@ -5,6 +5,7 @@ import 'package:autobus/features/settings/manage_subscription.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:autobus/icons/figma_icons.dart';
 
 /// Compact header chip showing remaining credits for one category.
 /// Tapping navigates to the subscription page for full credit breakdown.
@@ -94,10 +95,9 @@ class _CreditAvatarState extends State<CreditAvatar> {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                Icons.toll_rounded,
+              FigmaSvgIcon(
+                FigmaIcons.token,
                 size: 18,
-                color: Colors.amber.shade300,
               ),
               const SizedBox(width: 4),
               Column(
@@ -106,7 +106,7 @@ class _CreditAvatarState extends State<CreditAvatar> {
                 children: [
                   Text(
                     _displayValue(),
-                    style: GoogleFonts.inter(
+                    style: GoogleFonts.montserrat(
                       color: Colors.white,
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
@@ -115,7 +115,7 @@ class _CreditAvatarState extends State<CreditAvatar> {
                   ),
                   Text(
                     short,
-                    style: GoogleFonts.inter(
+                    style: GoogleFonts.montserrat(
                       color: Colors.white54,
                       fontSize: 9,
                       height: 1.0,

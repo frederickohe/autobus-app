@@ -6,6 +6,7 @@ import 'package:equatable/equatable.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'package:autobus/config/app_config.dart';
+import 'package:autobus/common_design/user_facing_error.dart';
 import 'package:autobus/common_bloc/success_bloc.dart';
 import '../models/token_model.dart';
 import '../services/token_service.dart';
@@ -56,33 +57,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     return data;
   }
 
-  String _parseApiErrorMessage(String body, String fallback) {
-    try {
-      final errorData = json.decode(body);
-      if (errorData is! Map) return fallback;
-
-      final detail = errorData['detail'];
-      if (detail is String && detail.trim().isNotEmpty) return detail.trim();
-      if (detail is Map) {
-        final message = detail['message'];
-        if (message is String && message.trim().isNotEmpty) {
-          return message.trim();
-        }
-      }
-
-      final message = errorData['message'];
-      if (message is String && message.trim().isNotEmpty) return message.trim();
-    } catch (_) {}
-    return fallback;
-  }
-
-  String _normalizeLoginError(String message) {
-    final lower = message.toLowerCase();
-    if (lower.contains('invalid username and password') ||
-        lower.contains('invalid email or password')) {
-      return 'Invalid email/username or PIN';
-    }
-    return message;
+  String _safeError(Object error, {required String fallback}) {
+    return userFacingError(error, fallback: fallback);
   }
 
   Future<void> _onLogin(LoginEvent event, Emitter<AuthState> emit) async {
@@ -106,7 +82,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         if (decoded is! Map) {
           emit(
             AuthError(
-              message: 'Unexpected login response from server.',
+              message: AppUserMessages.auth,
               source: 'login',
             ),
           );
@@ -119,7 +95,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         if (tokenModel.accessToken.isEmpty) {
           emit(
             AuthError(
-              message: 'Login succeeded but no access token was returned.',
+              message: AppUserMessages.auth,
               source: 'login',
             ),
           );
@@ -141,37 +117,29 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           await prefs.setString('user', json.encode(userData));
           emit(Authenticated(user: userData));
         } else {
-          final errorMsg = _parseApiErrorMessage(
-            userResponse.body,
-            'Failed to fetch user profile after login.',
-          );
-          print('User fetch error: ${userResponse.body}');
-          emit(AuthError(message: errorMsg, source: 'login'));
+          emit(AuthError(message: AppUserMessages.auth, source: 'login'));
         }
       } else {
-        final errorMsg = _normalizeLoginError(
-          _parseApiErrorMessage(response.body, 'Login failed'),
-        );
-        emit(AuthError(message: errorMsg, source: 'login'));
+        emit(AuthError(message: AppUserMessages.auth, source: 'login'));
       }
     } on TimeoutException {
       emit(
         AuthError(
-          message: 'Connection timed out. Check your network and try again.',
+          message: AppUserMessages.timeout,
           source: 'login',
         ),
       );
     } on SocketException {
       emit(
         AuthError(
-          message: 'Cannot reach the server. Check your connection.',
+          message: AppUserMessages.offline,
           source: 'login',
         ),
       );
     } catch (e) {
       emit(
         AuthError(
-          message: 'Something went wrong. Please try again.',
+          message: AppUserMessages.generic,
           source: 'login',
         ),
       );
@@ -225,10 +193,23 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
             errorMsg = errorData['detail'];
           }
         } catch (_) {}
-        emit(AuthError(message: errorMsg, source: 'signup'));
+        emit(
+          AuthError(
+            message: sanitizeUserFacingError(
+              errorMsg,
+              fallback: AppUserMessages.signup,
+            ),
+            source: 'signup',
+          ),
+        );
       }
     } catch (e) {
-      emit(AuthError(message: e.toString(), source: 'signup'));
+      emit(
+        AuthError(
+          message: _safeError(e, fallback: AppUserMessages.signup),
+          source: 'signup',
+        ),
+      );
     }
   }
 
@@ -249,7 +230,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         if (data is Map && data['success'] == false) {
           emit(
             AuthError(
-              message: (data['message'] ?? 'OTP verification failed').toString(),
+              message: sanitizeUserFacingError(
+                (data['message'] ?? '').toString(),
+                fallback: AppUserMessages.validation,
+              ),
               source: 'signup_otp',
             ),
           );
@@ -279,10 +263,23 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
             }
           }
         } catch (_) {}
-        emit(AuthError(message: errorMsg, source: 'signup_otp'));
+        emit(
+          AuthError(
+            message: sanitizeUserFacingError(
+              errorMsg,
+              fallback: AppUserMessages.validation,
+            ),
+            source: 'signup_otp',
+          ),
+        );
       }
     } catch (e) {
-      emit(AuthError(message: e.toString(), source: 'signup_otp'));
+      emit(
+        AuthError(
+          message: _safeError(e, fallback: AppUserMessages.validation),
+          source: 'signup_otp',
+        ),
+      );
     }
   }
 
@@ -316,10 +313,23 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
             errorMsg = errorData['detail'];
           }
         } catch (_) {}
-        emit(AuthError(message: errorMsg, source: 'signup_otp_resend'));
+        emit(
+          AuthError(
+            message: sanitizeUserFacingError(
+              errorMsg,
+              fallback: AppUserMessages.generic,
+            ),
+            source: 'signup_otp_resend',
+          ),
+        );
       }
     } catch (e) {
-      emit(AuthError(message: e.toString(), source: 'signup_otp_resend'));
+      emit(
+        AuthError(
+          message: _safeError(e, fallback: AppUserMessages.generic),
+          source: 'signup_otp_resend',
+        ),
+      );
     }
   }
 
@@ -340,7 +350,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         emit(Unauthenticated());
       }
     } catch (e) {
-      emit(AuthError(message: e.toString(), source: 'check_auth'));
+      emit(
+        AuthError(
+          message: _safeError(e, fallback: AppUserMessages.session),
+          source: 'check_auth',
+        ),
+      );
     }
   }
 
@@ -365,7 +380,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       await prefs.remove('user');
       emit(Unauthenticated());
     } catch (e) {
-      emit(AuthError(message: 'Logout failed: $e', source: 'logout'));
+      emit(
+        AuthError(
+          message: _safeError(e, fallback: AppUserMessages.generic),
+          source: 'logout',
+        ),
+      );
     }
   }
 
@@ -401,10 +421,23 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
             errorMsg = errorData['detail'].toString();
           }
         } catch (_) {}
-        emit(AuthError(message: errorMsg, source: 'reset_password'));
+        emit(
+          AuthError(
+            message: sanitizeUserFacingError(
+              errorMsg,
+              fallback: AppUserMessages.validation,
+            ),
+            source: 'reset_password',
+          ),
+        );
       }
     } catch (e) {
-      emit(AuthError(message: e.toString(), source: 'reset_password'));
+      emit(
+        AuthError(
+          message: _safeError(e, fallback: AppUserMessages.generic),
+          source: 'reset_password',
+        ),
+      );
     }
   }
 
@@ -437,10 +470,23 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
             errorMsg = errorData['detail'].toString();
           }
         } catch (_) {}
-        emit(AuthError(message: errorMsg, source: 'check_email'));
+        emit(
+          AuthError(
+            message: sanitizeUserFacingError(
+              errorMsg,
+              fallback: AppUserMessages.generic,
+            ),
+            source: 'check_email',
+          ),
+        );
       }
     } catch (e) {
-      emit(AuthError(message: e.toString(), source: 'check_email'));
+      emit(
+        AuthError(
+          message: _safeError(e, fallback: AppUserMessages.generic),
+          source: 'check_email',
+        ),
+      );
     }
   }
 
@@ -482,10 +528,23 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
             errorMsg = errorData['detail'].toString();
           }
         } catch (_) {}
-        emit(AuthError(message: errorMsg, source: 'send_reset_code'));
+        emit(
+          AuthError(
+            message: sanitizeUserFacingError(
+              errorMsg,
+              fallback: AppUserMessages.generic,
+            ),
+            source: 'send_reset_code',
+          ),
+        );
       }
     } catch (e) {
-      emit(AuthError(message: e.toString(), source: 'send_reset_code'));
+      emit(
+        AuthError(
+          message: _safeError(e, fallback: AppUserMessages.generic),
+          source: 'send_reset_code',
+        ),
+      );
     }
   }
 
@@ -528,10 +587,23 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
             errorMsg = errorData['detail'].toString();
           }
         } catch (_) {}
-        emit(AuthError(message: errorMsg, source: 'verify_code'));
+        emit(
+          AuthError(
+            message: sanitizeUserFacingError(
+              errorMsg,
+              fallback: AppUserMessages.validation,
+            ),
+            source: 'verify_code',
+          ),
+        );
       }
     } catch (e) {
-      emit(AuthError(message: e.toString(), source: 'verify_code'));
+      emit(
+        AuthError(
+          message: _safeError(e, fallback: AppUserMessages.generic),
+          source: 'verify_code',
+        ),
+      );
     }
   }
 
@@ -584,37 +656,24 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           emit(TokenRefreshed(user: userData));
         } else {
           emit(
-            TokenRefreshFailed(
-              message: 'Failed to fetch user data after token refresh',
-            ),
+            TokenRefreshFailed(message: AppUserMessages.session),
           );
         }
       } else if (response.statusCode == 401) {
         // Refresh token is invalid or expired
         await tokenService.clearTokens();
         emit(
-          SessionExpired(
-            message: 'Your session has expired. Please login again.',
-          ),
+          SessionExpired(message: AppUserMessages.session),
         );
       } else {
-        String errorMsg = 'Failed to refresh token';
-        try {
-          final errorData = json.decode(response.body);
-          if (errorData is Map && errorData['detail'] != null) {
-            errorMsg = errorData['detail'];
-          }
-        } catch (_) {}
-        emit(TokenRefreshFailed(message: errorMsg));
+        emit(TokenRefreshFailed(message: AppUserMessages.session));
       }
     } on TimeoutException {
       emit(
-        SessionExpired(
-          message: 'Connection timed out. Please sign in again.',
-        ),
+        SessionExpired(message: AppUserMessages.timeout),
       );
     } catch (e) {
-      emit(TokenRefreshFailed(message: 'Token refresh error: $e'));
+      emit(TokenRefreshFailed(message: AppUserMessages.session));
     }
   }
 
@@ -656,7 +715,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       }
     } catch (e) {
       emit(
-        AuthError(message: 'Session check failed: $e', source: 'check_session'),
+        AuthError(
+          message: _safeError(e, fallback: AppUserMessages.session),
+          source: 'check_session',
+        ),
       );
     }
   }

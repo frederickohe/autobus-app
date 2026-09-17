@@ -21,10 +21,8 @@ class SessionAwareHttpClient extends http.BaseClient {
       request.headers['Authorization'] = 'Bearer $accessToken';
     }
 
-    // Send the request
-    var response = await _innerClient
-        .send(request)
-        .timeout(AppConfig.networkTimeout);
+    final timeout = _timeoutFor(request.url);
+    var response = await _innerClient.send(request).timeout(timeout);
 
     // If we get a 401, attempt token refresh and retry
     if (response.statusCode == 401) {
@@ -37,9 +35,7 @@ class SessionAwareHttpClient extends http.BaseClient {
             request.headers['Authorization'] = 'Bearer $newAccessToken';
             // Clone the request to resend it
             final clonedRequest = _cloneRequest(request);
-            response = await _innerClient
-                .send(clonedRequest)
-                .timeout(AppConfig.networkTimeout);
+            response = await _innerClient.send(clonedRequest).timeout(timeout);
           }
         }
       }
@@ -79,6 +75,16 @@ class SessionAwareHttpClient extends http.BaseClient {
       print('Error refreshing token: $e');
       return false;
     }
+  }
+
+  Duration _timeoutFor(Uri url) {
+    final path = url.path.toLowerCase();
+    if (path.contains('start-dialog') ||
+        path.contains('/nlu/') ||
+        path.contains('/agent/')) {
+      return AppConfig.agentTimeout;
+    }
+    return AppConfig.networkTimeout;
   }
 
   /// Clone a request to resend it

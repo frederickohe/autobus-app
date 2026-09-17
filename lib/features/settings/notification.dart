@@ -3,6 +3,7 @@ import 'package:autobus/common_design/light_screen_theme.dart';
 import 'package:autobus/common_design/widgets/app_bottom_nav.dart';
 import 'package:autobus/common_design/widgets/light_list_card.dart';
 import 'package:autobus/common_design/widgets/light_screen_scaffold.dart';
+import 'package:autobus/icons/home_figma_icons.dart';
 
 class NotificationsPage extends StatefulWidget {
   const NotificationsPage({super.key});
@@ -52,7 +53,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
       });
     } catch (e) {
       if (!mounted) return;
-      setState(() => _error = e.toString());
+      setState(() => _error = userFacingError(e, fallback: AppUserMessages.load));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -82,7 +83,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Failed to update notification settings: $e'),
+          content: Text(userFacingError(e, fallback: AppUserMessages.save)),
           backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
         ),
@@ -162,8 +163,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
                       style: LightScreenTheme.listSubtitle(scale),
                     ),
                     SizedBox(width: 6 * scale),
-                    Icon(
-                      Icons.chevron_right,
+                    HomeSfIcon(
+                      icon: HomeFigmaIcons.chevronRight,
                       color: LightScreenTheme.muted,
                       size: 20 * scale,
                     ),

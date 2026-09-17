@@ -4,8 +4,8 @@ import 'package:autobus/common_design/widgets/app_bottom_nav.dart';
 import 'package:autobus/common_design/widgets/light_hub_card.dart';
 import 'package:autobus/common_design/widgets/light_list_card.dart';
 import 'package:autobus/common_design/widgets/light_screen_scaffold.dart';
+import 'package:autobus/icons/figma_icons.dart';
 import 'package:autobus/icons/home_figma_icons.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class ManageChannels extends StatefulWidget {
   const ManageChannels({super.key});
@@ -111,7 +111,7 @@ class _ManageChannelsState extends State<ManageChannels> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _loadError = e.toString().replaceFirst('Exception: ', '');
+        _loadError = userFacingError(e);
         _linked = [];
         _unlinked = ChannelCatalog.all;
         _loading = false;
@@ -216,7 +216,6 @@ class _ManageChannelsState extends State<ManageChannels> {
 
     return LightScreenScaffold(
       title: 'Link Channel',
-      titleFontSize: 16,
       creditCategory: CreditCategory.llm,
       body: _loading
           ? Center(child: CircularProgressIndicator(color: LightScreenTheme.accent))
@@ -225,7 +224,7 @@ class _ManageChannelsState extends State<ManageChannels> {
               color: LightScreenTheme.accent,
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
-                padding: EdgeInsets.fromLTRB(20 * scale, 30 * scale, 20 * scale, 32 * scale),
+                padding: LightScreenTheme.hubPagePadding(scale),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -246,7 +245,7 @@ class _ManageChannelsState extends State<ManageChannels> {
                     ),
                     SizedBox(height: 16 * scale),
                     Text(
-                      'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
+                      'Connect Instagram or WhatsApp so customers can reach you in Autobus.',
                       textAlign: TextAlign.center,
                       style: LightScreenTheme.hubBody(scale).copyWith(
                         color: const Color(0xFF4E4E4E),
@@ -273,7 +272,7 @@ class _ManageChannelsState extends State<ManageChannels> {
                     ),
                     SizedBox(height: 8 * scale),
                     Text(
-                      'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do',
+                      'Accounts already connected to this workspace.',
                       style: LightScreenTheme.hubBody(scale).copyWith(
                         color: const Color(0xFF4E4E4E),
                       ),
@@ -294,8 +293,9 @@ class _ManageChannelsState extends State<ManageChannels> {
                                   borderRadius: BorderRadius.circular(12 * scale),
                                 ),
                                 alignment: Alignment.center,
-                                child: FaIcon(
-                                  item.channel.icon,
+                                child: FigmaBrandIcon(
+                                  asset: item.channel.iconAsset,
+                                  fallback: item.channel.icon,
                                   color: Colors.white,
                                   size: 22 * scale,
                                 ),
@@ -342,8 +342,9 @@ class _ManageChannelsState extends State<ManageChannels> {
       subtitle: channel.linkSubtitle,
       icon: HomeFigmaIcons.linkChannel,
       iconTileColor: channel.tileColor,
-      iconWidget: FaIcon(
-        channel.icon,
+      iconWidget: FigmaBrandIcon(
+        asset: channel.iconAsset,
+        fallback: channel.icon,
         color: Colors.white,
         size: 22 * scale,
       ),

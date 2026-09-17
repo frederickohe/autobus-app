@@ -4,6 +4,8 @@ import 'package:autobus/common_design/widgets/app_bottom_nav.dart';
 import 'package:autobus/common_design/widgets/light_list_card.dart';
 import 'package:autobus/common_design/widgets/light_screen_scaffold.dart';
 
+import 'package:autobus/icons/home_figma_icons.dart';
+
 class Security extends StatelessWidget {
   const Security({super.key});
 
@@ -12,25 +14,20 @@ class Security extends StatelessWidget {
     final scale = MediaQuery.sizeOf(context).width / appShellDesignWidth;
 
     final List<SecurityMenuItem> menuItems = [
-      SecurityMenuItem("Change Password", Icons.person_outline, () {
+      SecurityMenuItem("Change Password", HomeFigmaIcons.lock, () {
         Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => const RecoverAccount()),
         );
       }),
-      SecurityMenuItem("2FA", Icons.notifications_none, () {}),
+      SecurityMenuItem("2FA", HomeFigmaIcons.twoFactor, () {}),
     ];
 
     return LightScreenScaffold(
       title: 'Password & Security',
       creditCategory: CreditCategory.server,
       body: SingleChildScrollView(
-        padding: EdgeInsets.fromLTRB(
-          20 * scale,
-          20 * scale,
-          20 * scale,
-          32 * scale,
-        ),
+        padding: LightScreenTheme.listPagePadding(scale),
         child: LightListCard(
           scale: scale,
           padding: EdgeInsets.symmetric(vertical: 4 * scale),
@@ -58,10 +55,14 @@ class _SecurityMenuTile extends StatelessWidget {
     return ListTile(
       onTap: item.onTap,
       contentPadding: EdgeInsets.symmetric(horizontal: 8 * scale),
-      leading: Icon(item.icon, color: Colors.black87, size: 22 * scale),
+      leading: HomeSfIcon(
+        icon: item.icon,
+        color: Colors.black87,
+        size: 22 * scale,
+      ),
       title: Text(item.title, style: LightScreenTheme.listTitle(scale)),
-      trailing: Icon(
-        Icons.chevron_right,
+      trailing: HomeSfIcon(
+        icon: HomeFigmaIcons.chevronRight,
         color: LightScreenTheme.muted,
         size: 20 * scale,
       ),

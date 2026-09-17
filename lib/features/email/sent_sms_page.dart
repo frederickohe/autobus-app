@@ -47,7 +47,7 @@ class _SentSmsPageState extends State<SentSmsPage> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _loadError = e.toString().replaceFirst('Exception: ', '');
+        _loadError = userFacingError(e);
         _loading = false;
         _messages = const [];
       });

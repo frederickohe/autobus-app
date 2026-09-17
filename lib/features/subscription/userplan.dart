@@ -1,4 +1,8 @@
 import 'package:autobus/barrel.dart';
+import 'package:autobus/common_design/light_screen_theme.dart';
+import 'package:autobus/common_design/widgets/app_bottom_nav.dart';
+import 'package:autobus/common_design/widgets/light_screen_scaffold.dart';
+import 'package:autobus/icons/figma_icons.dart';
 import 'package:autobus/main.dart';
 import 'dart:developer';
 
@@ -10,12 +14,20 @@ class SelectPlan extends StatefulWidget {
   final double? minExclusivePlanPrice;
   /// Passed to [SubscriptionBillPage] so pay+activate returns to this route.
   final String? successPopUntilRouteName;
+  /// Light Figma Top up picker (Credits flow). Onboarding keeps the classic UI.
+  final bool topUpStyle;
+  /// Light Figma Renew picker (Credits → Renew).
+  final bool renewStyle;
+  final String? remainingCreditsLabel;
 
   const SelectPlan({
     required this.userEmail,
     this.upgradeFromActivePlan = false,
     this.minExclusivePlanPrice,
     this.successPopUntilRouteName,
+    this.topUpStyle = false,
+    this.renewStyle = false,
+    this.remainingCreditsLabel,
     super.key,
   });
 
@@ -53,6 +65,11 @@ class _SelectPlanState extends State<SelectPlan> with TickerProviderStateMixin {
             _selectedPlanId = null;
             _expandedPlanId = null;
           }
+          if (_usesLightPicker &&
+              _selectedPlanId == null &&
+              _visiblePlans.isNotEmpty) {
+            _selectedPlanId = _visiblePlans.first.id;
+          }
         });
       }
     } catch (e) {
@@ -65,8 +82,12 @@ class _SelectPlanState extends State<SelectPlan> with TickerProviderStateMixin {
       ? null
       : _visiblePlans.where((p) => p.id == _selectedPlanId).firstOrNull;
 
+  bool get _usesLightPicker => widget.topUpStyle || widget.renewStyle;
+
   @override
   Widget build(BuildContext context) {
+    if (_usesLightPicker) return _buildLightPicker(context);
+
     return Scaffold(
       body: _GradientBackground(
         child: SafeArea(
@@ -157,28 +178,154 @@ class _SelectPlanState extends State<SelectPlan> with TickerProviderStateMixin {
                 _BottomCta(
                   label: widget.upgradeFromActivePlan ? 'Continue' : 'Next',
                   enabled: _selectedPlan != null,
-                  onPressed: () {
-                    final selected = _selectedPlan;
-                    if (selected == null) return;
-                    Navigator.of(context).push(
-                      PageTransition(
-                        type: PageTransitionType.rightToLeftWithFade,
-                        duration: const Duration(milliseconds: 1000),
-                        reverseDuration: const Duration(milliseconds: 600),
-                        child: SubscriptionBillPage(
-                          plan: selected,
-                          userEmail: widget.userEmail,
-                          isUpgrade: widget.upgradeFromActivePlan,
-                          successPopUntilRouteName: widget.successPopUntilRouteName,
-                        ),
-                      ),
-                    );
-                  },
+                  onPressed: _goToBill,
                 ),
               ],
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  void _goToBill() {
+    final selected = _selectedPlan;
+    if (selected == null) return;
+    Navigator.of(context).push(
+      PageTransition(
+        type: PageTransitionType.rightToLeftWithFade,
+        duration: const Duration(milliseconds: 1000),
+        reverseDuration: const Duration(milliseconds: 600),
+        child: SubscriptionBillPage(
+          plan: selected,
+          userEmail: widget.userEmail,
+          isUpgrade: widget.upgradeFromActivePlan,
+          successPopUntilRouteName: widget.successPopUntilRouteName,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLightPicker(BuildContext context) {
+    final scale = MediaQuery.sizeOf(context).width / appShellDesignWidth;
+    final renew = widget.renewStyle;
+
+    return LightScreenScaffold(
+      title: renew ? 'Renew' : 'Top up',
+      backgroundColor: Colors.white,
+      body: Column(
+        children: [
+          Expanded(
+            child: _isLoading
+                ? const Center(child: AutobusLoadingIndicator(size: 36))
+                : _visiblePlans.isEmpty
+                ? Center(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 24 * scale),
+                      child: Text(
+                        widget.minExclusivePlanPrice != null
+                            ? 'There is no higher plan available right now. Contact support if you need a custom tier.'
+                            : 'No plans available.',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.montserrat(
+                          fontSize: 14 * scale.clamp(0.9, 1.05),
+                          color: const Color(0xFF4E4E4E),
+                        ),
+                      ),
+                    ),
+                  )
+                : ListView(
+                    padding: LightScreenTheme.listPagePadding(scale),
+                    children: [
+                      if (renew) ...[
+                        Container(
+                          height: 88 * scale,
+                          width: double.infinity,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF2D0C51),
+                            borderRadius: BorderRadius.circular(15 * scale),
+                          ),
+                          child: Text(
+                            widget.remainingCreditsLabel ?? '0 credits left',
+                            style: GoogleFonts.montserrat(
+                              fontSize: 16 * scale.clamp(0.9, 1.05),
+                              fontWeight: FontWeight.w500,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: LightScreenTheme.rowGap * scale),
+                        Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 8 * scale),
+                          child: Text(
+                            'Choose a plan to renew your credits and keep using Autobus without interruption.',
+                            style: GoogleFonts.montserrat(
+                              fontSize: 12 * scale.clamp(0.9, 1.05),
+                              fontWeight: FontWeight.w400,
+                              height: 1.45,
+                              color: const Color(0xFF4E4E4E),
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 20 * scale),
+                      ],
+                      for (var i = 0; i < _visiblePlans.length; i++) ...[
+                        if (i > 0) SizedBox(height: LightScreenTheme.rowGap * scale),
+                        _TopUpPlanCard(
+                          scale: scale,
+                          plan: _visiblePlans[i],
+                          selected: _selectedPlanId == _visiblePlans[i].id,
+                          showPrice: renew,
+                          showUnselectedBorder: !renew,
+                          showRadioWhenUnselected: !renew,
+                          onTap: () => setState(
+                            () => _selectedPlanId = _visiblePlans[i].id,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+          ),
+          SafeArea(
+            top: false,
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(
+                35 * scale,
+                8 * scale,
+                35 * scale,
+                16 * scale,
+              ),
+              child: SizedBox(
+                width: double.infinity,
+                height: 64 * scale,
+                child: ElevatedButton(
+                  onPressed: _selectedPlan == null ? null : _goToBill,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF2D0C51),
+                    disabledBackgroundColor: const Color(
+                      0xFF2D0C51,
+                    ).withValues(alpha: 0.4),
+                    foregroundColor: Colors.white,
+                    disabledForegroundColor: Colors.white70,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30 * scale),
+                    ),
+                  ),
+                  child: Text(
+                    renew ? 'Renew' : 'Top up',
+                    style: GoogleFonts.montserrat(
+                      fontSize: 16 * scale.clamp(0.9, 1.05),
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -379,13 +526,7 @@ class _BottomCta extends StatelessWidget {
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                Row(
-                  children: const [
-                    Icon(Icons.chevron_right, color: Colors.white, size: 18),
-                    Icon(Icons.chevron_right, color: Colors.white54, size: 18),
-                    Icon(Icons.chevron_right, color: Colors.white38, size: 18),
-                  ],
-                ),
+                const FigmaChevronTrail(),
               ],
             ),
           ),
@@ -449,6 +590,126 @@ class _GradientBackground extends StatelessWidget {
         ),
       ),
       child: child,
+    );
+  }
+}
+
+class _TopUpPlanCard extends StatelessWidget {
+  static const _fill = Color(0xFFF8FAFC);
+  static const _subtitle = Color(0xFF938F8F);
+  static const _price = Color(0xFF7F03B9);
+
+  final double scale;
+  final SubscriptionPlan plan;
+  final bool selected;
+  final bool showPrice;
+  final bool showUnselectedBorder;
+  final bool showRadioWhenUnselected;
+  final VoidCallback onTap;
+
+  const _TopUpPlanCard({
+    required this.scale,
+    required this.plan,
+    required this.selected,
+    required this.onTap,
+    this.showPrice = false,
+    this.showUnselectedBorder = true,
+    this.showRadioWhenUnselected = true,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(15 * scale),
+        child: Container(
+          height: 80 * scale,
+          padding: EdgeInsets.symmetric(horizontal: 16 * scale),
+          decoration: BoxDecoration(
+            color: _fill,
+            borderRadius: BorderRadius.circular(15 * scale),
+            border: selected
+                ? Border.all(color: Colors.black, width: 2)
+                : showUnselectedBorder
+                ? Border.all(color: const Color(0xFFE5E5E5), width: 1)
+                : null,
+          ),
+          child: Row(
+            children: [
+              FigmaSvgIcon(
+                FigmaIcons.token,
+                size: 32 * scale,
+              ),
+              SizedBox(width: 16 * scale),
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      plan.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.montserrat(
+                        fontSize: 16 * scale.clamp(0.9, 1.05),
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black,
+                      ),
+                    ),
+                    SizedBox(height: 2 * scale),
+                    Text(
+                      plan.creditsInTotalLabel,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.montserrat(
+                        fontSize: 12 * scale.clamp(0.9, 1.05),
+                        fontWeight: FontWeight.w400,
+                        color: _subtitle,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (showPrice) ...[
+                SizedBox(width: 8 * scale),
+                Text(
+                  plan.shortPriceLabel,
+                  style: GoogleFonts.montserrat(
+                    fontSize: 14 * scale.clamp(0.9, 1.05),
+                    fontWeight: FontWeight.w600,
+                    color: _price,
+                  ),
+                ),
+              ],
+              if (selected || showRadioWhenUnselected) ...[
+                SizedBox(width: 8 * scale),
+                Container(
+                  width: 20 * scale,
+                  height: 20 * scale,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.black, width: 2),
+                  ),
+                  child: selected
+                      ? Center(
+                          child: Container(
+                            width: 10 * scale,
+                            height: 10 * scale,
+                            decoration: const BoxDecoration(
+                              color: Colors.black,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        )
+                      : null,
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

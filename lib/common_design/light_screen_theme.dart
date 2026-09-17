@@ -17,6 +17,31 @@ class LightScreenTheme {
   static const field = Color(0xFFFAFAFA);
   static const warning = Color(0xFFE27C00);
 
+  static const headerTitleSize = 16.0;
+  static const pageHorizontal = 20.0;
+  static const hubPageTop = 30.0;
+  static const pageBottom = 32.0;
+  static const listPageTop = 20.0;
+  static const hubTitleGap = 16.0;
+  static const hubToCards = 30.0;
+  static const gridGap = 12.0;
+  static const sectionGap = 20.0;
+  static const rowGap = 10.0;
+
+  static EdgeInsets hubPagePadding(double scale) => EdgeInsets.fromLTRB(
+        pageHorizontal * scale,
+        hubPageTop * scale,
+        pageHorizontal * scale,
+        pageBottom * scale,
+      );
+
+  static EdgeInsets listPagePadding(double scale) => EdgeInsets.fromLTRB(
+        pageHorizontal * scale,
+        listPageTop * scale,
+        pageHorizontal * scale,
+        pageBottom * scale,
+      );
+
   static TextStyle hubTitle(double scale) => GoogleFonts.montserrat(
         color: Colors.black,
         fontSize: 16 * scale.clamp(0.9, 1.05),

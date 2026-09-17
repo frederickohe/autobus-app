@@ -7,6 +7,7 @@ import 'package:autobus/common_design/widgets/light_list_card.dart';
 import 'package:autobus/common_design/widgets/light_screen_scaffold.dart';
 import 'package:autobus/features/products/product_chat_image_attachments.dart';
 import 'package:autobus/features/products/product_form_images.dart';
+import 'package:autobus/icons/figma_icons.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:share_plus/share_plus.dart';
@@ -23,8 +24,6 @@ class _AddProductScreenState extends State<AddProductScreen> {
   static const _labelColor = Color(0xFF4E4E4E);
   static const _hintColor = Color(0xFFB7B0B0);
   static const _buttonColor = Color(0xFF2D0C51);
-  static const _lorem =
-      'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod';
 
   static const _shareChannels = <OutletOption>[
     OutletOption(
@@ -37,6 +36,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
     OutletOption(
       label: 'Instagram',
       icon: FontAwesomeIcons.instagram,
+      iconAsset: FigmaIcons.instagram,
       iconColor: Color(0xFFE60B51),
       tileColor: Color(0xFFE60B51),
       linkSubtitle: 'Share from this phone',
@@ -44,6 +44,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
     OutletOption(
       label: 'YouTube',
       icon: FontAwesomeIcons.youtube,
+      iconAsset: FigmaIcons.youtube,
       iconColor: Color(0xFFED1F1F),
       tileColor: Color(0xFFED1F1F),
       linkSubtitle: 'Share from this phone',
@@ -205,7 +206,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
       setState(() => _saving = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(e.toString().replaceFirst('Exception: ', '')),
+          content: Text(userFacingError(e)),
         ),
       );
     }
@@ -223,14 +224,20 @@ class _AddProductScreenState extends State<AddProductScreen> {
       resizeToAvoidBottomInset: true,
       body: Form(
         key: _formKey,
-        child: ListView(
-          padding: EdgeInsets.fromLTRB(
-            21 * scale,
-            20 * scale,
-            21 * scale,
-            32 * scale,
-          ),
+        child: Column(
           children: [
+            Expanded(
+              child: ListView(
+                physics: const ClampingScrollPhysics(),
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
+                padding: EdgeInsets.fromLTRB(
+                  21 * scale,
+                  20 * scale,
+                  21 * scale,
+                  20 * scale,
+                ),
+                children: [
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 7 * scale),
               child: Text(
@@ -246,7 +253,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 7 * scale),
               child: Text(
-                _lorem,
+                'Add photos of this product. They appear in your catalog and shared posts.',
                 style: GoogleFonts.montserrat(
                   color: _labelColor,
                   fontSize: 13 * scale.clamp(0.9, 1.05),
@@ -325,6 +332,12 @@ class _AddProductScreenState extends State<AddProductScreen> {
                           keyboardType: const TextInputType.numberWithOptions(
                             decimal: true,
                           ),
+                          scrollPadding: EdgeInsets.fromLTRB(
+                            20 * scale,
+                            20 * scale,
+                            20 * scale,
+                            88 * scale,
+                          ),
                           validator: (v) {
                             if (v == null || v.trim().isEmpty) {
                               return 'Price is required';
@@ -393,7 +406,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 7 * scale),
               child: Text(
-                _lorem,
+                'After you create the product, share it to the channels you select.',
                 style: GoogleFonts.montserrat(
                   color: _labelColor,
                   fontSize: 13 * scale.clamp(0.9, 1.05),
@@ -413,28 +426,39 @@ class _AddProductScreenState extends State<AddProductScreen> {
                 ),
               ),
             ],
-            SizedBox(height: 28 * scale),
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: 14 * scale),
-              child: Material(
-                color: _buttonColor,
-                borderRadius: BorderRadius.circular(30 * scale),
-                child: InkWell(
-                  onTap: _saving ? null : _submit,
+                ],
+              ),
+            ),
+            SafeArea(
+              top: false,
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(
+                  35 * scale,
+                  8 * scale,
+                  35 * scale,
+                  12 * scale,
+                ),
+                child: Material(
+                  color: _buttonColor,
                   borderRadius: BorderRadius.circular(30 * scale),
-                  child: SizedBox(
-                    height: 64 * scale,
-                    child: Center(
-                      child: _saving
-                          ? const AutobusLoadingIndicator(size: 22)
-                          : Text(
-                              'Create product',
-                              style: GoogleFonts.montserrat(
-                                color: Colors.white,
-                                fontSize: 16 * scale.clamp(0.9, 1.05),
-                                fontWeight: FontWeight.w500,
+                  child: InkWell(
+                    onTap: _saving ? null : _submit,
+                    borderRadius: BorderRadius.circular(30 * scale),
+                    child: SizedBox(
+                      height: 64 * scale,
+                      width: double.infinity,
+                      child: Center(
+                        child: _saving
+                            ? const AutobusLoadingIndicator(size: 22)
+                            : Text(
+                                'Create product',
+                                style: GoogleFonts.montserrat(
+                                  color: Colors.white,
+                                  fontSize: 16 * scale.clamp(0.9, 1.05),
+                                  fontWeight: FontWeight.w500,
+                                ),
                               ),
-                            ),
+                      ),
                     ),
                   ),
                 ),
@@ -551,6 +575,12 @@ class _LabeledField extends StatelessWidget {
           textInputAction: textInputAction,
           validator: validator,
           maxLines: maxLines,
+          scrollPadding: EdgeInsets.fromLTRB(
+            20 * scale,
+            20 * scale,
+            20 * scale,
+            88 * scale,
+          ),
           style: GoogleFonts.montserrat(
             color: Colors.black87,
             fontSize: fontSize,
@@ -622,13 +652,92 @@ class _MediaDropZone extends StatelessWidget {
         if (!slots[i].isEmpty) i,
     ];
 
-    return GestureDetector(
-      onTap: busy || filled.isNotEmpty ? null : onAdd,
-      child: CustomPaint(
-        painter: _DashedRRectPainter(
-          color: const Color(0xFF888888),
-          radius: 20 * scale,
+    Widget thumbnails() {
+      return SizedBox(
+        height: 88 * scale,
+        child: ListView(
+          primary: false,
+          scrollDirection: Axis.horizontal,
+          physics: const ClampingScrollPhysics(),
+          children: [
+            for (var j = 0; j < filled.length; j++) ...[
+              if (j > 0) SizedBox(width: 10 * scale),
+              GestureDetector(
+                onTap: busy ? null : () => onSlotTap(filled[j]),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12 * scale),
+                  child: SizedBox(
+                    width: 88 * scale,
+                    height: 88 * scale,
+                    child: _slotPreview(slots[filled[j]]),
+                  ),
+                ),
+              ),
+            ],
+            if (filled.length < ProductFormImageSection.maxImages) ...[
+              SizedBox(width: 10 * scale),
+              GestureDetector(
+                onTap: busy ? null : onAdd,
+                child: Container(
+                  width: 88 * scale,
+                  height: 88 * scale,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.55),
+                    borderRadius: BorderRadius.circular(12 * scale),
+                  ),
+                  child: Icon(
+                    Icons.add,
+                    color: const Color(0xFF3F3E3E),
+                    size: 28 * scale,
+                  ),
+                ),
+              ),
+            ],
+          ],
         ),
+      );
+    }
+
+    Widget emptyHint() {
+      return Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.photo_library_outlined,
+                size: 20 * scale,
+                color: const Color(0xFF3F3E3E),
+              ),
+              SizedBox(width: 8 * scale),
+              Text(
+                'Upload media',
+                style: GoogleFonts.montserrat(
+                  color: const Color(0xFF3F3E3E),
+                  fontSize: 14 * scale.clamp(0.9, 1.05),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 8 * scale),
+          Text(
+            'Upload your product image or video',
+            style: GoogleFonts.montserrat(
+              color: const Color(0xFF939292),
+              fontSize: 11 * scale.clamp(0.9, 1.05),
+            ),
+          ),
+        ],
+      );
+    }
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: busy || filled.isNotEmpty ? null : onAdd,
+        borderRadius: BorderRadius.circular(20 * scale),
         child: Container(
           width: double.infinity,
           constraints: BoxConstraints(minHeight: 125 * scale),
@@ -639,81 +748,9 @@ class _MediaDropZone extends StatelessWidget {
           decoration: BoxDecoration(
             color: const Color(0xFFE6E6E6),
             borderRadius: BorderRadius.circular(20 * scale),
+            border: Border.all(color: const Color(0xFF888888)),
           ),
-          child: filled.isEmpty
-              ? Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.photo_library_outlined,
-                          size: 20 * scale,
-                          color: const Color(0xFF3F3E3E),
-                        ),
-                        SizedBox(width: 8 * scale),
-                        Text(
-                          'Upload media',
-                          style: GoogleFonts.montserrat(
-                            color: const Color(0xFF3F3E3E),
-                            fontSize: 14 * scale.clamp(0.9, 1.05),
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 8 * scale),
-                    Text(
-                      'Upload your product image or video',
-                      style: GoogleFonts.montserrat(
-                            color: const Color(0xFF939292),
-                            fontSize: 11 * scale.clamp(0.9, 1.05),
-                          ),
-                    ),
-                  ],
-                )
-              : SizedBox(
-                  height: 88 * scale,
-                  child: ListView(
-                    scrollDirection: Axis.horizontal,
-                    children: [
-                      for (var j = 0; j < filled.length; j++) ...[
-                        if (j > 0) SizedBox(width: 10 * scale),
-                        GestureDetector(
-                          onTap: busy ? null : () => onSlotTap(filled[j]),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(12 * scale),
-                            child: SizedBox(
-                              width: 88 * scale,
-                              height: 88 * scale,
-                              child: _slotPreview(slots[filled[j]]),
-                            ),
-                          ),
-                        ),
-                      ],
-                      if (filled.length < ProductFormImageSection.maxImages) ...[
-                        SizedBox(width: 10 * scale),
-                        GestureDetector(
-                          onTap: busy ? null : onAdd,
-                          child: Container(
-                            width: 88 * scale,
-                            height: 88 * scale,
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.55),
-                              borderRadius: BorderRadius.circular(12 * scale),
-                            ),
-                            child: Icon(
-                              Icons.add,
-                              color: const Color(0xFF3F3E3E),
-                              size: 28 * scale,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
+          child: filled.isEmpty ? emptyHint() : thumbnails(),
         ),
       ),
     );
@@ -730,40 +767,6 @@ class _MediaDropZone extends StatelessWidget {
     }
     return const ColoredBox(color: Colors.white70);
   }
-}
-
-class _DashedRRectPainter extends CustomPainter {
-  final Color color;
-  final double radius;
-
-  _DashedRRectPainter({required this.color, required this.radius});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1;
-    final rrect = RRect.fromRectAndRadius(
-      Offset.zero & size,
-      Radius.circular(radius),
-    );
-    final path = Path()..addRRect(rrect);
-    const dash = 7.0;
-    const gap = 5.0;
-    for (final metric in path.computeMetrics()) {
-      var distance = 0.0;
-      while (distance < metric.length) {
-        final next = (distance + dash).clamp(0.0, metric.length);
-        canvas.drawPath(metric.extractPath(distance, next), paint);
-        distance += dash + gap;
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _DashedRRectPainter oldDelegate) =>
-      oldDelegate.color != color || oldDelegate.radius != radius;
 }
 
 class _ChannelCard extends StatelessWidget {
@@ -802,7 +805,12 @@ class _ChannelCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
             ),
             alignment: Alignment.center,
-            child: FaIcon(outlet.icon, size: 18, color: Colors.white),
+            child: FigmaBrandIcon(
+              asset: outlet.iconAsset,
+              fallback: outlet.icon,
+              size: 18,
+              color: Colors.white,
+            ),
           ),
           SizedBox(width: 12 * scale),
           Expanded(

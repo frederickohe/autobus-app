@@ -27,7 +27,14 @@ String _formatOrderHistoryDate(Map<String, dynamic> o) {
 }
 
 class AllOrdersHistory extends StatefulWidget {
-  const AllOrdersHistory({super.key});
+  final String? orderStatus;
+  final String title;
+
+  const AllOrdersHistory({
+    super.key,
+    this.orderStatus,
+    this.title = 'All Orders',
+  });
 
   @override
   State<AllOrdersHistory> createState() => _AllOrdersHistoryState();
@@ -51,7 +58,11 @@ class _AllOrdersHistoryState extends State<AllOrdersHistory> {
     });
     try {
       final api = context.read<ApiService>();
-      final list = await api.listOrders(skip: 0, limit: 200);
+      final list = await api.listOrders(
+        skip: 0,
+        limit: 200,
+        orderStatus: widget.orderStatus,
+      );
       if (!mounted) return;
       setState(() {
         _orders = list;
@@ -60,7 +71,7 @@ class _AllOrdersHistoryState extends State<AllOrdersHistory> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _loadError = e.toString().replaceFirst('Exception: ', '');
+        _loadError = userFacingError(e);
         _loading = false;
         _orders = const [];
       });
@@ -125,7 +136,7 @@ class _AllOrdersHistoryState extends State<AllOrdersHistory> {
     final scale = MediaQuery.sizeOf(context).width / appShellDesignWidth;
 
     return LightScreenScaffold(
-      title: 'All Orders',
+      title: widget.title,
       creditCategory: CreditCategory.server,
       body: _loading
           ? Center(child: CircularProgressIndicator(color: LightScreenTheme.accent))
@@ -165,7 +176,9 @@ class _AllOrdersHistoryState extends State<AllOrdersHistory> {
                         SizedBox(height: MediaQuery.sizeOf(context).height * 0.32),
                         Center(
                           child: Text(
-                            'No orders yet',
+                            widget.orderStatus == 'completed'
+                                ? 'No completed orders'
+                                : 'No orders yet',
                             style: LightScreenTheme.emptyState(scale),
                           ),
                         ),

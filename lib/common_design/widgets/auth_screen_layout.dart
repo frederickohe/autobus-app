@@ -1,5 +1,6 @@
 import 'package:autobus/barrel.dart';
 import 'package:autobus/common_design/widgets/auth_field.dart';
+import 'package:autobus/icons/figma_icons.dart';
 import 'package:flutter/services.dart';
 
 /// Shared tokens for Figma auth/onboarding screens (402px design width).
@@ -48,7 +49,11 @@ class AuthBackButton extends StatelessWidget {
       alignment: Alignment.centerLeft,
       child: IconButton(
         onPressed: onTap ?? () => Navigator.of(context).maybePop(),
-        icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black, size: 20),
+        icon: FigmaSvgIcon(
+          FigmaIcons.back,
+          size: 20,
+          color: Colors.black,
+        ),
         padding: EdgeInsets.zero,
         constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
       ),

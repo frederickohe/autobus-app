@@ -8,8 +8,9 @@ import 'package:autobus/features/autochat/chat_event.dart';
 import 'package:autobus/features/autochat/chat_state.dart';
 import 'package:autobus/features/autochat/models/chat_message.dart';
 import 'package:autobus/features/autochat/services/autochat_repository.dart';
-import 'package:flutter_sficon/flutter_sficon.dart';
-import 'package:http/http.dart' as http;
+import 'package:image_picker/image_picker.dart';
+import 'package:speech_to_text/speech_to_text.dart';
+import 'dart:io';
 
 /// My AI chat — Figma INTELLIGENCE frame 3237:2750.
 class IntelligenceMyAiPage extends StatelessWidget {
@@ -29,7 +30,9 @@ class IntelligenceMyAiPage extends StatelessWidget {
         }
 
         return BlocProvider(
-          create: (_) => ChatBloc(AutoChatRepository(client: http.Client())),
+          create: (context) => ChatBloc(
+            AutoChatRepository(client: context.read<ApiService>().httpClient),
+          ),
           child: _IntelligenceMyAiChatBody(user: authState.user),
         );
       },
@@ -52,6 +55,10 @@ class _IntelligenceMyAiChatBodyState extends State<_IntelligenceMyAiChatBody> {
 
   final _controller = TextEditingController();
   final _scrollController = ScrollController();
+  final _speech = SpeechToText();
+  bool _attaching = false;
+  bool _listening = false;
+  bool _speechReady = false;
 
   @override
   void initState() {
@@ -66,6 +73,7 @@ class _IntelligenceMyAiChatBodyState extends State<_IntelligenceMyAiChatBody> {
 
   @override
   void dispose() {
+    _speech.stop();
     _controller.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -107,20 +115,136 @@ class _IntelligenceMyAiChatBodyState extends State<_IntelligenceMyAiChatBody> {
     });
   }
 
-  void _sendMessage() {
+  void _sendMessage({List<String>? mediaUrls}) {
     final text = _controller.text.trim();
-    if (text.isEmpty) return;
+    if (text.isEmpty && (mediaUrls == null || mediaUrls.isEmpty)) return;
 
     context.read<ChatBloc>().add(
       SendMessage(
         phone: _userPhone(),
-        message: text,
+        message: text.isEmpty ? 'Please look at this attachment.' : text,
         companyNumber: _userCompanyNumber(),
         context: IntelligenceMyAiPage.webhookContext,
+        attachedProductImageUrls: mediaUrls,
       ),
     );
     _controller.clear();
     _scrollToBottom();
+  }
+
+  Future<void> _showAttachSheet() async {
+    if (_attaching) return;
+    final choice = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const HomeSfIcon(
+                  icon: HomeFigmaIcons.photoLibrary,
+                  size: 22,
+                  color: Color(0xFF475569),
+                ),
+                title: Text('Photo', style: GoogleFonts.montserrat()),
+                onTap: () => Navigator.pop(ctx, 'photo'),
+              ),
+              ListTile(
+                leading: const HomeSfIcon(
+                  icon: HomeFigmaIcons.play,
+                  size: 22,
+                  color: Color(0xFF475569),
+                ),
+                title: Text('Video', style: GoogleFonts.montserrat()),
+                onTap: () => Navigator.pop(ctx, 'video'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+    if (choice == null || !mounted) return;
+    await _pickAndSendMedia(isVideo: choice == 'video');
+  }
+
+  Future<void> _pickAndSendMedia({required bool isVideo}) async {
+    final picker = ImagePicker();
+    final XFile? file = isVideo
+        ? await picker.pickVideo(source: ImageSource.gallery)
+        : await picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
+    if (file == null || !mounted) return;
+
+    setState(() => _attaching = true);
+    try {
+      final api = context.read<ApiService>();
+      final url = await api.uploadFile(
+        file: File(file.path),
+        filename: file.name,
+      );
+      if (!mounted) return;
+      _sendMessage(mediaUrls: [url]);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(userFacingError(e, fallback: AppUserMessages.upload)),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _attaching = false);
+    }
+  }
+
+  Future<void> _toggleListening() async {
+    if (_attaching) return;
+    if (_listening) {
+      await _speech.stop();
+      if (mounted) setState(() => _listening = false);
+      return;
+    }
+
+    if (!_speechReady) {
+      _speechReady = await _speech.initialize(
+        onError: (_) {
+          if (mounted) setState(() => _listening = false);
+        },
+        onStatus: (status) {
+          if (status == 'done' || status == 'notListening') {
+            if (mounted) setState(() => _listening = false);
+          }
+        },
+      );
+    }
+    if (!_speechReady) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Microphone is not available on this device.'),
+        ),
+      );
+      return;
+    }
+
+    setState(() => _listening = true);
+    await _speech.listen(
+      onResult: (result) {
+        _controller.text = result.recognizedWords;
+        _controller.selection = TextSelection.collapsed(
+          offset: _controller.text.length,
+        );
+        if (mounted) setState(() {});
+      },
+      listenOptions: SpeechListenOptions(
+        listenFor: const Duration(seconds: 30),
+        pauseFor: const Duration(seconds: 4),
+        partialResults: true,
+      ),
+    );
   }
 
   String _formatTimestamp(DateTime timestamp) {
@@ -215,6 +339,7 @@ class _IntelligenceMyAiChatBodyState extends State<_IntelligenceMyAiChatBody> {
                         timestamp: _formatTimestamp(message.timestamp),
                         user: widget.user,
                         pending: message.status == MessageStatus.pending,
+                        failed: message.status == MessageStatus.failed,
                       ),
                     );
                   },
@@ -226,7 +351,11 @@ class _IntelligenceMyAiChatBodyState extends State<_IntelligenceMyAiChatBody> {
             scale: scale,
             controller: _controller,
             canSend: _controller.text.trim().isNotEmpty,
+            attaching: _attaching,
+            listening: _listening,
             onSend: _sendMessage,
+            onAttach: _showAttachSheet,
+            onMic: _toggleListening,
           ),
         ],
       ),
@@ -255,7 +384,7 @@ class _MyAiBackButton extends StatelessWidget {
           height: size,
           child: Center(
             child: HomeSfIcon(
-              icon: SFIcons.sf_chevron_left,
+              icon: HomeFigmaIcons.chevronLeft,
               color: AppScreenHeader.iconColor,
               size: 18 * headerScale,
               fontWeight: FontWeight.w600,
@@ -274,6 +403,7 @@ class _MyAiMessageRow extends StatelessWidget {
   final String timestamp;
   final Map<String, dynamic> user;
   final bool pending;
+  final bool failed;
 
   const _MyAiMessageRow({
     required this.scale,
@@ -282,6 +412,7 @@ class _MyAiMessageRow extends StatelessWidget {
     required this.timestamp,
     required this.user,
     this.pending = false,
+    this.failed = false,
   });
 
   static const _surfaceColor = Color(0xFFF8FAFC);
@@ -324,7 +455,7 @@ class _MyAiMessageRow extends StatelessWidget {
     );
 
     final timestampWidget = Text(
-      pending ? 'Sending…' : timestamp,
+      pending ? 'Sending…' : failed ? "Couldn't send" : timestamp,
       style: GoogleFonts.montserrat(
         color: _timestampColor,
         fontSize: 12 * scale.clamp(0.85, 1.0),
@@ -410,13 +541,21 @@ class _MyAiInputBar extends StatelessWidget {
   final double scale;
   final TextEditingController controller;
   final bool canSend;
+  final bool attaching;
+  final bool listening;
   final VoidCallback onSend;
+  final VoidCallback onAttach;
+  final VoidCallback onMic;
 
   const _MyAiInputBar({
     required this.scale,
     required this.controller,
     required this.canSend,
+    required this.attaching,
+    required this.listening,
     required this.onSend,
+    required this.onAttach,
+    required this.onMic,
   });
 
   static const _timestampColor = Color(0xFF94A3B8);
@@ -453,12 +592,20 @@ class _MyAiInputBar extends StatelessWidget {
               Material(
                 color: Colors.transparent,
                 child: InkWell(
-                  onTap: () {},
+                  onTap: attaching ? null : onAttach,
                   customBorder: const CircleBorder(),
                   child: Padding(
                     padding: EdgeInsets.all(4 * scale),
-                    child: HomeSfIcon(
-                      icon: SFIcons.sf_plus,
+                    child: attaching
+                        ? SizedBox(
+                            width: 24 * scale.clamp(0.9, 1.05),
+                            height: 24 * scale.clamp(0.9, 1.05),
+                            child: const CircularProgressIndicator(
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : HomeSfIcon(
+                      icon: HomeFigmaIcons.add,
                       color: _timestampColor,
                       size: 24 * scale.clamp(0.9, 1.05),
                       fontWeight: FontWeight.w500,
@@ -479,7 +626,11 @@ class _MyAiInputBar extends StatelessWidget {
                     fontSize: 14 * scale.clamp(0.9, 1.05),
                   ),
                   decoration: InputDecoration(
-                    hintText: 'Type your message...',
+                    hintText: listening
+                        ? 'Listening…'
+                        : attaching
+                        ? 'Uploading…'
+                        : 'Type your message...',
                     hintStyle: GoogleFonts.montserrat(
                       color: _timestampColor,
                       fontSize: 14 * scale.clamp(0.9, 1.05),
@@ -493,13 +644,15 @@ class _MyAiInputBar extends StatelessWidget {
               Material(
                 color: Colors.transparent,
                 child: InkWell(
-                  onTap: () {},
+                  onTap: attaching ? null : onMic,
                   customBorder: const CircleBorder(),
                   child: Padding(
                     padding: EdgeInsets.all(4 * scale),
                     child: HomeSfIcon(
-                      icon: SFIcons.sf_microphone,
-                      color: _timestampColor,
+                      icon: HomeFigmaIcons.microphone,
+                      color: listening
+                          ? const Color(0xFF7F03B9)
+                          : _timestampColor,
                       size: 24 * scale.clamp(0.9, 1.05),
                       fontWeight: FontWeight.w500,
                     ),
@@ -510,7 +663,7 @@ class _MyAiInputBar extends StatelessWidget {
               Material(
                 color: Colors.transparent,
                 child: InkWell(
-                  onTap: canSend ? onSend : null,
+                  onTap: canSend && !attaching ? onSend : null,
                   customBorder: const CircleBorder(),
                   child: Opacity(
                     opacity: canSend ? 1 : 0.45,
@@ -523,7 +676,7 @@ class _MyAiInputBar extends StatelessWidget {
                       ),
                       alignment: Alignment.center,
                       child: HomeSfIcon(
-                        icon: SFIcons.sf_paperplane_fill,
+                        icon: HomeFigmaIcons.sendMail,
                         color: Colors.white,
                         size: 18 * scale.clamp(0.9, 1.05),
                         fontWeight: FontWeight.w600,

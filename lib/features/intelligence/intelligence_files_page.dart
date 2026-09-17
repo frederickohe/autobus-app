@@ -63,7 +63,7 @@ class _IntelligenceFilesPageState extends State<IntelligenceFilesPage> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _loadError = e.toString();
+        _loadError = userFacingError(e, fallback: AppUserMessages.load);
         _loading = false;
       });
     }
@@ -159,14 +159,7 @@ class _IntelligenceFilesPageState extends State<IntelligenceFilesPage> {
   }
 
   String _uploadErrorMessage(Object e) {
-    final raw = e.toString();
-    if (raw.contains('403')) {
-      return 'Upload blocked: an active subscription is required for RAG documents.';
-    }
-    if (raw.contains('Session expired') || raw.contains('401')) {
-      return 'Session expired. Please sign in again.';
-    }
-    return raw.replaceFirst('Exception: ', '');
+    return userFacingError(e, fallback: AppUserMessages.upload);
   }
 
   Future<void> _openFile(Map<String, dynamic> doc) async {
@@ -209,7 +202,7 @@ class _IntelligenceFilesPageState extends State<IntelligenceFilesPage> {
       );
       if (!ok) _showSnack('Downloaded "$name", but no app could open it.');
     } catch (e) {
-      _showSnack(e.toString().replaceFirst('Exception: ', ''));
+      _showSnack(userFacingError(e));
     }
   }
 
@@ -228,7 +221,7 @@ class _IntelligenceFilesPageState extends State<IntelligenceFilesPage> {
       });
       _showSnack('Deleted "$name"');
     } catch (e) {
-      _showSnack(e.toString().replaceFirst('Exception: ', ''));
+      _showSnack(userFacingError(e));
     }
   }
 
@@ -676,7 +669,7 @@ class _MyFilesRagProgressDialogState extends State<_MyFilesRagProgressDialog> {
       if (!mounted) return;
       setState(() {
         _failed = true;
-        _message = e.toString().replaceFirst('Exception: ', '');
+        _message = userFacingError(e);
         _progress = 100;
       });
       await Future<void>.delayed(const Duration(milliseconds: 900));

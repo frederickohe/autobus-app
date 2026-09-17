@@ -1,4 +1,4 @@
-import 'package:autobus/icons/home_figma_icons.dart';
+import 'package:autobus/icons/figma_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -16,7 +16,7 @@ class AppScreenHeader extends StatelessWidget {
     required this.title,
     required this.leading,
     this.trailing,
-    this.titleFontSize = 20,
+    this.titleFontSize = 16,
   });
 
   static const infoCircleColor = Color(0xFFECECF0);
@@ -111,11 +111,10 @@ class AppScreenBackButton extends StatelessWidget {
         minWidth: 36 * headerScale,
         minHeight: 36 * headerScale,
       ),
-      icon: HomeSfIcon(
-        icon: HomeFigmaIcons.chevronLeft,
-        color: Colors.black,
+      icon: FigmaSvgIcon(
+        FigmaIcons.back,
         size: 22 * headerScale,
-        fontWeight: FontWeight.w600,
+        color: Colors.black,
       ),
     );
   }
@@ -148,11 +147,9 @@ class IntelligenceInfoButton extends StatelessWidget {
           width: size,
           height: size,
           child: Center(
-            child: HomeSfIcon(
-              icon: HomeFigmaIcons.info,
-              color: AppScreenHeader.iconColor,
-              size: 20 * headerScale,
-              fontWeight: FontWeight.w500,
+            child: FigmaSvgIcon(
+              FigmaIcons.infoHeader,
+              size: 24 * headerScale,
             ),
           ),
         ),

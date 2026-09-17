@@ -1,5 +1,6 @@
 import 'package:autobus/barrel.dart';
 import 'package:autobus/features/onboarding/details2_page.dart';
+import 'package:autobus/icons/figma_icons.dart';
 
 /// Post-signup setup intro — Figma DETAILS (detail1) 402×874.
 class DetailsPage extends StatelessWidget {
@@ -59,11 +60,10 @@ class DetailsPage extends StatelessWidget {
                 SizedBox(height: heroHeight - (24 * scale)),
                 Padding(
                   padding: EdgeInsets.symmetric(horizontal: 24 * scale),
-                  child: Image.asset(
-                    'assets/img/aibot.png',
-                    width: 70 * scale,
-                    height: 70 * scale,
-                    fit: BoxFit.contain,
+                  child: FigmaSvgIcon(
+                    FigmaIcons.ai,
+                    size: 70 * scale,
+                    color: const Color(0xFF7F03B9),
                   ),
                 ),
                 SizedBox(height: 10 * scale),

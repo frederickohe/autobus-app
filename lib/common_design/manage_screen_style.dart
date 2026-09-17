@@ -27,7 +27,7 @@ class ManageScreenStyle {
     ),
   );
 
-  static TextStyle headerTitleStyle() => GoogleFonts.inter(
+  static TextStyle headerTitleStyle() => GoogleFonts.montserrat(
     color: Colors.white,
     fontSize: 22,
     fontWeight: FontWeight.w300,

@@ -136,8 +136,8 @@ class LightHubGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     return GridView.count(
       crossAxisCount: 2,
-      mainAxisSpacing: 12 * scale,
-      crossAxisSpacing: 12 * scale,
+      mainAxisSpacing: LightScreenTheme.gridGap * scale,
+      crossAxisSpacing: LightScreenTheme.gridGap * scale,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       childAspectRatio: LightHubCard.tileAspectRatio,

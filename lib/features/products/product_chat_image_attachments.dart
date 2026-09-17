@@ -302,12 +302,12 @@ Future<void> showProductSlotActionsSheet(
         children: [
           ListTile(
             leading: const Icon(Icons.refresh, color: Colors.white70),
-            title: Text('Replace', style: GoogleFonts.outfit(color: Colors.white)),
+            title: Text('Replace', style: GoogleFonts.montserrat(color: Colors.white)),
             onTap: () => Navigator.pop(ctx, 'replace'),
           ),
           ListTile(
             leading: const Icon(Icons.delete_outline, color: Colors.redAccent),
-            title: Text('Remove', style: GoogleFonts.outfit(color: Colors.redAccent)),
+            title: Text('Remove', style: GoogleFonts.montserrat(color: Colors.redAccent)),
             onTap: () => Navigator.pop(ctx, 'remove'),
           ),
         ],

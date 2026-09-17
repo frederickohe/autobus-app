@@ -4,8 +4,10 @@ class ThemeBloc extends Cubit<ThemeState> {
   ThemeBloc() : super(ThemeState(_defaultTheme()));
 
   static ThemeData _defaultTheme() {
+    final montserrat = GoogleFonts.montserrat();
     return ThemeData(
       colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+      fontFamily: montserrat.fontFamily,
       textTheme: GoogleFonts.montserratTextTheme(),
     );
   }
@@ -15,6 +17,7 @@ class ThemeBloc extends Cubit<ThemeState> {
       ThemeState(
         ThemeData(
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+          fontFamily: GoogleFonts.montserrat().fontFamily,
           textTheme: GoogleFonts.montserratTextTheme(),
         ),
       ),

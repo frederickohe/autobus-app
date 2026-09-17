@@ -1,24 +1,24 @@
-import 'package:autobus/icons/home_figma_icons.dart';
+import 'package:autobus/icons/figma_icons.dart';
 import 'package:flutter/material.dart';
 
 /// Purple-outlined AI sparkle from the HOME header and FAB.
 class AiSparkleIcon extends StatelessWidget {
   final double size;
-  final Color color;
+  final Color? color;
 
   const AiSparkleIcon({
     super.key,
     this.size = 35,
-    this.color = const Color(0xFF7F03B9),
+    this.color,
   });
 
   @override
   Widget build(BuildContext context) {
-    return HomeSfIcon(
-      icon: HomeFigmaIcons.ai,
+    final asset = color == Colors.white ? FigmaIcons.aiFab : FigmaIcons.ai;
+    return FigmaSvgIcon(
+      asset,
       size: size,
-      color: color,
-      fontWeight: FontWeight.w500,
+      color: color == null || color == Colors.white ? null : color,
     );
   }
 }

@@ -1,4 +1,5 @@
 import 'package:bloc/bloc.dart';
+import 'package:autobus/common_design/user_facing_error.dart';
 import 'chat_event.dart';
 import 'chat_state.dart';
 import 'services/autochat_repository.dart';
@@ -61,8 +62,9 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       updated.add(botReply);
       emit(ChatLoadSuccess(updated));
     } catch (e) {
+      final friendly = userFacingError(e, fallback: AppUserMessages.load);
       if (event.hidden && current.isEmpty) {
-        emit(ChatLoadFailure(e.toString()));
+        emit(ChatLoadFailure(friendly));
         return;
       }
 
@@ -72,6 +74,16 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
         }
         return m;
       }).toList();
+      failed.add(
+        ChatMessage(
+          id: '${DateTime.now().millisecondsSinceEpoch}-err',
+          userId: event.phone,
+          text: friendly,
+          timestamp: DateTime.now(),
+          sender: Sender.bot,
+          status: MessageStatus.sent,
+        ),
+      );
       emit(ChatLoadSuccess(failed));
     }
   }
@@ -91,9 +103,7 @@ String _webhookMessageWithOptionalImages(
   final buf = StringBuffer(trimmed);
   buf.writeln();
   buf.writeln();
-  buf.writeln(
-    'Product image URLs (already uploaded; use these for photos / primary image when adding or updating a product):',
-  );
+  buf.writeln('Attached media URLs (already uploaded):');
   for (final u in cleaned) {
     buf.writeln(u);
   }

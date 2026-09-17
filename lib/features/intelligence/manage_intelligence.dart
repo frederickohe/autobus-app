@@ -13,6 +13,7 @@ import 'package:autobus/features/intelligence/intelligence_files_page.dart';
 import 'package:autobus/features/intelligence/intelligence_intro_modal.dart';
 import 'package:autobus/features/intelligence/intelligence_my_ai_page.dart';
 import 'package:autobus/features/intelligence/intelligence_websites_page.dart';
+import 'package:autobus/icons/figma_icons.dart';
 import 'package:autobus/icons/home_figma_icons.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
@@ -125,8 +126,8 @@ class _ManageIntelligenceState extends State<ManageIntelligence> {
                 const SizedBox(height: 12),
                 ListTile(
                   contentPadding: EdgeInsets.zero,
-                  leading: HomeSfIcon(
-                    icon: HomeFigmaIcons.files,
+                  leading: FigmaSvgIcon(
+                    FigmaIcons.files,
                     size: 22,
                     color: _accentColor,
                   ),
@@ -138,8 +139,8 @@ class _ManageIntelligenceState extends State<ManageIntelligence> {
                 ),
                 ListTile(
                   contentPadding: EdgeInsets.zero,
-                  leading: HomeSfIcon(
-                    icon: HomeFigmaIcons.files,
+                  leading: FigmaSvgIcon(
+                    FigmaIcons.files,
                     size: 22,
                     color: _mutedColor,
                   ),
@@ -196,8 +197,8 @@ class _ManageIntelligenceState extends State<ManageIntelligence> {
                 const SizedBox(height: 12),
                 ListTile(
                   contentPadding: EdgeInsets.zero,
-                  leading: HomeSfIcon(
-                    icon: HomeFigmaIcons.website,
+                  leading: FigmaSvgIcon(
+                    FigmaIcons.website,
                     size: 22,
                     color: _accentColor,
                   ),
@@ -209,8 +210,8 @@ class _ManageIntelligenceState extends State<ManageIntelligence> {
                 ),
                 ListTile(
                   contentPadding: EdgeInsets.zero,
-                  leading: HomeSfIcon(
-                    icon: HomeFigmaIcons.website,
+                  leading: FigmaSvgIcon(
+                    FigmaIcons.website,
                     size: 22,
                     color: _mutedColor,
                   ),
@@ -261,7 +262,7 @@ class _ManageIntelligenceState extends State<ManageIntelligence> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _presenceError = e.toString();
+        _presenceError = userFacingError(e, fallback: AppUserMessages.load);
         _presenceLoading = false;
         _hasRagDocuments = false;
         _ragFiles = const [];
@@ -411,14 +412,7 @@ class _ManageIntelligenceState extends State<ManageIntelligence> {
   }
 
   String _uploadErrorMessage(Object e) {
-    final raw = e.toString();
-    if (raw.contains('403')) {
-      return 'Upload blocked: an active subscription is required for RAG documents.';
-    }
-    if (raw.contains('Session expired') || raw.contains('401')) {
-      return 'Session expired. Please sign in again.';
-    }
-    return raw.replaceFirst('Exception: ', '');
+    return userFacingError(e, fallback: AppUserMessages.upload);
   }
 
   @override
@@ -527,7 +521,7 @@ class _ManageIntelligenceState extends State<ManageIntelligence> {
                           scale: scale,
                           title: 'Files',
                           subtitle: 'Upload/view files',
-                          icon: HomeFigmaIcons.files,
+                          iconAsset: FigmaIcons.files,
                           gradient: const LinearGradient(
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
@@ -539,7 +533,7 @@ class _ManageIntelligenceState extends State<ManageIntelligence> {
                           scale: scale,
                           title: 'Websites',
                           subtitle: 'View/index websites',
-                          icon: HomeFigmaIcons.website,
+                          iconAsset: FigmaIcons.website,
                           gradient: const LinearGradient(
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
@@ -729,7 +723,7 @@ class _IntelligenceToolCard extends StatelessWidget {
   final double scale;
   final String title;
   final String subtitle;
-  final IconData icon;
+  final String iconAsset;
   final Gradient gradient;
   final VoidCallback onTap;
 
@@ -737,7 +731,7 @@ class _IntelligenceToolCard extends StatelessWidget {
     required this.scale,
     required this.title,
     required this.subtitle,
-    required this.icon,
+    required this.iconAsset,
     required this.gradient,
     required this.onTap,
   });
@@ -771,9 +765,9 @@ class _IntelligenceToolCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12 * scale),
                 ),
                 alignment: Alignment.center,
-                child: HomeSfIcon(
-                  icon: icon,
-                  size: 20 * scale.clamp(0.9, 1.05),
+                child: FigmaSvgIcon(
+                  iconAsset,
+                  size: 22 * scale.clamp(0.9, 1.05),
                   color: Colors.white,
                 ),
               ),
@@ -857,7 +851,10 @@ class _MyAiWideCard extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                AiSparkleIcon(size: 22 * scale.clamp(0.9, 1.05)),
+                FigmaSvgIcon(
+                  FigmaIcons.aiMyAi,
+                  size: 35 * scale.clamp(0.9, 1.05),
+                ),
                 SizedBox(width: 8 * scale),
                 Text(
                   'My AI',
@@ -1080,7 +1077,7 @@ class _RagIndexProgressDialogState extends State<_RagIndexProgressDialog> {
       if (!mounted) return;
       setState(() {
         _failed = true;
-        _message = e.toString().replaceFirst('Exception: ', '');
+        _message = userFacingError(e);
         _progress = 100;
       });
       await Future<void>.delayed(const Duration(milliseconds: 900));
@@ -1273,7 +1270,7 @@ class _IntelligenceHistoryPageState extends State<IntelligenceHistoryPage> {
         );
       }
     } catch (e) {
-      _showSnack(e.toString().replaceFirst('Exception: ', ''));
+      _showSnack(userFacingError(e));
     }
   }
 
@@ -1300,7 +1297,7 @@ class _IntelligenceHistoryPageState extends State<IntelligenceHistoryPage> {
           ),
           title: Text(
             isWebsite ? 'Indexed content' : 'Indexed text preview',
-            style: GoogleFonts.outfit(color: Colors.white, fontSize: 18),
+            style: GoogleFonts.montserrat(color: Colors.white, fontSize: 18),
           ),
           content: SizedBox(
             width: double.maxFinite,
@@ -1315,8 +1312,8 @@ class _IntelligenceHistoryPageState extends State<IntelligenceHistoryPage> {
                 }
                 if (snapshot.hasError) {
                   return Text(
-                    snapshot.error.toString().replaceFirst('Exception: ', ''),
-                    style: GoogleFonts.outfit(
+                    userFacingError(snapshot.error, fallback: AppUserMessages.load),
+                    style: GoogleFonts.montserrat(
                       color: Colors.white.withValues(alpha: 0.75),
                       fontSize: 13,
                     ),
@@ -1326,7 +1323,7 @@ class _IntelligenceHistoryPageState extends State<IntelligenceHistoryPage> {
                 if (text.trim().isEmpty) {
                   return Text(
                     'No preview available.',
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.montserrat(
                       color: Colors.white.withValues(alpha: 0.75),
                       fontSize: 13,
                     ),
@@ -1337,7 +1334,7 @@ class _IntelligenceHistoryPageState extends State<IntelligenceHistoryPage> {
                   child: SingleChildScrollView(
                     child: SelectableText(
                       text,
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.montserrat(
                         color: Colors.white.withValues(alpha: 0.9),
                         fontSize: 13,
                         height: 1.45,
@@ -1357,14 +1354,14 @@ class _IntelligenceHistoryPageState extends State<IntelligenceHistoryPage> {
                 },
                 child: Text(
                   'Open original',
-                  style: GoogleFonts.outfit(color: Colors.white70),
+                  style: GoogleFonts.montserrat(color: Colors.white70),
                 ),
               ),
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(),
               child: Text(
                 'Close',
-                style: GoogleFonts.outfit(color: const Color(0xFFA855F7)),
+                style: GoogleFonts.montserrat(color: const Color(0xFFA855F7)),
               ),
             ),
           ],
@@ -1435,13 +1432,13 @@ class _IntelligenceHistoryPageState extends State<IntelligenceHistoryPage> {
           ),
           title: Text(
             'Clear intelligence?',
-            style: GoogleFonts.outfit(color: Colors.white, fontSize: 18),
+            style: GoogleFonts.montserrat(color: Colors.white, fontSize: 18),
           ),
           content: Text(
             'This removes all uploaded documents and websites from storage '
             'and from the search index. Chat history is kept. '
             'You can upload your data again afterwards.',
-            style: GoogleFonts.outfit(
+            style: GoogleFonts.montserrat(
               color: Colors.white.withValues(alpha: 0.8),
               fontSize: 14,
               height: 1.4,
@@ -1452,14 +1449,14 @@ class _IntelligenceHistoryPageState extends State<IntelligenceHistoryPage> {
               onPressed: () => Navigator.of(dialogContext).pop(false),
               child: Text(
                 'Cancel',
-                style: GoogleFonts.outfit(color: Colors.white70),
+                style: GoogleFonts.montserrat(color: Colors.white70),
               ),
             ),
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(true),
               child: Text(
                 'Clear all',
-                style: GoogleFonts.outfit(color: const Color(0xFFFF6B6B)),
+                style: GoogleFonts.montserrat(color: const Color(0xFFFF6B6B)),
               ),
             ),
           ],
@@ -1476,14 +1473,14 @@ class _IntelligenceHistoryPageState extends State<IntelligenceHistoryPage> {
       _showSnack(message);
     } catch (e) {
       if (!mounted) return;
-      _showSnack(e.toString().replaceFirst('Exception: ', ''));
+      _showSnack(userFacingError(e));
     }
   }
 
   void _showSnack(String message) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message, style: GoogleFonts.outfit())),
+      SnackBar(content: Text(message, style: GoogleFonts.montserrat())),
     );
   }
 
@@ -1512,7 +1509,7 @@ class _IntelligenceHistoryPageState extends State<IntelligenceHistoryPage> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _loadError = e.toString();
+        _loadError = userFacingError(e, fallback: AppUserMessages.load);
         _loading = false;
       });
     }
@@ -1535,15 +1532,15 @@ class _IntelligenceHistoryPageState extends State<IntelligenceHistoryPage> {
         _expandedIndex = null;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Deleted "$name"', style: GoogleFonts.outfit())),
+        SnackBar(content: Text('Deleted "$name"', style: GoogleFonts.montserrat())),
       );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            e.toString().replaceFirst('Exception: ', ''),
-            style: GoogleFonts.outfit(),
+            userFacingError(e),
+            style: GoogleFonts.montserrat(),
           ),
         ),
       );
@@ -1663,12 +1660,12 @@ class _IntelligenceHistoryPageState extends State<IntelligenceHistoryPage> {
                                             children: [
                                               Row(
                                                 children: [
-                                                  HomeSfIcon(
-                                                    icon: isWebsite
-                                                        ? HomeFigmaIcons.website
-                                                        : HomeFigmaIcons.files,
-                                                    color: LightScreenTheme.accent,
+                                                  FigmaSvgIcon(
+                                                    isWebsite
+                                                        ? FigmaIcons.website
+                                                        : FigmaIcons.files,
                                                     size: 20 * scale.clamp(0.9, 1.05),
+                                                    color: LightScreenTheme.accent,
                                                   ),
                                                   SizedBox(width: 8 * scale),
                                                   Expanded(
@@ -1792,12 +1789,12 @@ class _IntelligenceHistoryPageState extends State<IntelligenceHistoryPage> {
                                             children: [
                                               Row(
                                                 children: [
-                                                  HomeSfIcon(
-                                                    icon: isWebsite
-                                                        ? HomeFigmaIcons.website
-                                                        : HomeFigmaIcons.files,
-                                                    color: LightScreenTheme.accent,
+                                                  FigmaSvgIcon(
+                                                    isWebsite
+                                                        ? FigmaIcons.website
+                                                        : FigmaIcons.files,
                                                     size: 18 * scale.clamp(0.9, 1.05),
+                                                    color: LightScreenTheme.accent,
                                                   ),
                                                   SizedBox(width: 8 * scale),
                                                   Expanded(
