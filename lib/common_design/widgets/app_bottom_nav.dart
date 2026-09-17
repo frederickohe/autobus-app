@@ -31,6 +31,7 @@ class AppBottomNav extends StatelessWidget {
     final fabSize = 48 * scale.clamp(0.9, 1.1);
     final fabOverlap = fabSize / 2;
     final iconSize = 20 * scale.clamp(0.9, 1.1);
+    final notchGap = 6 * scale;
 
     return Padding(
       padding: EdgeInsets.fromLTRB(
@@ -47,47 +48,42 @@ class AppBottomNav extends StatelessWidget {
           children: [
             Align(
               alignment: Alignment.bottomCenter,
-              child: Container(
-                height: barHeight,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(24 * scale),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.10),
-                      blurRadius: 16,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
+              child: CustomPaint(
+                painter: _DockNavBarPainter(
+                  cornerRadius: 24 * scale,
+                  notchRadius: fabSize / 2 + notchGap,
                 ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: _NavTabButton(
-                        scale: scale,
-                        label: 'Home',
-                        active: destination == AppShellDestination.home,
-                        onTap: () => onTabSelected?.call(AppNavTab.home),
-                        icon: _HomeNavIcon(
+                child: SizedBox(
+                  height: barHeight,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _NavTabButton(
+                          scale: scale,
+                          label: 'Home',
                           active: destination == AppShellDestination.home,
-                          size: iconSize,
+                          onTap: () => onTabSelected?.call(AppNavTab.home),
+                          icon: _HomeNavIcon(
+                            active: destination == AppShellDestination.home,
+                            size: iconSize,
+                          ),
                         ),
                       ),
-                    ),
-                    SizedBox(width: fabSize),
-                    Expanded(
-                      child: _NavTabButton(
-                        scale: scale,
-                        label: 'Analytics',
-                        active: destination == AppShellDestination.analytics,
-                        onTap: () => onTabSelected?.call(AppNavTab.analytics),
-                        icon: _AnalyticsNavIcon(
+                      SizedBox(width: fabSize + 16 * scale),
+                      Expanded(
+                        child: _NavTabButton(
+                          scale: scale,
+                          label: 'Analytics',
                           active: destination == AppShellDestination.analytics,
-                          size: iconSize,
+                          onTap: () => onTabSelected?.call(AppNavTab.analytics),
+                          icon: _AnalyticsNavIcon(
+                            active: destination == AppShellDestination.analytics,
+                            size: iconSize,
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -103,6 +99,56 @@ class AppBottomNav extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+/// White Figma dock: rounded rectangle with a circular bite for the center FAB.
+class _DockNavBarPainter extends CustomPainter {
+  final double cornerRadius;
+  final double notchRadius;
+
+  const _DockNavBarPainter({
+    required this.cornerRadius,
+    required this.notchRadius,
+  });
+
+  Path _dock(Size size) {
+    final bar = Path()
+      ..addRRect(
+        RRect.fromLTRBR(
+          0,
+          0,
+          size.width,
+          size.height,
+          Radius.circular(cornerRadius),
+        ),
+      );
+    final notch = Path()
+      ..addOval(
+        Rect.fromCircle(
+          center: Offset(size.width / 2, 0),
+          radius: notchRadius,
+        ),
+      );
+    return Path.combine(PathOperation.difference, bar, notch);
+  }
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final path = _dock(size);
+    canvas.drawShadow(path, Colors.black.withValues(alpha: 0.12), 12, false);
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = Colors.white
+        ..style = PaintingStyle.fill,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _DockNavBarPainter oldDelegate) {
+    return oldDelegate.cornerRadius != cornerRadius ||
+        oldDelegate.notchRadius != notchRadius;
   }
 }
 
@@ -123,7 +169,7 @@ class _CenterNavFab extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: active ? _accentColor : Colors.white,
-      elevation: 8,
+      elevation: 10,
       shadowColor: const Color(0x40005D5D),
       shape: const CircleBorder(),
       clipBehavior: Clip.antiAlias,
@@ -208,7 +254,7 @@ class _NavTabButton extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(12 * scale),
       child: Padding(
-        padding: EdgeInsets.symmetric(vertical: 16 * scale),
+        padding: EdgeInsets.only(top: 20 * scale, bottom: 10 * scale),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -281,7 +327,7 @@ class AppShellScaffold extends StatelessWidget {
     this.destination = AppShellDestination.home,
     required this.body,
     this.backgroundColor = const Color(0xFFF3F3F7),
-    this.showAiFab = true,
+    this.showAiFab = false,
     this.onAiTap,
     this.onCenterNavTap,
     this.onTabSelected,

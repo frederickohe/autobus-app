@@ -146,6 +146,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         FigmaSvgIcon(
                           FigmaIcons.switchBusiness,
                           size: 24 * scale,
+                          color: Colors.white,
                         ),
                         SizedBox(width: 12 * scale),
                         Expanded(
@@ -213,6 +214,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         FigmaSvgIcon(
                           FigmaIcons.chevronDown,
                           size: 30 * scale,
+                          color: const Color(0xFF4C4C4C),
                           chevronRight: true,
                         ),
                       ],
@@ -607,7 +609,11 @@ class _SettingsMenuTile extends StatelessWidget {
             children: [
               SizedBox(
                 width: 28 * scale,
-                child: FigmaSvgIcon(item.iconAsset, size: 20 * scale),
+                child: FigmaSvgIcon(
+                  item.iconAsset,
+                  size: 20 * scale,
+                  color: const Color(0xFF4E4E4E),
+                ),
               ),
               SizedBox(width: 10 * scale),
               Expanded(
@@ -623,6 +629,7 @@ class _SettingsMenuTile extends StatelessWidget {
               FigmaSvgIcon(
                 FigmaIcons.chevronDown,
                 size: 24 * scale,
+                color: const Color(0xFF4C4C4C),
                 chevronRight: true,
               ),
             ],

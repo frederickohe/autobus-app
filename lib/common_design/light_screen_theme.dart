@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 /// Shared tokens for the light Figma shell used across hub and detail screens.
@@ -73,4 +74,20 @@ class LightScreenTheme {
         fontSize: 14 * scale.clamp(0.9, 1.05),
         fontWeight: FontWeight.w400,
       );
+}
+
+/// Phone status-bar / nav-bar overlay for the light Figma shell.
+///
+/// Android uses [statusBarIconBrightness]; iOS uses [statusBarBrightness]
+/// (light = dark clock/battery glyphs on a light background).
+class AppSystemUi {
+  AppSystemUi._();
+
+  static const light = SystemUiOverlayStyle(
+    statusBarColor: Colors.transparent,
+    statusBarIconBrightness: Brightness.dark,
+    statusBarBrightness: Brightness.light,
+    systemNavigationBarColor: Color(0xFFF3F3F7),
+    systemNavigationBarIconBrightness: Brightness.dark,
+  );
 }

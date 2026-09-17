@@ -1,4 +1,6 @@
 import 'package:autobus/barrel.dart';
+import 'package:autobus/common_design/light_screen_theme.dart';
+import 'package:flutter/services.dart';
 
 // Initialize services at app level
 late TokenService _tokenService;
@@ -83,6 +85,12 @@ class MyApp extends StatelessWidget {
           debugShowCheckedModeBanner: false,
           title: 'Autobus',
           theme: state.themeData,
+          builder: (context, child) {
+            return AnnotatedRegion<SystemUiOverlayStyle>(
+              value: AppSystemUi.light,
+              child: child ?? const SizedBox.shrink(),
+            );
+          },
           home: const SplashWrapper(),
         );
       },

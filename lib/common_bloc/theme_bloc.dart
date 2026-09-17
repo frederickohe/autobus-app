@@ -1,4 +1,5 @@
 import 'package:autobus/barrel.dart';
+import 'package:autobus/common_design/light_screen_theme.dart';
 
 class ThemeBloc extends Cubit<ThemeState> {
   ThemeBloc() : super(ThemeState(_defaultTheme()));
@@ -6,21 +7,24 @@ class ThemeBloc extends Cubit<ThemeState> {
   static ThemeData _defaultTheme() {
     final montserrat = GoogleFonts.montserrat();
     return ThemeData(
-      colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+      brightness: Brightness.light,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: const Color(0xFF7F03B9),
+        brightness: Brightness.light,
+      ),
       fontFamily: montserrat.fontFamily,
       textTheme: GoogleFonts.montserratTextTheme(),
+      scaffoldBackgroundColor: LightScreenTheme.background,
+      appBarTheme: const AppBarTheme(
+        elevation: 0,
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        systemOverlayStyle: AppSystemUi.light,
+      ),
     );
   }
 
   void changeFontFamily(String fontFamily) {
-    emit(
-      ThemeState(
-        ThemeData(
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-          fontFamily: GoogleFonts.montserrat().fontFamily,
-          textTheme: GoogleFonts.montserratTextTheme(),
-        ),
-      ),
-    );
+    emit(ThemeState(_defaultTheme()));
   }
 }
